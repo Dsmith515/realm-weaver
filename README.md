@@ -46,6 +46,17 @@ dotnet test RealmWeaver.slnx
 cd src/frontend && npm run lint && npm test
 ```
 
+### Generate a realm from the command line
+
+```bash
+dotnet run --project tools/RealmWeaver.Cli -- --seed 42 --biome forest --size 40x30 --events 12 --mobs beast
+# writes samples/forest-42.svg, .prompt.txt (image-generation prompt), .md (placement sheet) and .json
+```
+
+Biomes: `plains`, `forest`, `desert`, `tundra`, `swamp`, `volcanic`, `mountains`, `coast`. Run with `--help` for every option.
+
+![Sample forest field, seed 42](docs/images/sample-forest-42.svg)
+
 ## Repository layout
 
 ```
@@ -55,14 +66,15 @@ src/backend/
   RealmWeaver.Infrastructure     EF Core DbContext, migrations, seeding
   RealmWeaver.Modules.*          Catalog, Inventory, Rituals and Realms modules
 src/frontend/                    React + TypeScript + Vite app
+tools/RealmWeaver.Cli           command-line generator for samples
 tests/                           xUnit test projects
-docs/                            roadmap and ADRs
+docs/                            roadmap, ADRs and images
 ```
 
 ## Status
 
 - [x] Milestone 1: scaffold, CI, docs
-- [ ] Milestone 2: generation library (fields, events, labels, exports)
+- [x] Milestone 2: generation library (fields, events, labels, exports)
 - [ ] Milestone 3: dungeons (floors, material themes, dungeon events)
 - [ ] Milestone 4: persistence and APIs
 - [ ] Milestone 5: ritual transaction
