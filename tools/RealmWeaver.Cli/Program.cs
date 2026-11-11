@@ -8,6 +8,9 @@ using RealmWeaver.Generation.Model;
 const string Usage = """
     Usage: realmweaver [options]
       --seed <n>          Seed (default: random)
+      --kind <name>       field|dungeon|fieldwithdungeon (default: field)
+      --floors <n>        Dungeon floors 1-3 (default: 1)
+      --floor-events <n>  Events per dungeon floor (default: scaled random)
       --biome <name>      plains|forest|desert|tundra|swamp|volcanic|mountains|coast (default: plains)
       --element <name>    none|fire|water|earth|air|frost|lightning|light|shadow (default: none)
       --size <W>x<H>      Map size, 15-100 each (default: random)
@@ -53,6 +56,9 @@ var seed = Opt("seed") is { } s ? ulong.Parse(s, CultureInfo.InvariantCulture) :
 var request = new GenerationRequest
 {
     Seed = seed,
+    Kind = Enum.Parse<RealmKind>(Opt("kind") ?? "field", ignoreCase: true),
+    FloorCount = IntOpt("floors") ?? 1,
+    FloorEventCount = IntOpt("floor-events"),
     Biome = Enum.Parse<Biome>(Opt("biome") ?? "plains", ignoreCase: true),
     Element = Enum.Parse<Element>(Opt("element") ?? "none", ignoreCase: true),
     Width = width,
@@ -79,12 +85,15 @@ var outDir = Opt("out") ?? "samples";
 Directory.CreateDirectory(outDir);
 var name = Path.Combine(outDir, $"{request.Biome.ToString().ToLowerInvariant()}-{seed}");
 
-File.WriteAllText(name + ".svg", SvgExporter.Render(realm));
-File.WriteAllText(name + ".prompt.txt", PromptExporter.Build(realm));
+foreach (var area in realm.Areas)
+{
+    File.WriteAllText($"{name}-{area.Id}.svg", SvgExporter.Render(realm, area.Id));
+    File.WriteAllText($"{name}-{area.Id}.prompt.txt", PromptExporter.Build(realm, area.Id));
+    var rooms = area.Rooms.Count > 0 ? $", {area.Rooms.Count} rooms" : "";
+    Console.WriteLine($"  {area.Name}: {area.Width}x{area.Height}, {area.Events.Count} events{rooms}, {area.Features.Count} features, spawn {area.Spawn}");
+}
+
 File.WriteAllText(name + ".md", MarkdownExporter.Build(realm));
 File.WriteAllText(name + ".json", RealmJson.Serialize(realm));
-
-var area = realm.Areas[0];
-Console.WriteLine($"Seed {seed}: {area.Name} {area.Width}x{area.Height}, {area.Events.Count} events, spawn {area.Spawn}");
-Console.WriteLine($"Wrote {name}.svg / .prompt.txt / .md / .json");
+Console.WriteLine($"Seed {seed}: wrote {name}-<area>.svg / .prompt.txt, {name}.md and {name}.json");
 return 0;

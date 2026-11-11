@@ -20,7 +20,28 @@ public static class PromptExporter
         Line(sb, $"Top-down orthographic battle map for a grid-based tactics RPG.");
         Line(sb, $"Square grid of {area.Width} columns by {area.Height} rows, one square per tile, viewed straight down with no perspective.");
         var element = request.Element == Element.None ? "" : $" with a strong {request.Element.ToString().ToLowerInvariant()} elemental influence";
-        Line(sb, $"Setting: {request.Biome.ToString().ToLowerInvariant()} {(area.Kind == AreaKind.Field ? "wilderness" : "dungeon")}{element}.");
+        if (area.Kind == AreaKind.Field)
+        {
+            Line(sb, $"Setting: {request.Biome.ToString().ToLowerInvariant()} wilderness{element}.");
+        }
+        else
+        {
+            var host = realm.Theme?.HostName.ToLowerInvariant() ?? "ruin";
+            Line(sb, $"Setting: dungeon floor {area.FloorNumber} beneath a {host} in a {request.Biome.ToString().ToLowerInvariant()} region{element}. Solid rock fills everything outside the rooms and corridors.");
+            Line(sb, $"Construction:");
+            foreach (var group in area.Rooms.GroupBy(r => r.Material).OrderByDescending(g => g.Count()))
+            {
+                var info = DungeonMaterials.Of(group.Key);
+                var share = group.Count() * 100.0 / area.Rooms.Count;
+                Line(sb, $"- {info.Name.ToLowerInvariant()} ({info.Style.ToString().ToLowerInvariant()}): about {Math.Round(share):0}% of rooms, e.g. {string.Join(", ", group.Take(3).Select(r => r.Location))}");
+            }
+
+            foreach (var t in area.Rooms.Where(r => r.IsTransition))
+            {
+                Line(sb, $"- at {t.Location} the {DungeonMaterials.Of(t.TransitionFrom!.Value).Name.ToLowerInvariant()} gives way to {DungeonMaterials.Of(t.Material).Name.ToLowerInvariant()}");
+            }
+        }
+
         sb.AppendLine();
 
         Line(sb, $"Terrain mix:");
@@ -47,7 +68,8 @@ public static class PromptExporter
             Line(sb, $"- {e.Name.ToLowerInvariant()} covering {e.Location}");
         }
 
-        foreach (var f in area.Features)
+        // Traps and secret doors are for the game master only, so they are left out of the art prompt.
+        foreach (var f in area.Features.Where(f => f.Kind is not (FeatureKind.Trap or FeatureKind.SecretDoor)))
         {
             Line(sb, $"- {f.Description.ToLowerInvariant()} at {f.Location}");
         }
@@ -73,6 +95,11 @@ public static class MarkdownExporter
         Line(sb, $"- Kind: {realm.Request.Kind}; biome: {realm.Request.Biome}; element: {realm.Request.Element}");
         Line(sb, $"- Threat: {realm.Threat} (difficulty {realm.Request.Difficulty} + danger {realm.Request.DangerModifier})");
         Line(sb, $"- Generator version: {realm.GeneratorVersion}");
+        if (realm.Theme is { } theme)
+        {
+            var branches = theme.BranchMaterials.Count == 0 ? "none" : string.Join(", ", theme.BranchMaterials.Select(m => DungeonMaterials.Of(m).Name));
+            Line(sb, $"- Dungeon host: {theme.HostName}; primary material: {DungeonMaterials.Of(theme.PrimaryMaterial).Name}; possible branches: {branches}");
+        }
 
         foreach (var area in realm.Areas)
         {
@@ -85,13 +112,31 @@ public static class MarkdownExporter
             }
 
             Line(sb, $"");
-            Line(sb, $"| Id | Event | Category | Location | Mobs | Templates |");
-            Line(sb, $"|---|---|---|---|---|---|");
+            Line(sb, $"| Id | Event | Category | Location | Rooms | Mobs | Templates |");
+            Line(sb, $"|---|---|---|---|---|---|---|");
             foreach (var e in area.Events)
             {
                 var mobs = e.Mobs.Count == 0 ? "-" : string.Join(", ", e.Mobs.Select(m => $"{m.Count}x {m.Name} ({m.Role})"));
                 var templates = e.DifficultyTemplateIds.Count == 0 ? "-" : string.Join(", ", e.DifficultyTemplateIds);
-                Line(sb, $"| {e.Id} | {e.Name} | {e.Category} | {e.Location} | {mobs} | {templates} |");
+                var rooms = e.RoomIds.Count == 0 ? "-" : string.Join(", ", e.RoomIds);
+                Line(sb, $"| {e.Id} | {e.Name} | {e.Category} | {e.Location} | {rooms} | {mobs} | {templates} |");
+            }
+
+            if (area.Rooms.Count > 0)
+            {
+                Line(sb, $"");
+                Line(sb, $"| Room | Location | Material | Connects to | Notes |");
+                Line(sb, $"|---|---|---|---|---|");
+                foreach (var r in area.Rooms)
+                {
+                    var notes = new List<string>();
+                    if (r.IsEntrance) notes.Add("entrance");
+                    if (r.HasStairsDown) notes.Add("stairs down");
+                    if (r.IsBossRoom) notes.Add("boss room");
+                    if (r.IsSecret) notes.Add("secret room");
+                    if (r.IsTransition) notes.Add($"transition from {DungeonMaterials.Of(r.TransitionFrom!.Value).Name}");
+                    Line(sb, $"| {r.Id} | {r.Location} | {DungeonMaterials.Of(r.Material).Name} | {string.Join(", ", r.Connections)} | {(notes.Count == 0 ? "-" : string.Join("; ", notes))} |");
+                }
             }
 
             if (area.Features.Count > 0)

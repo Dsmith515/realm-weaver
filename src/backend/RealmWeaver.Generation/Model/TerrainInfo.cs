@@ -24,6 +24,11 @@ public sealed record TerrainInfo(Terrain Terrain, char Code, string Name, bool P
         new(Terrain.Ground, '_', "Cleared ground", true, false, "#c4a87a"),
         new(Terrain.Trail, '=', "Trail", true, false, "#b8935b"),
         new(Terrain.Bridge, '#', "Bridge / ford", true, false, "#9c6b3c"),
+        new(Terrain.Wall, 'X', "Wall / solid rock", false, false, "#2f2b28"),
+        new(Terrain.StoneFloor, 'o', "Stone floor", true, false, "#b9b2a6"),
+        new(Terrain.CaveFloor, 'c', "Cave floor", true, false, "#8c7c68"),
+        new(Terrain.TimberFloor, 'b', "Timber-braced floor", true, false, "#a8834f"),
+        new(Terrain.Door, 'D', "Door / opening", true, false, "#6b4423"),
     ];
 
     private static readonly FrozenDictionary<Terrain, TerrainInfo> ByTerrain = All.ToFrozenDictionary(t => t.Terrain);

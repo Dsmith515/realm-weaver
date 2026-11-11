@@ -8,6 +8,8 @@ public readonly record struct GridPoint(int X, int Y)
 {
     public int ChebyshevDistanceTo(GridPoint other) => Math.Max(Math.Abs(X - other.X), Math.Abs(Y - other.Y));
 
+    public int ManhattanDistanceTo(GridPoint other) => Math.Abs(X - other.X) + Math.Abs(Y - other.Y);
+
     public override string ToString() => TileLabels.Label(X, Y);
 }
 
@@ -19,6 +21,19 @@ public readonly record struct GridRect(int X, int Y, int Width, int Height)
     public int Right => X + Width - 1;
 
     public int Bottom => Y + Height - 1;
+
+    public GridPoint Center => new(X + ((Width - 1) / 2), Y + ((Height - 1) / 2));
+
+    public GridRect Expand(int by) => new(X - by, Y - by, Width + (2 * by), Height + (2 * by));
+
+    public static GridRect Union(IEnumerable<GridRect> rects)
+    {
+        ArgumentNullException.ThrowIfNull(rects);
+        var list = rects.ToList();
+        var x = list.Min(r => r.X);
+        var y = list.Min(r => r.Y);
+        return new GridRect(x, y, list.Max(r => r.Right) - x + 1, list.Max(r => r.Bottom) - y + 1);
+    }
 
     public bool Contains(GridPoint p) => p.X >= X && p.X <= Right && p.Y >= Y && p.Y <= Bottom;
 

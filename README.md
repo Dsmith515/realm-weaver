@@ -53,9 +53,11 @@ dotnet run --project tools/RealmWeaver.Cli -- --seed 42 --biome forest --size 40
 # writes samples/forest-42.svg, .prompt.txt (image-generation prompt), .md (placement sheet) and .json
 ```
 
-Biomes: `plains`, `forest`, `desert`, `tundra`, `swamp`, `volcanic`, `mountains`, `coast`. Run with `--help` for every option.
+Biomes: `plains`, `forest`, `desert`, `tundra`, `swamp`, `volcanic`, `mountains`, `coast`. Add `--kind fieldwithdungeon --floors 3` (or `--kind dungeon`) for dungeons. Run with `--help` for every option.
 
-![Sample forest field, seed 42](docs/images/sample-forest-42.svg)
+| Field with a ruined keep (seed 42) | Floor 1 beneath the keep: brick core branching into cave |
+|---|---|
+| ![Sample forest field](docs/images/sample-forest-42.svg) | ![Sample dungeon floor](docs/images/sample-forest-42-floor-1.svg) |
 
 ## Repository layout
 
@@ -75,7 +77,7 @@ docs/                            roadmap, ADRs and images
 
 - [x] Milestone 1: scaffold, CI, docs
 - [x] Milestone 2: generation library (fields, events, labels, exports)
-- [ ] Milestone 3: dungeons (floors, material themes, dungeon events)
+- [x] Milestone 3: dungeons (floors, material themes, dungeon events)
 - [ ] Milestone 4: persistence and APIs
 - [ ] Milestone 5: ritual transaction
 - [ ] Milestone 6: frontend pages

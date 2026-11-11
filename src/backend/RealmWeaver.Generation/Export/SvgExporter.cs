@@ -23,7 +23,8 @@ public static class SvgExporter
         var mapHeight = area.Height * Tile;
         var legendTop = TopGutter + mapHeight + 24;
         var terrains = area.TerrainRows.SelectMany(r => r).Distinct().Select(TerrainInfo.FromCode).OrderBy(t => t.Terrain).ToList();
-        var legendLines = 2 + terrains.Count + area.Events.Count + area.Features.Count + 3;
+        var materials = area.Rooms.Select(r => r.Material).Distinct().Order().Select(DungeonMaterials.Of).ToList();
+        var legendLines = 2 + terrains.Count + materials.Count + area.Events.Count + area.Features.Count + 4;
         var totalWidth = LeftGutter + mapWidth + 16;
         var totalHeight = legendTop + (legendLines * LegendLine) + 16;
 
@@ -80,6 +81,24 @@ public static class SvgExporter
 
         AppendRaw(svg, "</g>");
 
+        // Dungeon rooms: outlined in their material's color; transition rooms are dashed.
+        if (area.Rooms.Count > 0)
+        {
+            Append(svg, $"<g id=\"rooms\" transform=\"translate({LeftGutter},{TopGutter})\" fill=\"none\">");
+            foreach (var room in area.Rooms)
+            {
+                var b = room.Bounds;
+                var color = DungeonMaterials.Of(room.Material).Color;
+                var dash = room.IsTransition ? " stroke-dasharray=\"5 3\"" : "";
+                var kind = room.IsTransition ? $" (transition from {DungeonMaterials.Of(room.TransitionFrom!.Value).Name})" : "";
+                Append(svg, $"<g data-room-id=\"{room.Id}\" data-material=\"{room.Material}\"><title>{room.Id} {Escape(DungeonMaterials.Of(room.Material).Name)}{Escape(kind)}</title>");
+                Append(svg, $"<rect x=\"{b.X * Tile}\" y=\"{b.Y * Tile}\" width=\"{b.Width * Tile}\" height=\"{b.Height * Tile}\" stroke=\"{color}\" stroke-width=\"2\"{dash}/>");
+                Append(svg, $"<text x=\"{(b.X * Tile) + 2}\" y=\"{(b.Y * Tile) + 9}\" font-size=\"8\" fill=\"#fff\" stroke=\"#000\" stroke-width=\"0.3\">{room.Id}</text></g>");
+            }
+
+            AppendRaw(svg, "</g>");
+        }
+
         // Events
         Append(svg, $"<g id=\"events\" transform=\"translate({LeftGutter},{TopGutter})\">");
         foreach (var e in area.Events)
@@ -100,6 +119,14 @@ public static class SvgExporter
             Append(svg, $"<g id=\"spawn\"><title>Spawn ({spawn})</title><circle cx=\"{cx}\" cy=\"{cy}\" r=\"8\" fill=\"#ffffff\" stroke=\"#111\" stroke-width=\"2\"/><text x=\"{cx}\" y=\"{cy + 4}\" font-size=\"10\" font-weight=\"700\" text-anchor=\"middle\">S</text></g>");
         }
 
+        foreach (var f in area.Features)
+        {
+            var (symbol, color) = FeatureMarker(f.Kind);
+            var fx = (f.Position.X * Tile) + (Tile / 2);
+            var fy = (f.Position.Y * Tile) + (Tile / 2);
+            Append(svg, $"<g data-feature-id=\"{f.Id}\" data-kind=\"{f.Kind}\"><title>{f.Id} {Escape(f.Description)} ({f.Location})</title><rect x=\"{fx - 7}\" y=\"{fy - 7}\" width=\"14\" height=\"14\" rx=\"2\" fill=\"{color}\" stroke=\"#111\"/><text x=\"{fx}\" y=\"{fy + 4}\" font-size=\"10\" font-weight=\"700\" fill=\"#fff\" text-anchor=\"middle\">{Escape(symbol)}</text></g>");
+        }
+
         AppendRaw(svg, "</g>");
 
         // Legend
@@ -111,6 +138,12 @@ public static class SvgExporter
         foreach (var t in terrains)
         {
             Append(svg, $"<rect x=\"{LeftGutter}\" y=\"{line - 10}\" width=\"12\" height=\"12\" fill=\"{t.Color}\" stroke=\"#0003\"/><text x=\"{LeftGutter + 18}\" y=\"{line}\">{Escape(t.Name)}{(t.Passable ? "" : " (impassable)")}</text>");
+            line += LegendLine;
+        }
+
+        foreach (var m in materials)
+        {
+            Append(svg, $"<rect x=\"{LeftGutter}\" y=\"{line - 10}\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"{m.Color}\" stroke-width=\"2\"/><text x=\"{LeftGutter + 18}\" y=\"{line}\">{Escape(m.Name)} rooms ({m.Style}){(materials.Count > 1 ? "; dashed outline = transition" : "")}</text>");
             line += LegendLine;
         }
 
@@ -144,7 +177,19 @@ public static class SvgExporter
         EventCategory.Social => "#2471a3",
         EventCategory.Landmark => "#b7950b",
         EventCategory.Hazard => "#d35400",
+        EventCategory.Structure => "#34495e",
         _ => "#333333",
+    };
+
+    public static (string Symbol, string Color) FeatureMarker(FeatureKind kind) => kind switch
+    {
+        FeatureKind.Trap => ("!", "#c0392b"),
+        FeatureKind.Chest => ("$", "#b7950b"),
+        FeatureKind.SecretDoor => ("?", "#6c3483"),
+        FeatureKind.StairsDown => (">", "#1f618d"),
+        FeatureKind.StairsUp => ("<", "#1f618d"),
+        FeatureKind.DungeonEntrance => ("@", "#117a65"),
+        _ => ("*", "#555555"),
     };
 
     private static void Append(StringBuilder sb, FormattableString text) => AppendRaw(sb, text.ToString(CultureInfo.InvariantCulture));

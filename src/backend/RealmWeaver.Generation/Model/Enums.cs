@@ -60,4 +60,39 @@ public enum Terrain
     Ground,
     Trail,
     Bridge,
+
+    // Dungeon terrain
+    Wall,
+    StoneFloor,
+    CaveFloor,
+    TimberFloor,
+    Door,
+}
+
+/// <summary>What a dungeon room is built from. Set by the host structure, with biome-specific branches.</summary>
+public enum DungeonMaterial
+{
+    DressedStone,
+    CrumblingBrick,
+    Sandstone,
+    TimberBracedRock,
+    NaturalCave,
+    FloodedGrotto,
+    CrystalVein,
+    RootEarth,
+    LavaTube,
+    IceCave,
+}
+
+/// <summary>How rooms of a material are shaped.</summary>
+public enum RoomStyle
+{
+    /// <summary>Built rooms: rectangles and L-shapes with doors.</summary>
+    Masonry,
+
+    /// <summary>Dug rooms: long shafts with side galleries.</summary>
+    Mine,
+
+    /// <summary>Natural rooms: irregular cellular-automata blobs.</summary>
+    Cave,
 }

@@ -27,18 +27,25 @@ public sealed class FieldEventPlacer
         _blocked = new bool[map.Area];
     }
 
-    public sealed record Result(GridPoint Spawn, IReadOnlyList<PlacedEvent> Events);
+    /// <param name="Host">The dungeon host event, when one was requested.</param>
+    public sealed record Result(GridPoint Spawn, IReadOnlyList<PlacedEvent> Events, PlacedEvent? Host);
 
-    public Result Place(int count, SeededRandom rng)
+    /// <summary>
+    /// Places <paramref name="count"/> events; when <paramref name="host"/> is set it is placed first and counts as one of them.
+    /// The spawn point and host come from <paramref name="layoutRng"/> so they stay put when encounters are rerolled.
+    /// </summary>
+    public Result Place(int count, SeededRandom rng, SeededRandom layoutRng, EventTemplate? host = null)
     {
         ArgumentNullException.ThrowIfNull(rng);
+        ArgumentNullException.ThrowIfNull(layoutRng);
 
-        var spawn = ChooseSpawn(rng.Fork("spawn"));
+        var spawn = ChooseSpawn(layoutRng.Fork("spawn"));
         BlockAround(spawn, GeneratorLimits.SpawnClearance - 1);
 
         var eligible = _catalog.EventTemplates
             .Where(t => t.Environments.HasFlag(Environments.Field))
             .Where(t => t.Biomes.Count == 0 || t.Biomes.Contains(_request.Biome))
+            .Where(t => !t.IsDungeonHost && !t.IsBoss)
             .ToList();
         var fallbacks = eligible.Where(t => t.Footprint.MaxSide <= 2 && t.MaxPerArea == int.MaxValue).ToList();
 
@@ -47,14 +54,23 @@ public sealed class FieldEventPlacer
         var mobs = new MobResolver(_catalog, _request);
         var mobRng = rng.Fork("mobs");
 
-        var plan = ChooseTemplates(eligible, count, planRng)
+        var placed = new List<(EventTemplate Template, GridRect Footprint)>();
+        GridRect? hostFootprint = null;
+        if (host is not null)
+        {
+            hostFootprint = TryPlace(host, layoutRng.Fork("host"))
+                ?? throw new RealmGenerationException($"The {host.Name} does not fit on a {_map.Width}x{_map.Height} map.");
+            Commit(host, hostFootprint.Value);
+            placed.Add((host, hostFootprint.Value));
+        }
+
+        var plan = ChooseTemplates(eligible, count - placed.Count, planRng)
             .Select((template, index) => (template, index))
             .OrderByDescending(p => p.template.Footprint.MaxSide)
             .ThenBy(p => p.index)
             .Select(p => p.template)
             .ToList();
 
-        var placed = new List<(EventTemplate Template, GridRect Footprint)>();
         foreach (var template in plan)
         {
             var footprint = TryPlace(template, placeRng);
@@ -89,7 +105,8 @@ public sealed class FieldEventPlacer
             .Select((p, i) => BuildEvent(i + 1, p.Template, p.Footprint, mobs, mobRng.Fork(i.ToString(CultureInfo.InvariantCulture))))
             .ToList();
 
-        return new Result(spawn, events);
+        var hostEvent = hostFootprint is { } hf ? events.Single(e => e.Footprint == hf) : null;
+        return new Result(spawn, events, hostEvent);
     }
 
     private static PlacedEvent BuildEvent(int number, EventTemplate template, GridRect footprint, MobResolver mobs, SeededRandom rng)

@@ -24,7 +24,8 @@ public static class EventBudget
         return Math.Clamp(GeneratorLimits.MinEvents + (area / 160), GeneratorLimits.MinEvents, GeneratorLimits.AbsoluteMaxEvents);
     }
 
-    public static int Resolve(int area, int? requested, SeededRandom rng)
+    /// <param name="defaultArea">Area used for the default range, e.g. the walkable part of a dungeon floor. Defaults to <paramref name="area"/>.</param>
+    public static int Resolve(int area, int? requested, SeededRandom rng, int? defaultArea = null)
     {
         ArgumentNullException.ThrowIfNull(rng);
         if (requested is { } count)
@@ -39,7 +40,7 @@ public static class EventBudget
             return count;
         }
 
-        var range = DefaultRange(area);
+        var range = DefaultRange(defaultArea ?? area);
         return rng.NextInclusive(range.Min, range.Max);
     }
 }

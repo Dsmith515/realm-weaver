@@ -16,6 +16,9 @@ public sealed record RealmDocument
 
     public required int Threat { get; init; }
 
+    /// <summary>The dungeon's host structure and materials. Null for field-only realms.</summary>
+    public DungeonTheme? Theme { get; init; }
+
     /// <summary>The field and/or dungeon floors, in travel order.</summary>
     public required IReadOnlyList<RealmArea> Areas { get; init; }
 }
@@ -45,6 +48,55 @@ public sealed record RealmArea
 
     /// <summary>Notable non-event things: traps, chests, secret doors, stairs, dungeon entrances.</summary>
     public IReadOnlyList<PlacedFeature> Features { get; init; } = [];
+
+    /// <summary>Dungeon rooms with material, connections and roles. Empty for fields.</summary>
+    public IReadOnlyList<DungeonRoom> Rooms { get; init; } = [];
+}
+
+/// <summary>
+/// What the dungeon is built from. The host structure (castle, mine...) sets the primary material;
+/// branches far from the entrance may switch to biome-specific materials through a transition room.
+/// </summary>
+public sealed record DungeonTheme(
+    string HostTemplateId,
+    string HostName,
+    DungeonMaterial PrimaryMaterial,
+    IReadOnlyList<DungeonMaterial> BranchMaterials);
+
+public sealed record DungeonRoom
+{
+    /// <summary>Short id shown on the map, e.g. "R4".</summary>
+    public required string Id { get; init; }
+
+    public required GridRect Bounds { get; init; }
+
+    public string Location => TileLabels.Range(Bounds);
+
+    public required DungeonMaterial Material { get; init; }
+
+    public RoomStyle Style => DungeonMaterials.Of(Material).Style;
+
+    /// <summary>
+    /// True when this room is where one material gives way to another, e.g. masonry to rough cave.
+    /// </summary>
+    public bool IsTransition { get; init; }
+
+    /// <summary>The material this transition room changes from.</summary>
+    public DungeonMaterial? TransitionFrom { get; init; }
+
+    /// <summary>Ids of directly connected rooms.</summary>
+    public required IReadOnlyList<string> Connections { get; init; }
+
+    public bool IsEntrance { get; init; }
+
+    public bool IsSecret { get; init; }
+
+    public bool HasStairsDown { get; init; }
+
+    public bool IsBossRoom { get; init; }
+
+    /// <summary>A floor tile near the room's center; corridors start and end here.</summary>
+    public required GridPoint Anchor { get; init; }
 }
 
 /// <summary>An encounter or event occupying one or more tiles.</summary>
@@ -69,6 +121,9 @@ public sealed record PlacedEvent
     /// <summary>Ids of <see cref="DifficultyTemplate"/>s to apply to the mobs.</summary>
     public IReadOnlyList<string> DifficultyTemplateIds { get; init; } = [];
 
+    /// <summary>Dungeon rooms this event occupies. Empty for field events.</summary>
+    public IReadOnlyList<string> RoomIds { get; init; } = [];
+
     public string? Notes { get; init; }
 }
 
@@ -89,4 +144,10 @@ public enum FeatureKind
 public sealed record PlacedFeature(string Id, FeatureKind Kind, GridPoint Position, string Description)
 {
     public string Location => TileLabels.Label(Position);
+
+    /// <summary>The trap template used, if any.</summary>
+    public string? TemplateId { get; init; }
+
+    /// <summary>The room the feature is in, if any.</summary>
+    public string? RoomId { get; init; }
 }

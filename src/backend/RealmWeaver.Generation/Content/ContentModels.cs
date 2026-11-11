@@ -13,6 +13,8 @@ public interface IContentCatalog
     IReadOnlyList<MobArchetype> MobArchetypes { get; }
 
     IReadOnlyList<DifficultyTemplate> DifficultyTemplates { get; }
+
+    IReadOnlyList<TrapTemplate> TrapTemplates { get; }
 }
 
 [Flags]
@@ -31,6 +33,9 @@ public enum EventCategory
     Social,
     Landmark,
     Hazard,
+
+    /// <summary>A building or opening on the field that leads into the dungeon.</summary>
+    Structure,
 }
 
 public enum MobRole
@@ -89,7 +94,27 @@ public sealed record EventTemplate
     public bool ClearsTerrain { get; init; }
 
     public string Description { get; init; } = "";
+
+    /// <summary>Dungeon only: room styles this event can appear in. Empty means any.</summary>
+    public IReadOnlyList<RoomStyle> AllowedStyles { get; init; } = [];
+
+    /// <summary>Dungeon only: room styles where this event is three times as likely.</summary>
+    public IReadOnlyList<RoomStyle> PreferredStyles { get; init; } = [];
+
+    /// <summary>Dungeon only: how many connected rooms the event spreads across (settlements).</summary>
+    public int MaxRooms { get; init; } = 1;
+
+    /// <summary>Placed only in the boss room on the deepest floor.</summary>
+    public bool IsBoss { get; init; }
+
+    /// <summary>A field structure that holds the dungeon entrance. Set means the template is a host.</summary>
+    public DungeonMaterial? HostMaterial { get; init; }
+
+    public bool IsDungeonHost => HostMaterial is not null;
 }
+
+/// <summary>A trap kind; <see cref="Styles"/> limits it to rooms and corridors of matching style (empty means any).</summary>
+public sealed record TrapTemplate(string Id, string Name, IReadOnlyList<RoomStyle> Styles);
 
 /// <summary>
 /// A kind of mob. Later milestones attach a user-authored stat block to each archetype id.
