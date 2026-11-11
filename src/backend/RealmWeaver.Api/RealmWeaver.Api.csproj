@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RealmWeaver.Infrastructure\RealmWeaver.Infrastructure.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Catalog\RealmWeaver.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Inventory\RealmWeaver.Modules.Inventory.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Rituals\RealmWeaver.Modules.Rituals.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Realms\RealmWeaver.Modules.Realms.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Generation\RealmWeaver.Generation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

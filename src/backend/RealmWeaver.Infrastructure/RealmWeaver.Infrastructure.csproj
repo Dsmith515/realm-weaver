@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RealmWeaver.Modules.Catalog\RealmWeaver.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Inventory\RealmWeaver.Modules.Inventory.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Rituals\RealmWeaver.Modules.Rituals.csproj" />
+    <ProjectReference Include="..\RealmWeaver.Modules.Realms\RealmWeaver.Modules.Realms.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/backend/RealmWeaver.Api/RealmWeaver.Api.csproj" />
+    <Project Path="src/backend/RealmWeaver.Generation/RealmWeaver.Generation.csproj" />
+    <Project Path="src/backend/RealmWeaver.Infrastructure/RealmWeaver.Infrastructure.csproj" />
+    <Project Path="src/backend/RealmWeaver.Modules.Catalog/RealmWeaver.Modules.Catalog.csproj" />
+    <Project Path="src/backend/RealmWeaver.Modules.Inventory/RealmWeaver.Modules.Inventory.csproj" />
+    <Project Path="src/backend/RealmWeaver.Modules.Realms/RealmWeaver.Modules.Realms.csproj" />
+    <Project Path="src/backend/RealmWeaver.Modules.Rituals/RealmWeaver.Modules.Rituals.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RealmWeaver.Api.IntegrationTests/RealmWeaver.Api.IntegrationTests.csproj" />
+    <Project Path="tests/RealmWeaver.Generation.Tests/RealmWeaver.Generation.Tests.csproj" />
+  </Folder>
+</Solution>
