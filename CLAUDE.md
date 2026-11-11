@@ -7,10 +7,12 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080)
 - Frontend (in `src/frontend`): `npm run dev`, `npm run lint`, `npm test`, `npm run build`
 - Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only)
+- Sample realms: `dotnet run --project tools/RealmWeaver.Cli -- --seed 42 --biome forest --size 40x30` (output in `samples/`, which is gitignored)
 
 ## Architecture rules
 - **Modular monolith.** Modules (`RealmWeaver.Modules.*`) talk to each other only through their public contracts (interfaces and DTOs). They never touch another module's entities or tables. This keeps the Milestone 8 microservice split mechanical.
 - **`RealmWeaver.Generation` is pure.** It has no EF Core, no ASP.NET, no I/O, no `System.Random` and no `DateTime.Now`. Randomness comes only from the project's seeded RNG, so the same seed and inputs always give the same realm. `ArchitectureTests` checks this.
+- Each generation step draws from its own `SeededRandom.Fork("purpose")` stream (see ADR 0002). Changing the algorithm means bumping `GeneratorLimits.Version`.
 - The generator outputs template ids and references (event templates, mob archetypes), not just display text, so content can move into DB tables later.
 - Rituals run in a single DB transaction in Phase 1, with idempotency keys and optimistic concurrency (Postgres `xmin`).
 
