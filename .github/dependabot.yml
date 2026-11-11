@@ -5,6 +5,16 @@ updates:
     schedule: { interval: weekly }
     groups:
       dotnet: { patterns: ["*"] }
+    ignore:
+      # These ship with the .NET runtime; major versions must match the target framework (net10.0).
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Npgsql.EntityFrameworkCore.PostgreSQL"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /src/frontend
     schedule: { interval: weekly }
@@ -13,3 +23,5 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }
