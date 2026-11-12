@@ -22,6 +22,7 @@ internal static class RealmsEndpoints
             .WithDescription("Realm summaries, newest first. Filter by player or by the map they were opened from.");
         realms.MapGet("/{id:guid}", GetAsync).WithName("GetRealm");
         realms.MapGet("/{id:guid}/export", ExportAsync).WithName("ExportRealm")
+            .Produces<string>(StatusCodes.Status200OK, "image/svg+xml", "text/plain", "text/markdown", "application/json")
             .WithDescription("format=svg|prompt (one area; area defaults to the first) or json|md (the whole realm).");
     }
 

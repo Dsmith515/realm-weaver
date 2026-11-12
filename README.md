@@ -63,6 +63,24 @@ cd src/frontend && npm run lint && npm test
 
 Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.
 
+### Frontend
+
+| Page | What it does |
+|---|---|
+| **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. |
+| **Player** | Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). |
+| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; click a placement to highlight it. Exports download as SVG, image prompt, Markdown or JSON. |
+| **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. |
+
+The player switcher is in the header (there's no login yet).
+
+**API contract.** The frontend's types in `src/frontend/src/api/schema.d.ts` are generated from `src/frontend/openapi/realm-weaver.json`, and CI fails if either drifts from the API. After changing an endpoint or DTO:
+
+```bash
+UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests   # refresh the OpenAPI document
+cd src/frontend && npm run api:types                          # regenerate the TypeScript types
+```
+
 ### Database migrations
 
 Each module has its own DbContext and Postgres schema (see [ADR 0004](docs/adr/0004-module-owned-persistence.md)).
@@ -106,7 +124,7 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 3: dungeons (floors, material themes, dungeon events)
 - [x] Milestone 4: persistence and APIs (catalog, players, inventory)
 - [x] Milestone 5: ritual transaction (preview, idempotent perform, realms and exports)
-- [ ] Milestone 6: frontend pages
+- [x] Milestone 6: frontend pages (ritual with drag and drop, player, realms, components)
 - [ ] Milestone 7: E2E tests and release images
 - [ ] Milestone 8: microservices (saga and outbox)
 - [ ] Milestone 9: content tables (mobs, events, difficulty templates)

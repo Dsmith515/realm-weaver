@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
+import { PlayerSwitcher } from '../player/PlayerSwitcher'
 import { ApiStatus } from './ApiStatus'
 
 const links = [
@@ -20,6 +21,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <PlayerSwitcher />
         <ApiStatus />
       </header>
       <main className="app-main">

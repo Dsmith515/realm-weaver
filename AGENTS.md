@@ -6,6 +6,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - Backend build/test: `dotnet build RealmWeaver.slnx` and `dotnet test RealmWeaver.slnx`
 - Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080)
 - Frontend (in `src/frontend`): `npm run dev`, `npm run lint`, `npm test`, `npm run build`
+- API contract: after changing an endpoint or DTO, run `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests`, then `npm run api:types` in `src/frontend`, and commit both generated files. CI checks both.
 - Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only). The API migrates and seeds on startup.
 - New migration (per module): `dotnet tool restore`, then `dotnet ef migrations add <Name> --context <Module>DbContext --project src/backend/RealmWeaver.Modules.<Module> --startup-project src/backend/RealmWeaver.Api -o Persistence/Migrations`
 - API integration tests use Testcontainers, so Docker must be running for `dotnet test`.
@@ -22,5 +23,5 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 ## Conventions
 - `TreatWarningsAsErrors` is on, along with the .NET recommended analyzers. Fix warnings rather than suppressing them.
 - Test names use `Method_or_behavior_reads_like_a_sentence`. Underscores are allowed in `tests/` only.
-- Frontend uses function components, TanStack Query for server state, and no global state library unless one is needed.
+- Frontend uses function components, TanStack Query for server state, and no global state library unless one is needed. Call the API through the typed `api` client (`src/api/client.ts`) and the hooks in `src/api/queries.ts`; page tests stub `fetch` with `src/test/fakeApi.ts`.
 - Don't copy rules text or stat blocks from published TTRPGs (DC20 etc.). Content is original or user-authored.
