@@ -1,16 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RealmWeaver.Infrastructure\RealmWeaver.Infrastructure.csproj" />
     <ProjectReference Include="..\RealmWeaver.Generation\RealmWeaver.Generation.csproj" />
+    <!-- Rituals orchestrates the other modules, through their public contracts only. -->
     <ProjectReference Include="..\RealmWeaver.Modules.Catalog\RealmWeaver.Modules.Catalog.csproj" />
     <ProjectReference Include="..\RealmWeaver.Modules.Inventory\RealmWeaver.Modules.Inventory.csproj" />
     <ProjectReference Include="..\RealmWeaver.Modules.Realms\RealmWeaver.Modules.Realms.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
 
 </Project>

@@ -56,8 +56,12 @@ cd src/frontend && npm run lint && npm test
 | `GET/PUT /api/settings` | The global `playersCanSelfAssign` toggle |
 | `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit. |
 | `GET/POST /api/players/{id}/inventory` | A player's inventory, and adding to it yourself (when allowed) |
+| `POST /api/rituals/preview` | Resolve the four slots: map auto-fill, `randomize`, mismatch and danger, and what's missing |
+| `POST /api/rituals` (header `Idempotency-Key`), `GET /api/rituals/{id}` | Perform a ritual in one transaction. Retrying with the same key replays the result. |
+| `GET /api/realms?playerId=&mapId=`, `GET /api/realms/{id}` | Realm summaries, and a full realm with its generated document |
+| `GET /api/realms/{id}/export?format=svg\|prompt\|json\|md&area=` | Exports. `svg` and `prompt` are per area (field or `floor-N`). |
 
-Errors are ProblemDetails (`400` with field errors, `403`, `404`, `409` on a concurrency conflict).
+Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.
 
 ### Database migrations
 
@@ -101,7 +105,7 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 2: generation library (fields, events, labels, exports)
 - [x] Milestone 3: dungeons (floors, material themes, dungeon events)
 - [x] Milestone 4: persistence and APIs (catalog, players, inventory)
-- [ ] Milestone 5: ritual transaction
+- [x] Milestone 5: ritual transaction (preview, idempotent perform, realms and exports)
 - [ ] Milestone 6: frontend pages
 - [ ] Milestone 7: E2E tests and release images
 - [ ] Milestone 8: microservices (saga and outbox)

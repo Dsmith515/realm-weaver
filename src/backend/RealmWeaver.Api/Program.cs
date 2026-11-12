@@ -6,6 +6,8 @@ using RealmWeaver.Infrastructure.Http;
 using RealmWeaver.Infrastructure.Persistence;
 using RealmWeaver.Modules.Catalog;
 using RealmWeaver.Modules.Inventory;
+using RealmWeaver.Modules.Realms;
+using RealmWeaver.Modules.Rituals;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,8 @@ builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadReq
 // Modules. Each registers its own DbContext (own schema), services, contract and database initializer.
 builder.Services.AddCatalogModule();
 builder.Services.AddInventoryModule();
+builder.Services.AddRealmsModule();
+builder.Services.AddRitualsModule();
 
 var app = builder.Build();
 
@@ -50,6 +54,8 @@ app.MapGet("/api/info", () => new ApiInfo("Realm Weaver", typeof(Program).Assemb
 
 app.MapCatalogModule();
 app.MapInventoryModule();
+app.MapRealmsModule();
+app.MapRitualsModule();
 
 await app.RunAsync();
 

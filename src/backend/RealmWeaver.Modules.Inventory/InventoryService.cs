@@ -66,7 +66,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
     /// Consumables stack. Needles and Maps are kept at quantity 1, and granting one the player owns changes nothing.
     /// The caller has already checked that the player and component exist.
     /// </summary>
-    public async Task<InventoryItemDto> GrantAsync(Guid playerId, ComponentDto component, int quantity, CancellationToken cancellationToken)
+    public async Task<InventoryItemDto> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(component);
         ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
@@ -98,5 +98,28 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         var item = await db.Items.AsNoTracking()
             .FirstAsync(i => i.PlayerId == playerId && i.ComponentDefinitionId == component.Id, cancellationToken);
         return new InventoryItemDto(component, item.Quantity, item.AcquiredAt);
+    }
+
+    public async Task SpendOneEachAsync(Guid playerId, IReadOnlyCollection<Guid> componentIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(componentIds);
+        var ids = componentIds.Distinct().ToList();
+        var items = await db.Items
+            .Where(i => i.PlayerId == playerId && ids.Contains(i.ComponentDefinitionId))
+            .ToListAsync(cancellationToken);
+
+        var missing = ids.Where(id => items.FirstOrDefault(i => i.ComponentDefinitionId == id) is not { Quantity: >= 1 }).ToList();
+        if (missing.Count > 0)
+        {
+            throw new InsufficientComponentsException(missing);
+        }
+
+        foreach (var item in items)
+        {
+            item.Quantity--;
+        }
+
+        // UPDATE ... WHERE xmin = <loaded>: a concurrent spend of the same stack makes this throw.
+        await db.SaveChangesAsync(cancellationToken);
     }
 }
