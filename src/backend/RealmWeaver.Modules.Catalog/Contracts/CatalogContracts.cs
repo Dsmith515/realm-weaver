@@ -1,0 +1,111 @@
+using System.Text.Json.Serialization;
+
+using RealmWeaver.Generation.Model;
+
+namespace RealmWeaver.Modules.Catalog.Contracts;
+
+/// <summary>Thimbles arrive in Phase 3 as a fifth, optional type.</summary>
+public enum ComponentType
+{
+    Needle,
+    Thread,
+    Coating,
+    Map,
+}
+
+public enum Rarity
+{
+    Common,
+    Uncommon,
+    Rare,
+    Epic,
+    Legendary,
+}
+
+/// <summary>Needle: difficulty, and the compass inside the realm. Never consumed.</summary>
+public sealed record NeedleDetails(int DifficultyTier, string Category, IReadOnlyList<string> Abilities);
+
+/// <summary>Thread: the realm's biome and element. Consumed by a ritual.</summary>
+public sealed record ThreadDetails(Biome Biome, Element Element);
+
+/// <summary>Coating: mob types and realm shape. Consumed by a ritual.</summary>
+public sealed record CoatingDetails(IReadOnlyList<string> MobTypes, RealmKind RealmKind, int FloorCount);
+
+/// <summary>Map: a realm already visited. Its seed rebuilds the same layout.</summary>
+public sealed record MapDetails(
+    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+    ulong Seed,
+    Guid NeedleId,
+    Guid ThreadId,
+    Guid CoatingId,
+    int Width,
+    int Height,
+    int EventCount,
+    string GeneratorVersion,
+    Guid? CreatedByPlayerId);
+
+public sealed record ComponentDto(
+    Guid Id,
+    ComponentType Type,
+    string Name,
+    Rarity Rarity,
+    int Rank,
+    string Description,
+    bool IsPlayerAssignable,
+    bool IsConsumable,
+    bool IsArchived,
+    DateTimeOffset CreatedAt,
+    NeedleDetails? Needle,
+    ThreadDetails? Thread,
+    CoatingDetails? Coating,
+    MapDetails? Map);
+
+/// <summary>
+/// Body for creating or replacing a component. Exactly one details object must be set, matching <see cref="Type"/>.
+/// <c>IsConsumable</c> is not settable: Threads and Coatings are consumed, everything else isn't.
+/// </summary>
+public sealed record ComponentInput(
+    ComponentType Type,
+    string Name,
+    Rarity Rarity,
+    int Rank,
+    string? Description,
+    bool IsPlayerAssignable,
+    NeedleDetails? Needle = null,
+    ThreadDetails? Thread = null,
+    CoatingDetails? Coating = null,
+    MapDetails? Map = null);
+
+public sealed record ComponentQuery(
+    ComponentType? Type = null,
+    Rarity? Rarity = null,
+    Biome? Biome = null,
+    string? Search = null,
+    bool? Assignable = null,
+    bool IncludeArchived = false,
+    int Page = 1,
+    int PageSize = 50);
+
+public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
+
+/// <summary>
+/// Global admin settings. A player may add a component to their own inventory only when
+/// <see cref="PlayersCanSelfAssign"/> is on and the component is <c>IsPlayerAssignable</c>.
+/// </summary>
+public sealed record CatalogSettingsDto(bool PlayersCanSelfAssign);
+
+/// <summary>What a new player's starter kit is drawn from.</summary>
+public sealed record StarterKitCandidates(Guid BeginnerNeedleId, IReadOnlyList<Guid> ThreadIds, IReadOnlyList<Guid> CoatingIds);
+
+/// <summary>The Catalog module's public contract for other modules. In Phase 2 this becomes an HTTP or message client.</summary>
+public interface ICatalogModule
+{
+    Task<ComponentDto?> GetComponentAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Looks up many components at once. Unknown ids are left out of the result.</summary>
+    Task<IReadOnlyDictionary<Guid, ComponentDto>> GetComponentsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
+    Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
+
+    Task<StarterKitCandidates> GetStarterKitCandidatesAsync(CancellationToken cancellationToken = default);
+}

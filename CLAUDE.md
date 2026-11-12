@@ -6,11 +6,14 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - Backend build/test: `dotnet build RealmWeaver.slnx` and `dotnet test RealmWeaver.slnx`
 - Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080)
 - Frontend (in `src/frontend`): `npm run dev`, `npm run lint`, `npm test`, `npm run build`
-- Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only)
+- Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only). The API migrates and seeds on startup.
+- New migration (per module): `dotnet tool restore`, then `dotnet ef migrations add <Name> --context <Module>DbContext --project src/backend/RealmWeaver.Modules.<Module> --startup-project src/backend/RealmWeaver.Api -o Persistence/Migrations`
+- API integration tests use Testcontainers, so Docker must be running for `dotnet test`.
 - Sample realms: `dotnet run --project tools/RealmWeaver.Cli -- --seed 42 --biome forest --size 40x30` (output in `samples/`, which is gitignored)
 
 ## Architecture rules
 - **Modular monolith.** Modules (`RealmWeaver.Modules.*`) talk to each other only through their public contracts (interfaces and DTOs). They never touch another module's entities or tables. This keeps the Milestone 8 microservice split mechanical.
+- **Each module owns its persistence** (ADR 0004): its own internal DbContext, Postgres schema and migrations, and no foreign keys into other modules. `RealmWeaver.Infrastructure` holds shared plumbing only and never references a module.
 - **`RealmWeaver.Generation` is pure.** It has no EF Core, no ASP.NET, no I/O, no `System.Random` and no `DateTime.Now`. Randomness comes only from the project's seeded RNG, so the same seed and inputs always give the same realm. `ArchitectureTests` checks this.
 - Each generation step draws from its own `SeededRandom.Fork("purpose")` stream (see ADR 0002). Changing the algorithm means bumping `GeneratorLimits.Version`.
 - The generator outputs template ids and references (event templates, mob archetypes), not just display text, so content can move into DB tables later.

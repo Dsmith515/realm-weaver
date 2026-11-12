@@ -22,7 +22,7 @@ Decisions made:
   RealmWeaver.Modules.Rituals/    ritual orchestration + transaction
   RealmWeaver.Modules.Realms/     realm persistence, export endpoints
   RealmWeaver.Generation/         PURE library: seeded RNG, field/dungeon/event generation, SVG + prompt export (no EF, no ASP.NET)
-  RealmWeaver.Infrastructure/     EF Core DbContext, migrations, seeding
+  RealmWeaver.Infrastructure/     shared plumbing: module DbContext registration, migrate+seed on startup, error mapping (ADR 0004)
 /tests/
   RealmWeaver.Generation.Tests/   xUnit invariant tests (no DB)
   RealmWeaver.Api.IntegrationTests/  xUnit + Testcontainers Postgres + WebApplicationFactory

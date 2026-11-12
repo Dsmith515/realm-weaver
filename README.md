@@ -33,6 +33,7 @@ Prerequisites: .NET 10 SDK, Node 24+ and Docker Desktop.
 docker compose up -d
 
 # 2. API  ->  http://localhost:5080  (OpenAPI document at /openapi/v1.json)
+#    Applies migrations and seeds the starter catalog and a demo player ("Wanderer") on startup.
 dotnet run --project src/backend/RealmWeaver.Api
 
 # 3. Web  ->  http://localhost:5173  (proxies /api to the API)
@@ -42,8 +43,29 @@ cd src/frontend && npm install && npm run dev
 ### Tests
 
 ```bash
-dotnet test RealmWeaver.slnx
+dotnet test RealmWeaver.slnx      # API tests start their own Postgres container, so Docker must be running
 cd src/frontend && npm run lint && npm test
+```
+
+### API
+
+| Endpoint | What it does |
+|---|---|
+| `GET/POST /api/components`, `GET/PUT/DELETE /api/components/{id}` | Component catalog. Filter with `type`, `rarity`, `biome`, `search`, `assignable`, `includeArchived`, `page`, `pageSize`. Delete archives. |
+| `POST /api/components/{id}/assign` | Admin: give a component to a player |
+| `GET/PUT /api/settings` | The global `playersCanSelfAssign` toggle |
+| `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit. |
+| `GET/POST /api/players/{id}/inventory` | A player's inventory, and adding to it yourself (when allowed) |
+
+Errors are ProblemDetails (`400` with field errors, `403`, `404`, `409` on a concurrency conflict).
+
+### Database migrations
+
+Each module has its own DbContext and Postgres schema (see [ADR 0004](docs/adr/0004-module-owned-persistence.md)).
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --context CatalogDbContext   --project src/backend/RealmWeaver.Modules.Catalog --startup-project src/backend/RealmWeaver.Api -o Persistence/Migrations
 ```
 
 ### Generate a realm from the command line
@@ -65,8 +87,8 @@ Biomes: `plains`, `forest`, `desert`, `tundra`, `swamp`, `volcanic`, `mountains`
 src/backend/
   RealmWeaver.Api                ASP.NET Core host: endpoints, OpenAPI, composition root
   RealmWeaver.Generation         pure, deterministic map generation (no EF or ASP.NET)
-  RealmWeaver.Infrastructure     EF Core DbContext, migrations, seeding
-  RealmWeaver.Modules.*          Catalog, Inventory, Rituals and Realms modules
+  RealmWeaver.Infrastructure     shared persistence and HTTP plumbing (no module references)
+  RealmWeaver.Modules.*          Catalog, Inventory, Rituals and Realms: endpoints, DbContext, migrations
 src/frontend/                    React + TypeScript + Vite app
 tools/RealmWeaver.Cli           command-line generator for samples
 tests/                           xUnit test projects
@@ -78,7 +100,7 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 1: scaffold, CI, docs
 - [x] Milestone 2: generation library (fields, events, labels, exports)
 - [x] Milestone 3: dungeons (floors, material themes, dungeon events)
-- [ ] Milestone 4: persistence and APIs
+- [x] Milestone 4: persistence and APIs (catalog, players, inventory)
 - [ ] Milestone 5: ritual transaction
 - [ ] Milestone 6: frontend pages
 - [ ] Milestone 7: E2E tests and release images

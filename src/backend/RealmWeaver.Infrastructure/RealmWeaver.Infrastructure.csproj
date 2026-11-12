@@ -1,16 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Shared plumbing only: how a module registers its own DbContext, how module databases are migrated
+    and seeded at startup, and HTTP error mapping. It never references a module, so modules can depend on it.
+  -->
+
   <ItemGroup>
-    <ProjectReference Include="..\RealmWeaver.Modules.Catalog\RealmWeaver.Modules.Catalog.csproj" />
-    <ProjectReference Include="..\RealmWeaver.Modules.Inventory\RealmWeaver.Modules.Inventory.csproj" />
-    <ProjectReference Include="..\RealmWeaver.Modules.Rituals\RealmWeaver.Modules.Rituals.csproj" />
-    <ProjectReference Include="..\RealmWeaver.Modules.Realms\RealmWeaver.Modules.Realms.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.15" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+  </ItemGroup>
 
 </Project>
