@@ -145,6 +145,112 @@ public sealed class StaticContentCatalog : IContentCatalog
             MobSlots = [new(MobRole.Minion, 0, 3)],
             Description = "A beached hull with cargo still aboard.",
         },
+
+        // Dungeon hosts: field structures holding the way down. Their material sets the dungeon's primary material.
+        new()
+        {
+            Id = "castle", Name = "Castle", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(6, 10), Weight = 10, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.DressedStone,
+            MobSlots = [new(MobRole.Minion, 2, 4), new(MobRole.Leader, 0, 1)],
+            Description = "A stone castle. Its cellars lead down into the dungeon.",
+        },
+        new()
+        {
+            Id = "ruined-keep", Name = "Ruined keep", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(5, 8), Weight = 10, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.CrumblingBrick,
+            MobSlots = [new(MobRole.Minion, 1, 3)],
+            Description = "A collapsed brick keep with a stairwell going down.",
+        },
+        new()
+        {
+            Id = "mine-entrance", Name = "Mine entrance", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(3, 4), Weight = 10, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.TimberBracedRock,
+            Biomes = [Biome.Mountains, Biome.Tundra, Biome.Desert, Biome.Volcanic, Biome.Plains],
+            Description = "Timber headframe over an abandoned mine shaft.",
+        },
+        new()
+        {
+            Id = "cave-mouth", Name = "Cave mouth", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(2, 3), Weight = 10, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.NaturalCave,
+            Description = "A dark opening in the rock.",
+        },
+        new()
+        {
+            Id = "wizard-tower", Name = "Wizard's tower", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(3, 4), Weight = 6, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.DressedStone,
+            MobSlots = [new(MobRole.Caster, 0, 1)],
+            Description = "A lone tower whose vaults reach far underground.",
+        },
+        new()
+        {
+            Id = "sunken-temple", Name = "Sunken temple", Category = EventCategory.Structure, Environments = Environments.Field,
+            Footprint = new(4, 7), Weight = 10, MaxPerArea = 1, ClearsTerrain = true, HostMaterial = DungeonMaterial.Sandstone,
+            Biomes = [Biome.Desert, Biome.Swamp, Biome.Coast, Biome.Forest],
+            Description = "A half-buried sandstone temple.",
+        },
+
+        // Dungeon events. Footprints are whole rooms, so the footprint rule is unused.
+        new()
+        {
+            Id = "guard-post", Name = "Guard post", Category = EventCategory.Encounter, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 18, AllowedStyles = [RoomStyle.Masonry, RoomStyle.Mine], PreferredStyles = [RoomStyle.Masonry],
+            MobSlots = [new(MobRole.Minion, 2, 4), new(MobRole.Leader, 1, 1)],
+            Description = "Sentries watching a junction.",
+        },
+        new()
+        {
+            Id = "crawler-nest", Name = "Crawler nest", Category = EventCategory.Encounter, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 16, AllowedStyles = [RoomStyle.Cave, RoomStyle.Mine], PreferredStyles = [RoomStyle.Cave],
+            MobSlots = [new(MobRole.Minion, 3, 6), new(MobRole.Brute, 0, 1)],
+            Description = "Eggs, webbing and something guarding them.",
+        },
+        new()
+        {
+            Id = "underground-settlement", Name = "Underground settlement", Category = EventCategory.Settlement, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 8, MaxPerArea = 1, MaxRooms = 3,
+            MobSlots = [new(MobRole.Minion, 3, 6), new(MobRole.Leader, 1, 1), new(MobRole.Caster, 0, 1)],
+            Description = "A warren of dwellings spread over connected rooms.",
+        },
+        new()
+        {
+            Id = "smugglers-den", Name = "Smugglers' den", Category = EventCategory.Settlement, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 6, MaxPerArea = 1, MaxRooms = 2, AllowedStyles = [RoomStyle.Masonry, RoomStyle.Mine],
+            MobSlots = [new(MobRole.Minion, 2, 4), new(MobRole.Leader, 1, 1)],
+            Description = "Crates of contraband and people who would rather not be found.",
+        },
+        new()
+        {
+            Id = "prison", Name = "Prison cells", Category = EventCategory.Social, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 6, MaxPerArea = 1, AllowedStyles = [RoomStyle.Masonry],
+            MobSlots = [new(MobRole.Minion, 1, 2)],
+            Description = "Captives who may help if freed.",
+        },
+        new()
+        {
+            Id = "treasure-vault", Name = "Treasure vault", Category = EventCategory.Landmark, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 5, MaxPerArea = 1,
+            MobSlots = [new(MobRole.Brute, 1, 1)],
+            Description = "A guarded hoard behind a heavy door.",
+        },
+        new()
+        {
+            Id = "collapsed-passage", Name = "Collapsed passage", Category = EventCategory.Hazard, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 8, AllowedStyles = [RoomStyle.Mine, RoomStyle.Cave], PreferredStyles = [RoomStyle.Mine],
+            Description = "Loose ceiling; loud noises bring it down.",
+        },
+        new()
+        {
+            Id = "fungal-grove", Name = "Fungal grove", Category = EventCategory.Landmark, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 8, AllowedStyles = [RoomStyle.Cave], PreferredStyles = [RoomStyle.Cave],
+            Description = "Glowing mushrooms; some are useful, some are not.",
+        },
+        new()
+        {
+            Id = "boss-chamber", Name = "Guardian's chamber", Category = EventCategory.Encounter, Environments = Environments.Dungeon,
+            Footprint = new(1, 1), Weight = 1, MaxPerArea = 1, IsBoss = true,
+            MobSlots = [new(MobRole.Boss, 1, 1), new(MobRole.Minion, 0, 3)],
+            Description = "The deepest room and whatever rules it.",
+        },
     ];
 
     public IReadOnlyList<MobArchetype> MobArchetypes { get; } =
@@ -202,5 +308,17 @@ public sealed class StaticContentCatalog : IContentCatalog
         new("elite", "Elite", 5, "Increase health and damage; add one extra ability."),
         new("champion", "Champion", 8, "Leaders and brutes gain a second action each round."),
         new("enraged", "Enraged", 10, "All mobs gain bonus damage when below half health."),
+    ];
+
+    public IReadOnlyList<TrapTemplate> TrapTemplates { get; } =
+    [
+        new("pressure-plate-darts", "Pressure plate (darts)", [RoomStyle.Masonry]),
+        new("rune-ward", "Rune ward", [RoomStyle.Masonry]),
+        new("swinging-blade", "Swinging blade", [RoomStyle.Masonry, RoomStyle.Mine]),
+        new("tripwire-rockfall", "Tripwire rockfall", [RoomStyle.Mine, RoomStyle.Cave]),
+        new("weak-floor", "Weak floor", [RoomStyle.Mine]),
+        new("spore-puff", "Spore puff", [RoomStyle.Cave]),
+        new("hidden-pit", "Hidden pit", []),
+        new("snare", "Snare", []),
     ];
 }

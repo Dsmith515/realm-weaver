@@ -483,3 +483,4 @@ $RECYCLE.BIN/
 
 # Local CLI output
 samples/
+.tmp/

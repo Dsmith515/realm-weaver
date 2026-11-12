@@ -5,7 +5,7 @@ namespace RealmWeaver.Generation.Model;
 /// <summary>Hard limits shared by the generator, API validation and UI.</summary>
 public static class GeneratorLimits
 {
-    public const string Version = "0.2.0";
+    public const string Version = "0.3.0";
     public const int MinSize = 15;
     public const int MaxSize = 100;
     public const int MinEvents = 5;
@@ -55,8 +55,11 @@ public sealed record GenerationRequest
     /// <summary>Manual event count (5-60, capped by map size); scaled random when null.</summary>
     public int? EventCount { get; init; }
 
-    /// <summary>Dungeon floors (1-<see cref="GeneratorLimits.MaxFloors"/>). Used from Milestone 3.</summary>
+    /// <summary>Dungeon floors (1-<see cref="GeneratorLimits.MaxFloors"/>).</summary>
     public int FloorCount { get; init; } = 1;
+
+    /// <summary>Manual event count per dungeon floor; scaled random when null.</summary>
+    public int? FloorEventCount { get; init; }
 
     /// <summary>Danger level used to pick mob counts and difficulty templates.</summary>
     [JsonIgnore]
