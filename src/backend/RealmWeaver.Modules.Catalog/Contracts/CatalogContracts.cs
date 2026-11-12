@@ -97,6 +97,12 @@ public sealed record CatalogSettingsDto(bool PlayersCanSelfAssign);
 /// <summary>What a new player's starter kit is drawn from.</summary>
 public sealed record StarterKitCandidates(Guid BeginnerNeedleId, IReadOnlyList<Guid> ThreadIds, IReadOnlyList<Guid> CoatingIds);
 
+/// <summary>
+/// A Map component created by a ritual. It appears in the admin catalog like any other component.
+/// The caller chooses the id up front, so a retried or replayed step always refers to the same map.
+/// </summary>
+public sealed record NewMap(Guid Id, string Name, string Description, MapDetails Details);
+
 /// <summary>The Catalog module's public contract for other modules. In Phase 2 this becomes an HTTP or message client.</summary>
 public interface ICatalogModule
 {
@@ -108,4 +114,7 @@ public interface ICatalogModule
     Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
 
     Task<StarterKitCandidates> GetStarterKitCandidatesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Creates a Map component. Joins the caller's unit of work when one is running.</summary>
+    Task<ComponentDto> CreateMapAsync(NewMap map, CancellationToken cancellationToken = default);
 }

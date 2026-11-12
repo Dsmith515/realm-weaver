@@ -17,7 +17,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - **`RealmWeaver.Generation` is pure.** It has no EF Core, no ASP.NET, no I/O, no `System.Random` and no `DateTime.Now`. Randomness comes only from the project's seeded RNG, so the same seed and inputs always give the same realm. `ArchitectureTests` checks this.
 - Each generation step draws from its own `SeededRandom.Fork("purpose")` stream (see ADR 0002). Changing the algorithm means bumping `GeneratorLimits.Version`.
 - The generator outputs template ids and references (event templates, mob archetypes), not just display text, so content can move into DB tables later.
-- Rituals run in a single DB transaction in Phase 1, with idempotency keys and optimistic concurrency (Postgres `xmin`).
+- Rituals run in a single DB transaction in Phase 1, with idempotency keys and optimistic concurrency (Postgres `xmin`). Cross-module writes that must be atomic go through `UnitOfWork` (ADR 0005); module contract methods stay transaction-agnostic.
 
 ## Conventions
 - `TreatWarningsAsErrors` is on, along with the .NET recommended analyzers. Fix warnings rather than suppressing them.

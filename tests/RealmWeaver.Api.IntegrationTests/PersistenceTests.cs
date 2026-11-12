@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using RealmWeaver.Api.IntegrationTests.Infrastructure;
 using RealmWeaver.Modules.Catalog;
 using RealmWeaver.Modules.Inventory;
+using RealmWeaver.Modules.Realms;
+using RealmWeaver.Modules.Rituals;
 
 namespace RealmWeaver.Api.IntegrationTests;
 
@@ -14,7 +16,7 @@ namespace RealmWeaver.Api.IntegrationTests;
 [Collection(PostgresApiTests.Name)]
 public class PersistenceTests(RealmWeaverApiFactory factory)
 {
-    private static readonly Assembly[] ModuleAssemblies = [typeof(CatalogModule).Assembly, typeof(InventoryModule).Assembly];
+    private static readonly Assembly[] ModuleAssemblies = [typeof(CatalogModule).Assembly, typeof(InventoryModule).Assembly, typeof(RealmsModule).Assembly, typeof(RitualsModule).Assembly];
 
     private static IEnumerable<Type> DbContextTypes() =>
         ModuleAssemblies.SelectMany(a => a.GetTypes()).Where(t => t.IsSubclassOf(typeof(DbContext)));

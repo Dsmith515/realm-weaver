@@ -51,6 +51,22 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
             [.. starters.Where(s => s.Type == ComponentType.Coating).Select(s => s.Id)]);
     }
 
+    public async Task<ComponentDto> CreateMapAsync(NewMap map, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        var name = map.Name.Length <= ComponentRules.MaxNameLength ? map.Name : map.Name[..ComponentRules.MaxNameLength];
+        var description = map.Description.Length <= ComponentRules.MaxDescriptionLength ? map.Description : map.Description[..ComponentRules.MaxDescriptionLength];
+        var input = new ComponentInput(ComponentType.Map, name, Rarity.Common, ComponentRules.MinRank, description, IsPlayerAssignable: false, Map: map.Details);
+
+        var errors = ComponentRules.Validate(input);
+        if (!errors.IsValid)
+        {
+            throw new ArgumentException($"Invalid map: {string.Join("; ", errors.ToDictionary().Select(e => $"{e.Key}: {string.Join(' ', e.Value)}"))}", nameof(map));
+        }
+
+        return await CreateAsync(input, map.Id, cancellationToken);
+    }
+
     public async Task<PagedResult<ComponentDto>> SearchAsync(ComponentQuery query, CancellationToken cancellationToken)
     {
         var page = Math.Max(1, query.Page);
