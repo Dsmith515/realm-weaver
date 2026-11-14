@@ -39,7 +39,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         var components = await catalog.GetComponentsAsync([.. items.Select(i => i.ComponentDefinitionId)], cancellationToken);
         return [.. items
             .Where(i => components.ContainsKey(i.ComponentDefinitionId))
-            .Select(i => new InventoryItemDto(components[i.ComponentDefinitionId], i.Quantity, i.AcquiredAt))
+            .Select(i => new InventoryItemDto(components[i.ComponentDefinitionId], i.Quantity, i.AcquiredAt, i.Notes))
             .OrderBy(i => i.Component.Type)
             .ThenBy(i => i.Component.Name, StringComparer.Ordinal)];
     }
@@ -97,7 +97,23 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
 
         var item = await db.Items.AsNoTracking()
             .FirstAsync(i => i.PlayerId == playerId && i.ComponentDefinitionId == component.Id, cancellationToken);
-        return new InventoryItemDto(component, item.Quantity, item.AcquiredAt);
+        return new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes);
+    }
+
+    /// <summary>Replaces the notes on an item the player owns. Returns null when they don't own it.</summary>
+    public async Task<InventoryItemDto?> SetNotesAsync(Guid playerId, Guid componentId, string notes, CancellationToken cancellationToken)
+    {
+        var item = await db.Items.FirstOrDefaultAsync(
+            i => i.PlayerId == playerId && i.ComponentDefinitionId == componentId && i.Quantity > 0, cancellationToken);
+        var component = item is null ? null : await catalog.GetComponentAsync(componentId, cancellationToken);
+        if (item is null || component is null)
+        {
+            return null;
+        }
+
+        item.Notes = notes.Trim();
+        await db.SaveChangesAsync(cancellationToken);
+        return new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes);
     }
 
     public async Task SpendOneEachAsync(Guid playerId, IReadOnlyCollection<Guid> componentIds, CancellationToken cancellationToken = default)

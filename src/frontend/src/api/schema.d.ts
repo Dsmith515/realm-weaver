@@ -37,6 +37,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/maps/{id}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMapDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/components": {
         parameters: {
             query?: never;
@@ -148,6 +164,23 @@ export interface paths {
         put?: never;
         /** @description A player adds a component to their own inventory. Allowed only when self-assign is on and the component is player-assignable. */
         post: operations["AddToOwnInventory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{id}/inventory/{componentId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Replaces the player's notes on an item they own. */
+        put: operations["SetInventoryNotes"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -340,6 +373,12 @@ export interface components {
         CreatePlayerInput: {
             name: string;
         };
+        DigestEntry: {
+            areaName: string;
+            id: string;
+            name: string;
+            location: string;
+        };
         /** @enum {unknown} */
         DungeonMaterial: "dressedStone" | "crumblingBrick" | "sandstone" | "timberBracedRock" | "naturalCave" | "floodedGrotto" | "crystalVein" | "rootEarth" | "lavaTube" | "iceCave";
         DungeonRoom: {
@@ -433,6 +472,11 @@ export interface components {
             quantity: number;
             /** Format: date-time */
             acquiredAt: string;
+            /** @default  */
+            notes: string;
+        };
+        InventoryNotesInput: {
+            notes: string;
         };
         MapDetails: {
             /** Format: uint64 */
@@ -456,6 +500,13 @@ export interface components {
             /** Format: int32 */
             threat?: null | number;
         };
+        MapDetailsDto: {
+            map: components["schemas"]["ComponentDto"];
+            needle: null | components["schemas"]["ComponentDto"];
+            thread: null | components["schemas"]["ComponentDto"];
+            coating: null | components["schemas"]["ComponentDto"];
+            originalRealm: null | components["schemas"]["RealmDigestDto"];
+        };
         MapRecipe: {
             kind: components["schemas"]["RealmKind"];
             /** Format: int32 */
@@ -475,6 +526,12 @@ export interface components {
         };
         /** @enum {unknown} */
         MobRole: "minion" | "brute" | "skirmisher" | "caster" | "leader" | "boss";
+        MobTally: {
+            archetypeId: string;
+            name: string;
+            /** Format: int32 */
+            count: number;
+        };
         NameSuffixesDto: {
             needle: string[];
             thread: string[];
@@ -561,6 +618,18 @@ export interface components {
             needle: components["schemas"]["ComponentRefDto"];
             thread: components["schemas"]["ComponentRefDto"];
             coating: components["schemas"]["ComponentRefDto"];
+        };
+        RealmDigest: {
+            mobs: components["schemas"]["MobTally"][];
+            loot: components["schemas"]["DigestEntry"][];
+            resourceNodes: components["schemas"]["DigestEntry"][];
+        };
+        RealmDigestDto: {
+            /** Format: uuid */
+            realmId: string;
+            /** Format: int32 */
+            threat: number;
+            digest: components["schemas"]["RealmDigest"];
         };
         RealmDocument: {
             generatorVersion: string;
@@ -768,6 +837,28 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMapDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapDetailsDto"];
                 };
             };
         };
@@ -1093,6 +1184,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AddInventoryItemInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    SetInventoryNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                componentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryNotesInput"];
             };
         };
         responses: {

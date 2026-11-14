@@ -7,7 +7,10 @@ public sealed record PlayerDto(Guid Id, string Name, DateTimeOffset CreatedAt);
 public sealed record CreatePlayerInput(string Name);
 
 /// <summary>One stack in a player's inventory. Needles and Maps always have quantity 1.</summary>
-public sealed record InventoryItemDto(ComponentDto Component, int Quantity, DateTimeOffset AcquiredAt);
+public sealed record InventoryItemDto(ComponentDto Component, int Quantity, DateTimeOffset AcquiredAt, string Notes = "");
+
+/// <summary>Body for replacing a player's notes on an item they own. Empty clears them.</summary>
+public sealed record InventoryNotesInput(string Notes);
 
 /// <summary>Body for a player adding a component to their own inventory.</summary>
 public sealed record AddInventoryItemInput(Guid ComponentId, int Quantity = 1);

@@ -59,4 +59,13 @@ public interface IRealmsModule
     Task<RealmSummaryDto> SaveAsync(NewRealm realm, CancellationToken cancellationToken = default);
 
     Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.
+    /// Null when no such realm is stored (for example a map an admin created by hand).
+    /// </summary>
+    Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default);
 }
+
+/// <summary>A map's original realm and what it holds.</summary>
+public sealed record RealmDigestDto(Guid RealmId, int Threat, Generation.Export.RealmDigest Digest);

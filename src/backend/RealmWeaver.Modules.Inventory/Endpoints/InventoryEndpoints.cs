@@ -26,6 +26,8 @@ internal static class InventoryEndpoints
         players.MapGet("/{id:guid}/inventory", GetInventoryAsync).WithName("GetInventory");
         players.MapPost("/{id:guid}/inventory", SelfAddAsync).WithName("AddToOwnInventory")
             .WithDescription("A player adds a component to their own inventory. Allowed only when self-assign is on and the component is player-assignable.");
+        players.MapPut("/{id:guid}/inventory/{componentId:guid}/notes", SetNotesAsync).WithName("SetInventoryNotes")
+            .WithDescription("Replaces the player's notes on an item they own.");
 
         // Lives here, not in Catalog: granting is an inventory write, and Catalog must not depend on Inventory.
         app.MapPost("/api/components/{id:guid}/assign", AssignAsync).WithTags("Components").WithName("AssignComponent")
@@ -97,6 +99,20 @@ internal static class InventoryEndpoints
         }
 
         return TypedResults.Ok(await inventory.GrantAsync(id, component, input.Quantity, cancellationToken));
+    }
+
+    private static async Task<Results<Ok<InventoryItemDto>, ProblemHttpResult, ValidationProblem>> SetNotesAsync(
+        Guid id, Guid componentId, [FromBody] InventoryNotesInput input, InventoryService inventory, CancellationToken cancellationToken)
+    {
+        var notes = input.Notes ?? string.Empty;
+        if (notes.Trim().Length > InventoryItem.MaxNotesLength)
+        {
+            return Problems.Validation(new Dictionary<string, string[]> { ["notes"] = [$"Use at most {InventoryItem.MaxNotesLength} characters."] });
+        }
+
+        return await inventory.SetNotesAsync(id, componentId, notes, cancellationToken) is { } item
+            ? TypedResults.Ok(item)
+            : TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Item not found.", detail: $"Player '{id}' doesn't own component '{componentId}'.");
     }
 
     private static async Task<Results<Ok<InventoryItemDto>, ProblemHttpResult, ValidationProblem>> AssignAsync(

@@ -77,6 +77,37 @@
         }
       }
     },
+    "/api/maps/{id}/details": {
+      "get": {
+        "tags": [
+          "Maps"
+        ],
+        "operationId": "GetMapDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapDetailsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/components": {
       "get": {
         "tags": [
@@ -529,6 +560,67 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AddInventoryItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players/{id}/inventory/{componentId}/notes": {
+      "put": {
+        "tags": [
+          "Players"
+        ],
+        "description": "Replaces the player\u0027s notes on an item they own.",
+        "operationId": "SetInventoryNotes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryNotesInput"
               }
             }
           },
@@ -1187,6 +1279,29 @@
           }
         }
       },
+      "DigestEntry": {
+        "required": [
+          "areaName",
+          "id",
+          "name",
+          "location"
+        ],
+        "type": "object",
+        "properties": {
+          "areaName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        }
+      },
       "DungeonMaterial": {
         "enum": [
           "dressedStone",
@@ -1509,6 +1624,21 @@
           "acquiredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "notes": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      },
+      "InventoryNotesInput": {
+        "required": [
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string"
           }
         }
       },
@@ -1584,6 +1714,61 @@
           }
         }
       },
+      "MapDetailsDto": {
+        "required": [
+          "map",
+          "needle",
+          "thread",
+          "coating",
+          "originalRealm"
+        ],
+        "type": "object",
+        "properties": {
+          "map": {
+            "$ref": "#/components/schemas/ComponentDto"
+          },
+          "needle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponentDto"
+              }
+            ]
+          },
+          "thread": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponentDto"
+              }
+            ]
+          },
+          "coating": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponentDto"
+              }
+            ]
+          },
+          "originalRealm": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmDigestDto"
+              }
+            ]
+          }
+        }
+      },
       "MapRecipe": {
         "required": [
           "kind",
@@ -1653,6 +1838,26 @@
           "leader",
           "boss"
         ]
+      },
+      "MobTally": {
+        "required": [
+          "archetypeId",
+          "name",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "archetypeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "NameSuffixesDto": {
         "required": [
@@ -2011,6 +2216,55 @@
           },
           "coating": {
             "$ref": "#/components/schemas/ComponentRefDto"
+          }
+        }
+      },
+      "RealmDigest": {
+        "required": [
+          "mobs",
+          "loot",
+          "resourceNodes"
+        ],
+        "type": "object",
+        "properties": {
+          "mobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MobTally"
+            }
+          },
+          "loot": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DigestEntry"
+            }
+          },
+          "resourceNodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DigestEntry"
+            }
+          }
+        }
+      },
+      "RealmDigestDto": {
+        "required": [
+          "realmId",
+          "threat",
+          "digest"
+        ],
+        "type": "object",
+        "properties": {
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "threat": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "digest": {
+            "$ref": "#/components/schemas/RealmDigest"
           }
         }
       },
@@ -2551,6 +2805,9 @@
     },
     {
       "name": "Components"
+    },
+    {
+      "name": "Maps"
     },
     {
       "name": "Settings"

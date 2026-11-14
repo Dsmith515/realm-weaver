@@ -384,5 +384,8 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
 
         public Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default) =>
             Task.FromResult<RealmSummaryDto?>(null);
+
+        public Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<RealmDigestDto?>(null);
     }
 }

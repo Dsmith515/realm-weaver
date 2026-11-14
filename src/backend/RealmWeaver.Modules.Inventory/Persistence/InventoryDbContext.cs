@@ -29,6 +29,11 @@ internal sealed class InventoryItem
 
     public DateTimeOffset AcquiredAt { get; set; }
 
+    public const int MaxNotesLength = 1000;
+
+    /// <summary>The player's own notes about this item, for example what they found on a map.</summary>
+    public string Notes { get; set; } = string.Empty;
+
     /// <summary>Postgres <c>xmin</c>. Two rituals spending the last thread can't both succeed.</summary>
     public uint Version { get; set; }
 }
@@ -59,6 +64,7 @@ internal sealed class InventoryDbContext(DbContextOptions<InventoryDbContext> op
             item.HasKey(i => new { i.PlayerId, i.ComponentDefinitionId });
             item.HasIndex(i => i.ComponentDefinitionId);
             item.Property(i => i.Version).IsRowVersion();
+            item.Property(i => i.Notes).HasMaxLength(InventoryItem.MaxNotesLength).HasDefaultValue(string.Empty);
         });
     }
 }

@@ -30,7 +30,7 @@ export function component(type: ComponentType, name: string, overrides: Partial<
   }
 }
 
-export const owned = (c: Component, quantity = 1, acquiredAt = '2026-11-12T10:00:00Z'): InventoryItem => ({ component: c, quantity, acquiredAt })
+export const owned = (c: Component, quantity = 1, acquiredAt = '2026-11-12T10:00:00Z'): InventoryItem => ({ component: c, quantity, acquiredAt, notes: '' })
 
 export const needle = component('needle', "Beginner's Needle", { id: 'needle-1' })
 export const moss = component('thread', 'Mossgreen Thread', { id: 'thread-moss' })

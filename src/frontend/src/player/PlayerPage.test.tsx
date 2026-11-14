@@ -2,7 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { fakeApi, problem } from '../test/fakeApi'
-import { inventory, moss, owned, player, wax } from '../test/fixtures'
+import type { Component } from '../api/types'
+import { forestMap, inventory, moss, needle, owned, player, wax } from '../test/fixtures'
 import { renderApp } from '../test/render'
 
 function routes(selfAssign: boolean, overrides: Record<string, unknown> = {}) {
@@ -16,7 +17,60 @@ function routes(selfAssign: boolean, overrides: Record<string, unknown> = {}) {
   }
 }
 
+const recordedMap = {
+  ...forestMap,
+  map: { ...forestMap.map!, recipe: { kind: 'fieldWithDungeon', floorCount: 2, biome: 'forest', element: 'earth', mobTags: ['beast'], difficulty: 3 }, threat: 3 },
+} as Component
+
+const mapDetails = {
+  map: recordedMap,
+  needle,
+  thread: moss,
+  coating: wax,
+  originalRealm: {
+    realmId: 'realm-1',
+    threat: 3,
+    digest: {
+      mobs: [{ archetypeId: 'grey-wolf', name: 'Grey wolf', count: 5 }],
+      loot: [{ areaName: 'Floor 1', id: 'C1', name: 'Hidden chest (rare)', location: 'D4' }],
+      resourceNodes: [{ areaName: 'Forest field', id: 'E3', name: 'Resource node', location: 'B2-B3' }],
+    },
+  },
+}
+
 describe('Player page', () => {
+  it('shows a map’s realm kind and threat, and its details when opened', async () => {
+    const withMap = inventory.map((i) => (i.component.id === forestMap.id ? owned(recordedMap) : i))
+    const api = fakeApi(
+      routes(true, {
+        'GET /api/players/:id/inventory': withMap,
+        'GET /api/maps/:id/details': mapDetails,
+        'PUT /api/players/:id/inventory/:componentId/notes': { ...owned(recordedMap), notes: 'Wolves by the river.' },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/player')
+
+    const maps = await screen.findByRole('region', { name: 'Maps' })
+    expect(within(maps).getByText('Field + Dungeon · Threat 3')).toBeInTheDocument()
+    expect(within(maps).queryByText(/seed/i)).not.toBeInTheDocument()
+
+    await user.click(within(maps).getByRole('button', { name: `Open ${forestMap.name}` }))
+    const dialog = screen.getByRole('dialog', { name: forestMap.name })
+    expect(await within(dialog).findByText('18446744073709551000')).toBeInTheDocument()
+    expect(within(dialog).getByText('Field + Dungeon (2 floors)')).toBeInTheDocument()
+    expect(within(dialog).getByText('5× Grey wolf')).toBeInTheDocument()
+    expect(within(dialog).getByText('Hidden chest (rare)')).toBeInTheDocument()
+    expect(within(dialog).getByText('Resource node')).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Open the original realm' })).toHaveAttribute('href', '/realms/realm-1')
+
+    await user.type(within(dialog).getByRole('textbox', { name: 'Your notes' }), 'Wolves by the river.')
+    await user.click(within(dialog).getByRole('button', { name: 'Save notes' }))
+    await waitFor(() =>
+      expect(api.callsTo('PUT', `/api/players/${player.id}/inventory/${forestMap.id}/notes`)[0]?.body).toEqual({ notes: 'Wolves by the river.' }),
+    )
+  })
+
   it('groups the inventory by type with total quantities', async () => {
     fakeApi(routes(true))
     renderApp('/player')

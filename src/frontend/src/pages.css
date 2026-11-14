@@ -355,6 +355,46 @@ textarea {
   font-weight: 700;
 }
 
+.item__open {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--accent);
+}
+
+.item__open:hover strong {
+  text-decoration: underline;
+}
+
+.item__notes {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.digest {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
 .item--uncommon {
   border-left-color: #3f9b5a;
 }

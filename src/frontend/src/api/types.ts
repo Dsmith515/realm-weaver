@@ -41,6 +41,8 @@ export const enumListsAreComplete: [
 ] = [true, true, true, true, true, true]
 
 export type NameSuffixes = Schemas['NameSuffixesDto']
+export type MapDetails = Schemas['MapDetailsDto']
+export type DigestEntry = Schemas['DigestEntry']
 
 const labels: Record<string, string> = {
   fieldWithDungeon: 'Field + Dungeon',

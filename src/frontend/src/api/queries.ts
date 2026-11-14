@@ -56,6 +56,25 @@ export function useSelfAdd(playerId: string) {
   })
 }
 
+/** Replaces the player's notes on an item they own. */
+export function useSaveNotes(playerId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ componentId, notes }: { componentId: string; notes: string }) =>
+      unwrap(api.PUT('/api/players/{id}/inventory/{componentId}/notes', { params: { path: { id: playerId, componentId } }, body: { notes } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.inventory(playerId) }),
+  })
+}
+
+/** A map with its components and a digest of its original realm, composed by the API from several modules. */
+export function useMapDetails(mapId: string | undefined) {
+  return useQuery({
+    queryKey: ['map-details', mapId],
+    queryFn: () => unwrap(api.GET('/api/maps/{id}/details', { params: { path: { id: mapId! } } })),
+    enabled: !!mapId,
+  })
+}
+
 export function useComponents(filters: ComponentFilters) {
   return useQuery({
     queryKey: keys.components(filters),
