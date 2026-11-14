@@ -125,6 +125,9 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 4: persistence and APIs (catalog, players, inventory)
 - [x] Milestone 5: ritual transaction (preview, idempotent perform, realms and exports)
 - [x] Milestone 6: frontend pages (ritual with drag and drop, player, realms, components)
+- [ ] Milestone 6a: M6 follow-ups (map recipe snapshot, naming, UI polish, player map details, GM Quick Weave)
 - [ ] Milestone 7: E2E tests and release images
-- [ ] Milestone 8: microservices (saga and outbox)
-- [ ] Milestone 9: content tables (mobs, events, difficulty templates)
+- [ ] Milestone 8: objectives and map rules
+- [ ] Milestone 9: microservices (saga and outbox)
+- [ ] Milestone 10: content tables (mobs, events, abilities, roles, level profiles)
+- [ ] Milestone 11: Phase 3 (thimbles, auth, economy, VTT exports)
