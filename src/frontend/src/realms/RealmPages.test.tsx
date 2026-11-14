@@ -160,6 +160,27 @@ describe('Realm pages', () => {
     expect(svg.querySelector('[data-event-id="E1"]')).not.toHaveClass('rw-highlight')
   })
 
+  it('shows a settlement’s population and the structures inside it', async () => {
+    const village = area('field', 'E1', 'Village')
+    village.events[0] = {
+      ...village.events[0],
+      templateId: 'village',
+      category: 'settlement',
+      population: 'bustling',
+      structures: [
+        { id: 'B1', templateId: 'hut-cluster', name: 'Hut cluster', footprint: { x: 1, y: 1, width: 2, height: 2 }, location: 'B2:C3' },
+        { id: 'B2', templateId: 'training-pit', name: 'Training pit', footprint: { x: 4, y: 1, width: 3, height: 3 }, location: 'E2:G4', ruined: true },
+      ],
+    }
+    fakeApi({ ...routes(), 'GET /api/realms/:id': { ...realm, document: { ...realm.document, areas: [village, realm.document.areas[1]] } } })
+    renderApp('/realms/realm-1')
+
+    expect(await screen.findByText('Bustling · 3× Grey wolf')).toBeInTheDocument()
+    const structures = screen.getByRole('list', { name: 'Structures in E1' })
+    expect(within(structures).getByText('B1 Hut cluster B2:C3')).toBeInTheDocument()
+    expect(within(structures).getByText('B2 Training pit (ruined) E2:G4')).toBeInTheDocument()
+  })
+
   it('switches floors and offers exports for the shown area', async () => {
     const api = fakeApi(routes())
     const user = userEvent.setup()

@@ -141,6 +141,13 @@ function RealmView({ realm }: { realm: Realm }) {
                   <strong>{p.id}</strong> {p.name} <span className="muted">{p.location}</span>
                 </button>
                 {p.detail && <span className="placements__mobs">{p.detail}</span>}
+                {p.structures && p.structures.length > 0 && (
+                  <ul className="placements__structures" aria-label={`Structures in ${p.id}`}>
+                    {p.structures.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
@@ -172,6 +179,8 @@ interface Placement {
   name: string
   location: string
   detail?: string
+  /** Buildings inside a settlement, one line each. */
+  structures?: string[]
   /** Where the party enters the area: the spawn, a dungeon entrance, the way up, or the host structure. */
   isEntry: boolean
 }
@@ -183,13 +192,18 @@ function placementsOf(area: RealmArea): Placement[] {
   const spawn: Placement[] = area.spawn
     ? [{ id: 'S', name: 'Spawn point', location: tileLabel(area.spawn.x ?? 0, area.spawn.y ?? 0), isEntry: true }]
     : []
-  const events: Placement[] = area.events.map((e) => ({
-    id: e.id,
-    name: e.name,
-    location: e.location ?? '',
-    detail: e.mobs && e.mobs.length > 0 ? e.mobs.map((m) => `${m.count}× ${m.name}`).join(', ') : undefined,
-    isEntry: e.category === 'structure',
-  }))
+  const events: Placement[] = area.events.map((e) => {
+    const mobs = e.mobs && e.mobs.length > 0 ? e.mobs.map((m) => `${m.count}× ${m.name}`).join(', ') : undefined
+    const detail = [e.population ? label(e.population) : undefined, mobs].filter(Boolean).join(' · ')
+    return {
+      id: e.id,
+      name: e.name,
+      location: e.location ?? '',
+      detail: detail || undefined,
+      structures: e.structures?.map((b) => `${b.id} ${b.name}${b.ruined ? ' (ruined)' : ''} ${b.location ?? ''}`.trim()),
+      isEntry: e.category === 'structure',
+    }
+  })
   const features: Placement[] = (area.features ?? []).map((f) => ({
     id: f.id,
     name: label(f.kind),

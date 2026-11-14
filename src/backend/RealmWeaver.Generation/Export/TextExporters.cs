@@ -65,7 +65,12 @@ public static class PromptExporter
 
         foreach (var e in area.Events)
         {
-            Line(sb, $"- {e.Name.ToLowerInvariant()} covering {e.Location}");
+            var crowd = e.Population is { } level ? $" ({Describe(level)})" : "";
+            Line(sb, $"- {e.Name.ToLowerInvariant()}{crowd} covering {e.Location}");
+            foreach (var b in e.Structures)
+            {
+                Line(sb, $"  - {(b.Ruined ? "ruined " : "")}{b.Name.ToLowerInvariant()} at {b.Location}");
+            }
         }
 
         // Traps and secret doors are for the game master only, so they are left out of the art prompt.
@@ -79,6 +84,15 @@ public static class PromptExporter
         Line(sb, $"Do not draw text, letters, numbers, creatures or a UI. Keep every location at the listed grid squares.");
         return sb.ToString();
     }
+
+    private static string Describe(SettlementPopulation population) => population switch
+    {
+        SettlementPopulation.Abandoned => "abandoned, empty and falling apart",
+        SettlementPopulation.Sparse => "sparsely populated",
+        SettlementPopulation.Modest => "lived in",
+        SettlementPopulation.Bustling => "bustling",
+        _ => "overcrowded and cramped",
+    };
 
     private static void Line(StringBuilder sb, FormattableString text) => sb.AppendLine(text.ToString(CultureInfo.InvariantCulture));
 }
@@ -112,14 +126,27 @@ public static class MarkdownExporter
             }
 
             Line(sb, $"");
-            Line(sb, $"| Id | Event | Category | Location | Rooms | Mobs | Templates |");
-            Line(sb, $"|---|---|---|---|---|---|---|");
+            Line(sb, $"| Id | Event | Category | Location | Rooms | Population | Mobs | Templates |");
+            Line(sb, $"|---|---|---|---|---|---|---|---|");
             foreach (var e in area.Events)
             {
                 var mobs = e.Mobs.Count == 0 ? "-" : string.Join(", ", e.Mobs.Select(m => $"{m.Count}x {m.Name} ({m.Role})"));
                 var templates = e.DifficultyTemplateIds.Count == 0 ? "-" : string.Join(", ", e.DifficultyTemplateIds);
                 var rooms = e.RoomIds.Count == 0 ? "-" : string.Join(", ", e.RoomIds);
-                Line(sb, $"| {e.Id} | {e.Name} | {e.Category} | {e.Location} | {rooms} | {mobs} | {templates} |");
+                var population = e.Population?.ToString() ?? "-";
+                Line(sb, $"| {e.Id} | {e.Name} | {e.Category} | {e.Location} | {rooms} | {population} | {mobs} | {templates} |");
+            }
+
+            var structures = area.Events.SelectMany(e => e.Structures.Select(b => (Event: e, Structure: b))).ToList();
+            if (structures.Count > 0)
+            {
+                Line(sb, $"");
+                Line(sb, $"| Structure | Name | In | Location |");
+                Line(sb, $"|---|---|---|---|");
+                foreach (var (e, b) in structures)
+                {
+                    Line(sb, $"| {b.Id} | {b.Name}{(b.Ruined ? " (ruined)" : "")} | {e.Id} {e.Name} | {b.Location} |");
+                }
             }
 
             if (area.Rooms.Count > 0)

@@ -39,6 +39,50 @@ public sealed class MobResolver(IContentCatalog catalog, GenerationRequest reque
         return groups;
     }
 
+    /// <summary>
+    /// Residents of a settlement, scaled by its size and population instead of the template's slot counts: one leader
+    /// (when the template has one), mostly minions, and some brutes and casters once it's busy. Abandoned settlements
+    /// hold at most a couple of squatters.
+    /// </summary>
+    public IReadOnlyList<MobGroup> ResolveSettlement(EventTemplate template, int area, SettlementPopulation population, SeededRandom rng)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(rng);
+
+        if (population == SettlementPopulation.Abandoned)
+        {
+            var squatters = rng.NextInclusive(0, 2);
+            var squatter = squatters == 0 ? null : Choose(MobRole.Minion, rng);
+            return squatter is null ? [] : [new MobGroup(squatter.Id, squatter.Name, MobRole.Minion, squatters)];
+        }
+
+        var minimum = template.MobSlots.Sum(s => s.MinCount);
+        var residents = Settlements.Residents(population, area, minimum);
+        var leaders = template.MobSlots.Any(s => s.Role == MobRole.Leader) ? 1 : 0;
+        var rest = residents - leaders;
+        var busy = population >= SettlementPopulation.Bustling;
+        var brutes = busy ? rest / 8 : 0;
+        var casters = busy ? rest / 10 : template.MobSlots.Where(s => s.Role == MobRole.Caster).Sum(s => rng.NextInclusive(s.MinCount, s.MaxCount));
+        var minions = rest - brutes - casters + (_threat / 4);
+
+        var groups = new List<MobGroup>();
+        foreach (var (role, count) in new[] { (MobRole.Leader, leaders), (MobRole.Minion, minions), (MobRole.Brute, brutes), (MobRole.Caster, casters) })
+        {
+            if (count <= 0)
+            {
+                continue;
+            }
+
+            var archetype = Choose(role, rng);
+            if (archetype is not null)
+            {
+                groups.Add(new MobGroup(archetype.Id, archetype.Name, role, count));
+            }
+        }
+
+        return groups;
+    }
+
     public IReadOnlyList<string> DifficultyTemplates(SeededRandom rng)
     {
         ArgumentNullException.ThrowIfNull(rng);

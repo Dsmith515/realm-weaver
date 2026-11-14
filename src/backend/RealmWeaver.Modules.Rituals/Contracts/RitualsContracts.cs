@@ -94,7 +94,8 @@ public sealed record QuickWeaveLimits(
 /// <summary>
 /// A GM weaving from the whole catalog: no inventory, nothing consumed. A chosen slot is used as is; an empty one is
 /// picked at random within <see cref="Limits"/>. With a Map the realm reuses its seed (a mirror if the slots differ);
-/// without one a new, unowned Map is recorded.
+/// without one a new, unowned Map is recorded. <see cref="Population"/> (null means rolled per settlement) and
+/// <see cref="IncludeStructures"/> apply to new maps; a recorded map keeps the settings in its recipe.
 /// </summary>
 public sealed record QuickWeaveRequest(
     Guid? NeedleId = null,
@@ -104,7 +105,9 @@ public sealed record QuickWeaveRequest(
     QuickWeaveLimits? Limits = null,
     int? Width = null,
     int? Height = null,
-    int? EventCount = null);
+    int? EventCount = null,
+    Generation.Model.SettlementPopulation? Population = null,
+    bool IncludeStructures = true);
 
 public sealed record QuickWeavePreviewDto(
     SlotPreview? Needle,

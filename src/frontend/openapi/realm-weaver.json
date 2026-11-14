@@ -1599,6 +1599,19 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "settlementPopulation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementPopulation"
+              }
+            ]
+          },
+          "includeStructures": {
+            "type": "boolean"
           }
         }
       },
@@ -1892,6 +1905,20 @@
           "difficulty": {
             "type": "integer",
             "format": "int32"
+          },
+          "settlementPopulation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementPopulation"
+              }
+            ]
+          },
+          "includeStructures": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -2083,6 +2110,22 @@
               "null",
               "string"
             ]
+          },
+          "population": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementPopulation"
+              }
+            ]
+          },
+          "structures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedStructure"
+            }
           }
         }
       },
@@ -2124,6 +2167,38 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "PlacedStructure": {
+        "required": [
+          "id",
+          "templateId",
+          "name",
+          "footprint"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "footprint": {
+            "$ref": "#/components/schemas/GridRect"
+          },
+          "location": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ruined": {
+            "type": "boolean"
           }
         }
       },
@@ -2376,6 +2451,20 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "population": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementPopulation"
+              }
+            ]
+          },
+          "includeStructures": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -3085,6 +3174,16 @@
           "masonry",
           "mine",
           "cave"
+        ]
+      },
+      "SettlementPopulation": {
+        "enum": [
+          "abandoned",
+          "sparse",
+          "modest",
+          "bustling",
+          "overcrowded",
+          null
         ]
       },
       "SlotPreview": {

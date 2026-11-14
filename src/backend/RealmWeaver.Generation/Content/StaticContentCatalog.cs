@@ -310,6 +310,46 @@ public sealed class StaticContentCatalog : IContentCatalog
         new("enraged", "Enraged", 10, "All mobs gain bonus damage when below half health."),
     ];
 
+    public IReadOnlyList<StructureTemplate> StructureTemplates { get; } =
+    [
+        // Any settlement
+        new() { Id = "well", Name = "Well", MinSide = 1, MaxSide = 1, Weight = 8, MaxPerSettlement = 2 },
+        new() { Id = "storehouse", Name = "Storehouse", MinSide = 2, MaxSide = 3, Weight = 8 },
+        new() { Id = "watchtower", Name = "Watchtower", MinSide = 2, MaxSide = 2, Weight = 6, MaxPerSettlement = 2 },
+        new() { Id = "shrine", Name = "Shrine", MinSide = 2, MaxSide = 2, Weight = 5, MaxPerSettlement = 1 },
+        new() { Id = "animal-pen", Name = "Animal pen", MinSide = 2, MaxSide = 4, Weight = 6 },
+
+        // Goblinoid
+        new() { Id = "hut-cluster", Name = "Hut cluster", Tags = ["goblinoid"], MinSide = 2, MaxSide = 3, Weight = 18 },
+        new() { Id = "training-pit", Name = "Training pit", Tags = ["goblinoid"], MinSide = 3, MaxSide = 4, Weight = 10, MaxPerSettlement = 2 },
+        new() { Id = "wolf-pen", Name = "Wolf pen", Tags = ["goblinoid"], MinSide = 2, MaxSide = 3, Weight = 8, MaxPerSettlement = 2 },
+        new() { Id = "war-totem", Name = "War totem", Tags = ["goblinoid"], MinSide = 1, MaxSide = 1, Weight = 6, MaxPerSettlement = 2 },
+        new() { Id = "chieftains-longhut", Name = "Chieftain's longhut", Tags = ["goblinoid"], MinSide = 3, MaxSide = 4, Weight = 8, MaxPerSettlement = 1 },
+
+        // Humanoid and bandit
+        new() { Id = "cottage", Name = "Cottage", Tags = ["humanoid", "bandit"], MinSide = 2, MaxSide = 3, Weight = 18 },
+        new() { Id = "farm-plot", Name = "Farm plot", Tags = ["humanoid"], Biomes = [Biome.Plains, Biome.Forest, Biome.Swamp, Biome.Coast, Biome.Mountains], MinSide = 3, MaxSide = 5, Weight = 10 },
+        new() { Id = "smithy", Name = "Smithy", Tags = ["humanoid", "bandit"], MinSide = 2, MaxSide = 3, Weight = 7, MaxPerSettlement = 1 },
+        new() { Id = "market-square", Name = "Market square", Tags = ["humanoid"], MinSide = 3, MaxSide = 4, Weight = 6, MaxPerSettlement = 1 },
+        new() { Id = "tavern", Name = "Tavern", Tags = ["humanoid", "bandit"], MinSide = 3, MaxSide = 3, Weight = 6, MaxPerSettlement = 1 },
+        new() { Id = "loot-cache", Name = "Loot cache", Tags = ["bandit"], MinSide = 2, MaxSide = 2, Weight = 6, MaxPerSettlement = 2 },
+
+        // Undead
+        new() { Id = "barrow", Name = "Barrow", Tags = ["undead"], MinSide = 2, MaxSide = 3, Weight = 14 },
+        new() { Id = "ossuary", Name = "Ossuary", Tags = ["undead"], MinSide = 2, MaxSide = 3, Weight = 8, MaxPerSettlement = 2 },
+        new() { Id = "bone-spire", Name = "Bone spire", Tags = ["undead"], MinSide = 1, MaxSide = 1, Weight = 5, MaxPerSettlement = 2 },
+
+        // Beasts, insects and plants
+        new() { Id = "den-mound", Name = "Den mound", Tags = ["beast"], MinSide = 2, MaxSide = 3, Weight = 14 },
+        new() { Id = "hive-mound", Name = "Hive mound", Tags = ["insect"], MinSide = 2, MaxSide = 3, Weight = 12 },
+        new() { Id = "overgrown-arbor", Name = "Overgrown arbor", Tags = ["plant", "fey"], MinSide = 2, MaxSide = 3, Weight = 12 },
+
+        // Elementals, constructs and dragonkin
+        new() { Id = "rune-circle", Name = "Rune circle", Tags = ["elemental", "construct"], MinSide = 2, MaxSide = 3, Weight = 10, MaxPerSettlement = 2 },
+        new() { Id = "scale-shrine", Name = "Scale shrine", Tags = ["dragonkin"], MinSide = 2, MaxSide = 3, Weight = 10, MaxPerSettlement = 2 },
+        new() { Id = "hoard-cairn", Name = "Hoard cairn", Tags = ["dragonkin"], MinSide = 2, MaxSide = 2, Weight = 6, MaxPerSettlement = 1 },
+    ];
+
     public IReadOnlyList<TrapTemplate> TrapTemplates { get; } =
     [
         new("pressure-plate-darts", "Pressure plate (darts)", [RoomStyle.Masonry]),

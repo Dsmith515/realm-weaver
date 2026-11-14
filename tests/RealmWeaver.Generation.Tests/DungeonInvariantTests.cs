@@ -266,5 +266,7 @@ public class DungeonInvariantTests
         public IReadOnlyList<DifficultyTemplate> DifficultyTemplates => Inner.DifficultyTemplates;
 
         public IReadOnlyList<TrapTemplate> TrapTemplates => Inner.TrapTemplates;
+
+        public IReadOnlyList<StructureTemplate> StructureTemplates => Inner.StructureTemplates;
     }
 }

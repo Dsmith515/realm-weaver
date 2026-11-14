@@ -5,7 +5,7 @@ namespace RealmWeaver.Generation.Model;
 /// <summary>Hard limits shared by the generator, API validation and UI.</summary>
 public static class GeneratorLimits
 {
-    public const string Version = "0.3.0";
+    public const string Version = "0.4.0";
     public const int MinSize = 15;
     public const int MaxSize = 100;
     public const int MinEvents = 5;
@@ -60,6 +60,12 @@ public sealed record GenerationRequest
 
     /// <summary>Manual event count per dungeon floor; scaled random when null.</summary>
     public int? FloorEventCount { get; init; }
+
+    /// <summary>Population for every settlement; rolled per settlement when null.</summary>
+    public SettlementPopulation? SettlementPopulation { get; init; }
+
+    /// <summary>Places buildings and grounds inside field settlements.</summary>
+    public bool IncludeStructures { get; init; } = true;
 
     /// <summary>Danger level used to pick mob counts and difficulty templates.</summary>
     [JsonIgnore]

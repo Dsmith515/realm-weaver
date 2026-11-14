@@ -15,6 +15,8 @@ public interface IContentCatalog
     IReadOnlyList<DifficultyTemplate> DifficultyTemplates { get; }
 
     IReadOnlyList<TrapTemplate> TrapTemplates { get; }
+
+    IReadOnlyList<StructureTemplate> StructureTemplates { get; }
 }
 
 [Flags]
@@ -111,6 +113,29 @@ public sealed record EventTemplate
     public DungeonMaterial? HostMaterial { get; init; }
 
     public bool IsDungeonHost => HostMaterial is not null;
+}
+
+/// <summary>
+/// A building or ground inside a settlement. <see cref="Tags"/> match the Coating's mob tags (empty means any
+/// settlement); <see cref="Biomes"/> limits it to those biomes (empty means any).
+/// </summary>
+public sealed record StructureTemplate
+{
+    public required string Id { get; init; }
+
+    public required string Name { get; init; }
+
+    public IReadOnlyList<string> Tags { get; init; } = [];
+
+    public IReadOnlyList<Biome> Biomes { get; init; } = [];
+
+    public required int MinSide { get; init; }
+
+    public required int MaxSide { get; init; }
+
+    public int Weight { get; init; } = 10;
+
+    public int MaxPerSettlement { get; init; } = int.MaxValue;
 }
 
 /// <summary>A trap kind; <see cref="Styles"/> limits it to rooms and corridors of matching style (empty means any).</summary>

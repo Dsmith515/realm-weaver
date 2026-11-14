@@ -42,7 +42,9 @@ public sealed record MapRecipe(
     Biome Biome,
     Element Element,
     IReadOnlyList<string> MobTags,
-    int Difficulty);
+    int Difficulty,
+    SettlementPopulation? SettlementPopulation = null,
+    bool IncludeStructures = true);
 
 /// <summary>
 /// Map: a realm already visited. Its seed and recipe rebuild the same realm.

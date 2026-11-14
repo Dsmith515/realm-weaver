@@ -91,6 +91,31 @@ public class QuickWeaveEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(1, (await QuantitiesAsync(client, player.Id))[first.MapId]);
     }
 
+    [Fact]
+    public async Task A_gm_map_records_its_settlement_settings_and_rebuilds_with_them()
+    {
+        using var client = factory.CreateClient();
+        var first = await WeaveOkAsync(
+            client,
+            new QuickWeaveRequest(BeginnerNeedle, MossgreenThread, BrigandsPitch, Width: 60, Height: 40, EventCount: 20, Population: SettlementPopulation.Abandoned, IncludeStructures: false));
+
+        var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{first.MapId}");
+        Assert.Equal(SettlementPopulation.Abandoned, map.Map!.Recipe!.SettlementPopulation);
+        Assert.False(map.Map.Recipe.IncludeStructures);
+
+        // Weaving the recorded map again uses its recipe, not the request's defaults.
+        var again = await WeaveOkAsync(client, new QuickWeaveRequest(MapId: first.MapId));
+        var areas = (await GetRealmAsync(client, again.RealmId)).Document.GetProperty("areas");
+        Assert.Equal((await GetRealmAsync(client, first.RealmId)).Document.GetProperty("areas").GetRawText(), areas.GetRawText());
+
+        var settlements = areas.EnumerateArray()
+            .SelectMany(a => a.GetProperty("events").EnumerateArray())
+            .Where(e => e.GetProperty("category").GetString() == "settlement")
+            .ToList();
+        Assert.All(settlements, e => Assert.Equal("abandoned", e.GetProperty("population").GetString()));
+        Assert.All(settlements, e => Assert.Equal(0, e.GetProperty("structures").GetArrayLength()));
+    }
+
     private static async Task<QuickWeavePreviewDto> PreviewAsync(HttpClient client, QuickWeaveRequest request)
     {
         var response = await client.PostJsonAsync("/api/gm/weave/preview", request);

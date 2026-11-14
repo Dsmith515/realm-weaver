@@ -54,6 +54,7 @@ internal sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> option
                     recipe.Property(r => r.Kind).HasConversion<string>();
                     recipe.Property(r => r.Biome).HasConversion<string>();
                     recipe.Property(r => r.Element).HasConversion<string>();
+                    recipe.Property(r => r.SettlementPopulation).HasConversion<string>();
                 });
             });
         });
