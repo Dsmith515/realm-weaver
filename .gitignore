@@ -484,3 +484,4 @@ $RECYCLE.BIN/
 # Local CLI output
 samples/
 .tmp/
+.playwright-mcp/

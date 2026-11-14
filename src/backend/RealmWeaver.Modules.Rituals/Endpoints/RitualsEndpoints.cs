@@ -23,6 +23,12 @@ internal static class RitualsEndpoints
             .WithDescription("Resolves the slots without changing anything: map auto-fill, random fill, mismatch and danger, and anything that would stop the ritual.");
 
         rituals.MapPost("/", PerformAsync).WithName("PerformRitual")
+            .Produces<RitualResultDto>(StatusCodes.Status201Created)
+            .Produces<RitualResultDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .WithDescription(
                 "Performs the ritual in one transaction. Requires an Idempotency-Key header: repeating a request with the same key "
                 + "returns the first result (200, Idempotent-Replayed: true) instead of performing it again. "

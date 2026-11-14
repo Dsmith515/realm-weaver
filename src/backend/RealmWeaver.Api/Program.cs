@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.OpenApi;
+
 using RealmWeaver.Api;
 using RealmWeaver.Infrastructure.Http;
 using RealmWeaver.Infrastructure.Persistence;
@@ -11,7 +13,17 @@ using RealmWeaver.Modules.Rituals;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer((schema, context, _) =>
+{
+    // Seeds are 64-bit and always sent as strings (JavaScript numbers can't hold them exactly).
+    if (context.JsonTypeInfo.Type == typeof(ulong))
+    {
+        schema.Type = JsonSchemaType.String;
+        schema.Pattern = "^[0-9]+$";
+    }
+
+    return Task.CompletedTask;
+}));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 builder.Services.AddHealthChecks();
@@ -20,7 +32,12 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
           .AllowAnyHeader()
           .AllowAnyMethod()));
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+    // Numbers are numbers. (The web default also accepts "12", which makes every integer `number | string` in TypeScript.)
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
 builder.Services.AddSingleton(TimeProvider.System);
 
 // Malformed input is always a 400 ProblemDetails, also in Development (where the default is to throw).

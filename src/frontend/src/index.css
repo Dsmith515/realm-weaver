@@ -7,6 +7,11 @@
   --ok: #2f7d4f;
   --bad: #b23a3a;
   --border: #ddd6ca;
+  --warn-bg: #fff4d6;
+  --warn: #8a5a00;
+  --ok-bg: #e5f4ea;
+  --bad-bg: #fbe6e6;
+  --highlight: #e0218a;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -22,6 +27,11 @@
     --ok: #6cc795;
     --bad: #ef7d7d;
     --border: #34303f;
+    --warn-bg: #3a2f14;
+    --warn: #f0c46a;
+    --ok-bg: #173323;
+    --bad-bg: #3a1c1c;
+    --highlight: #ff5cb8;
   }
 }
 

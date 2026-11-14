@@ -47,6 +47,10 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci
+      # The backend test OpenApiContractTests keeps openapi/realm-weaver.json in step with the API;
+      # this keeps the generated TypeScript types in step with that document.
+      - name: Check the API types match the OpenAPI contract
+        run: npm run api:types && git diff --exit-code -- src/api/schema.d.ts
       - run: npm run lint
       - run: npm test
       - run: npm run build

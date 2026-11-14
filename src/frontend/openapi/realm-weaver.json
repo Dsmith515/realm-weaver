@@ -1,0 +1,2408 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "RealmWeaver.Api | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/info": {
+      "get": {
+        "tags": [
+          "RealmWeaver.Api"
+        ],
+        "operationId": "GetApiInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/components/{id}/assign": {
+      "post": {
+        "tags": [
+          "Components"
+        ],
+        "description": "Admin: gives a component to a player, regardless of the self-assign rules.",
+        "operationId": "AssignComponent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignComponentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/components": {
+      "get": {
+        "tags": [
+          "Components"
+        ],
+        "operationId": "ListComponents",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rarity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "biome",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignable",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfComponentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Components"
+        ],
+        "operationId": "CreateComponent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComponentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/components/{id}": {
+      "get": {
+        "tags": [
+          "Components"
+        ],
+        "operationId": "GetComponent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Components"
+        ],
+        "operationId": "UpdateComponent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComponentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Components"
+        ],
+        "description": "Archives the component. It disappears from the catalog but stays readable for players who own it.",
+        "operationId": "ArchiveComponent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "GetSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "UpdateSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "ListPlayers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlayerDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Players"
+        ],
+        "description": "Creates a player with the starter kit: the beginner needle, 2 threads \u00D73 and 2 coatings \u00D73.",
+        "operationId": "CreatePlayer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlayerInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players/{id}": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "GetPlayer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players/{id}/inventory": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "GetInventory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Players"
+        ],
+        "description": "A player adds a component to their own inventory. Allowed only when self-assign is on and the component is player-assignable.",
+        "operationId": "AddToOwnInventory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddInventoryItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realms": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "Realm summaries, newest first. Filter by player or by the map they were opened from.",
+        "operationId": "ListRealms",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mapId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RealmSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realms/{id}": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "operationId": "GetRealm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realms/{id}/export": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "format=svg|prompt (one area; area defaults to the first) or json|md (the whole realm).",
+        "operationId": "ExportRealm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "svg"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/svg\u002Bxml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rituals/preview": {
+      "post": {
+        "tags": [
+          "Rituals"
+        ],
+        "description": "Resolves the slots without changing anything: map auto-fill, random fill, mismatch and danger, and anything that would stop the ritual.",
+        "operationId": "PreviewRitual",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RitualPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RitualPreviewDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rituals": {
+      "post": {
+        "tags": [
+          "Rituals"
+        ],
+        "description": "Performs the ritual in one transaction. Requires an Idempotency-Key header: repeating a request with the same key returns the first result (200, Idempotent-Replayed: true) instead of performing it again. 400: invalid selection. 409: components not owned, or spent by a concurrent ritual (reload and retry). 422: the key was already used for a different request, or the realm can\u0027t be generated.",
+        "operationId": "PerformRitual",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RitualSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RitualResultDto"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RitualResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rituals/{id}": {
+      "get": {
+        "tags": [
+          "Rituals"
+        ],
+        "operationId": "GetRitual",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RitualResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddInventoryItemInput": {
+        "required": [
+          "componentId"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1
+          }
+        }
+      },
+      "ApiInfo": {
+        "required": [
+          "name",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "AreaKind": {
+        "enum": [
+          "field",
+          "dungeonFloor"
+        ]
+      },
+      "AssignComponentInput": {
+        "required": [
+          "playerId"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1
+          }
+        }
+      },
+      "Biome": {
+        "enum": [
+          "plains",
+          "forest",
+          "desert",
+          "tundra",
+          "swamp",
+          "volcanic",
+          "mountains",
+          "coast"
+        ]
+      },
+      "CatalogSettingsDto": {
+        "required": [
+          "playersCanSelfAssign"
+        ],
+        "type": "object",
+        "properties": {
+          "playersCanSelfAssign": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CoatingDetails": {
+        "required": [
+          "mobTypes",
+          "realmKind",
+          "floorCount"
+        ],
+        "type": "object",
+        "properties": {
+          "mobTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "realmKind": {
+            "$ref": "#/components/schemas/RealmKind"
+          },
+          "floorCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ComponentDto": {
+        "required": [
+          "id",
+          "type",
+          "name",
+          "rarity",
+          "rank",
+          "description",
+          "isPlayerAssignable",
+          "isConsumable",
+          "isArchived",
+          "createdAt",
+          "needle",
+          "thread",
+          "coating",
+          "map"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ComponentType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rarity": {
+            "$ref": "#/components/schemas/Rarity"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isPlayerAssignable": {
+            "type": "boolean"
+          },
+          "isConsumable": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "needle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NeedleDetails"
+              }
+            ]
+          },
+          "thread": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ThreadDetails"
+              }
+            ]
+          },
+          "coating": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CoatingDetails"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MapDetails"
+              }
+            ]
+          }
+        }
+      },
+      "ComponentInput": {
+        "required": [
+          "type",
+          "name",
+          "rarity",
+          "rank",
+          "description",
+          "isPlayerAssignable"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ComponentType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rarity": {
+            "$ref": "#/components/schemas/Rarity"
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPlayerAssignable": {
+            "type": "boolean"
+          },
+          "needle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NeedleDetails"
+              }
+            ]
+          },
+          "thread": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ThreadDetails"
+              }
+            ]
+          },
+          "coating": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CoatingDetails"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MapDetails"
+              }
+            ]
+          }
+        }
+      },
+      "ComponentType": {
+        "enum": [
+          "needle",
+          "thread",
+          "coating",
+          "map"
+        ]
+      },
+      "CreatePlayerInput": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "DungeonMaterial": {
+        "enum": [
+          "dressedStone",
+          "crumblingBrick",
+          "sandstone",
+          "timberBracedRock",
+          "naturalCave",
+          "floodedGrotto",
+          "crystalVein",
+          "rootEarth",
+          "lavaTube",
+          "iceCave"
+        ]
+      },
+      "DungeonRoom": {
+        "required": [
+          "id",
+          "bounds",
+          "material",
+          "connections",
+          "anchor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bounds": {
+            "$ref": "#/components/schemas/GridRect"
+          },
+          "location": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "material": {
+            "$ref": "#/components/schemas/DungeonMaterial"
+          },
+          "style": {
+            "$ref": "#/components/schemas/RoomStyle"
+          },
+          "isTransition": {
+            "type": "boolean"
+          },
+          "transitionFrom": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DungeonMaterial"
+              }
+            ]
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isEntrance": {
+            "type": "boolean"
+          },
+          "isSecret": {
+            "type": "boolean"
+          },
+          "hasStairsDown": {
+            "type": "boolean"
+          },
+          "isBossRoom": {
+            "type": "boolean"
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/GridPoint"
+          }
+        }
+      },
+      "DungeonTheme": {
+        "required": [
+          "hostTemplateId",
+          "hostName",
+          "primaryMaterial",
+          "branchMaterials"
+        ],
+        "type": "object",
+        "properties": {
+          "hostTemplateId": {
+            "type": "string"
+          },
+          "hostName": {
+            "type": "string"
+          },
+          "primaryMaterial": {
+            "$ref": "#/components/schemas/DungeonMaterial"
+          },
+          "branchMaterials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMaterial"
+            }
+          }
+        }
+      },
+      "Element": {
+        "enum": [
+          "none",
+          "fire",
+          "water",
+          "earth",
+          "air",
+          "frost",
+          "lightning",
+          "light",
+          "shadow"
+        ]
+      },
+      "EventCategory": {
+        "enum": [
+          "encounter",
+          "settlement",
+          "social",
+          "landmark",
+          "hazard",
+          "structure"
+        ]
+      },
+      "FeatureKind": {
+        "enum": [
+          "trap",
+          "chest",
+          "secretDoor",
+          "stairsDown",
+          "stairsUp",
+          "dungeonEntrance",
+          "landmark"
+        ]
+      },
+      "GenerationRequest": {
+        "required": [
+          "seed"
+        ],
+        "type": "object",
+        "properties": {
+          "seed": {
+            "pattern": "^[0-9]\u002B$",
+            "type": "string",
+            "format": "uint64"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RealmKind"
+          },
+          "biome": {
+            "$ref": "#/components/schemas/Biome"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
+          },
+          "mobTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "difficulty": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "encounterVariant": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "eventCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "floorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "floorEventCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "GridPoint": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "y": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GridRect": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "y": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "area": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "right": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bottom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "center": {
+            "$ref": "#/components/schemas/GridPoint"
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "InventoryItemDto": {
+        "required": [
+          "component",
+          "quantity",
+          "acquiredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "$ref": "#/components/schemas/ComponentDto"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "acquiredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MapDetails": {
+        "required": [
+          "seed",
+          "needleId",
+          "threadId",
+          "coatingId",
+          "width",
+          "height",
+          "eventCount",
+          "generatorVersion",
+          "createdByPlayerId"
+        ],
+        "type": "object",
+        "properties": {
+          "seed": {
+            "pattern": "^[0-9]\u002B$",
+            "type": "string",
+            "format": "uint64"
+          },
+          "needleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eventCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "generatorVersion": {
+            "type": "string"
+          },
+          "createdByPlayerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "MobGroup": {
+        "required": [
+          "archetypeId",
+          "name",
+          "role",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "archetypeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MobRole"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MobRole": {
+        "enum": [
+          "minion",
+          "brute",
+          "skirmisher",
+          "caster",
+          "leader",
+          "boss"
+        ]
+      },
+      "NeedleDetails": {
+        "required": [
+          "difficultyTier",
+          "category",
+          "abilities"
+        ],
+        "type": "object",
+        "properties": {
+          "difficultyTier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "category": {
+            "type": "string"
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PagedResultOfComponentDto": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PlacedEvent": {
+        "required": [
+          "id",
+          "templateId",
+          "name",
+          "category",
+          "footprint"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/EventCategory"
+          },
+          "footprint": {
+            "$ref": "#/components/schemas/GridRect"
+          },
+          "location": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MobGroup"
+            }
+          },
+          "difficultyTemplateIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roomIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PlacedFeature": {
+        "required": [
+          "id",
+          "kind",
+          "position",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FeatureKind"
+          },
+          "position": {
+            "$ref": "#/components/schemas/GridPoint"
+          },
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "templateId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roomId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PlayerDto": {
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "Rarity": {
+        "enum": [
+          "common",
+          "uncommon",
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      },
+      "RealmArea": {
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "width",
+          "height",
+          "terrainRows",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AreaKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "terrainRows": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "spawn": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GridPoint"
+              }
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedEvent"
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedFeature"
+            }
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonRoom"
+            }
+          }
+        }
+      },
+      "RealmAreaSummaryDto": {
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "floorNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AreaKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "floorNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RealmDocument": {
+        "required": [
+          "generatorVersion",
+          "seed",
+          "request",
+          "threat",
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "generatorVersion": {
+            "type": "string"
+          },
+          "seed": {
+            "pattern": "^[0-9]\u002B$",
+            "type": "string",
+            "format": "uint64"
+          },
+          "request": {
+            "$ref": "#/components/schemas/GenerationRequest"
+          },
+          "threat": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "theme": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DungeonTheme"
+              }
+            ]
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RealmArea"
+            }
+          }
+        }
+      },
+      "RealmDto": {
+        "required": [
+          "summary",
+          "document"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/RealmSummaryDto"
+          },
+          "document": {
+            "$ref": "#/components/schemas/RealmDocument"
+          }
+        }
+      },
+      "RealmKind": {
+        "enum": [
+          "field",
+          "dungeon",
+          "fieldWithDungeon"
+        ]
+      },
+      "RealmSummaryDto": {
+        "required": [
+          "id",
+          "playerId",
+          "mapComponentId",
+          "kind",
+          "biome",
+          "width",
+          "height",
+          "floorCount",
+          "threat",
+          "dangerModifier",
+          "encounterVariant",
+          "seed",
+          "generatorVersion",
+          "createdAt",
+          "areas"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RealmKind"
+          },
+          "biome": {
+            "$ref": "#/components/schemas/Biome"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "floorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "threat": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "encounterVariant": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seed": {
+            "pattern": "^[0-9]\u002B$",
+            "type": "string",
+            "format": "uint64"
+          },
+          "generatorVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RealmAreaSummaryDto"
+            }
+          }
+        }
+      },
+      "RitualIssue": {
+        "required": [
+          "slot",
+          "field",
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RitualSlot"
+              }
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RitualPreviewDto": {
+        "required": [
+          "playerId",
+          "needle",
+          "thread",
+          "coating",
+          "map",
+          "isMismatch",
+          "mismatchedSlots",
+          "dangerModifier",
+          "createsNewMap",
+          "advancedOptionsIgnored",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "needle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "thread": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "coating": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "isMismatch": {
+            "type": "boolean"
+          },
+          "mismatchedSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RitualSlot"
+            }
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createsNewMap": {
+            "type": "boolean"
+          },
+          "advancedOptionsIgnored": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RitualIssue"
+            }
+          },
+          "canPerform": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RitualPreviewRequest": {
+        "required": [
+          "playerId"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "needleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mapId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "eventCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "randomize": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "RitualResultDto": {
+        "required": [
+          "ritualId",
+          "playerId",
+          "realmId",
+          "mapId",
+          "mapCreated",
+          "needleId",
+          "threadId",
+          "coatingId",
+          "isMismatch",
+          "dangerModifier",
+          "encounterVariant",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "ritualId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapCreated": {
+            "type": "boolean"
+          },
+          "needleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isMismatch": {
+            "type": "boolean"
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "encounterVariant": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RitualSelection": {
+        "required": [
+          "playerId"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "needleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mapId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "eventCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "RitualSlot": {
+        "enum": [
+          "needle",
+          "thread",
+          "coating",
+          "map"
+        ]
+      },
+      "RoomStyle": {
+        "enum": [
+          "masonry",
+          "mine",
+          "cave"
+        ]
+      },
+      "SlotPreview": {
+        "required": [
+          "component",
+          "source",
+          "ownedQuantity"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "$ref": "#/components/schemas/ComponentDto"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SlotSource"
+          },
+          "ownedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SlotSource": {
+        "enum": [
+          "selected",
+          "fromMap",
+          "matchingMap",
+          "random"
+        ]
+      },
+      "ThreadDetails": {
+        "required": [
+          "biome",
+          "element"
+        ],
+        "type": "object",
+        "properties": {
+          "biome": {
+            "$ref": "#/components/schemas/Biome"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "RealmWeaver.Api"
+    },
+    {
+      "name": "Components"
+    },
+    {
+      "name": "Settings"
+    },
+    {
+      "name": "Players"
+    },
+    {
+      "name": "Realms"
+    },
+    {
+      "name": "Rituals"
+    }
+  ]
+}
