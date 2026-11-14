@@ -13,7 +13,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - Sample realms: `dotnet run --project tools/RealmWeaver.Cli -- --seed 42 --biome forest --size 40x30` (output in `samples/`, which is gitignored)
 
 ## Architecture rules
-- **Modular monolith.** Modules (`RealmWeaver.Modules.*`) talk to each other only through their public contracts (interfaces and DTOs). They never touch another module's entities or tables. This keeps the Milestone 8 microservice split mechanical.
+- **Modular monolith.** Modules (`RealmWeaver.Modules.*`) talk to each other only through their public contracts (interfaces and DTOs). They never touch another module's entities or tables. This keeps the Milestone 9 microservice split mechanical.
 - **Each module owns its persistence** (ADR 0004): its own internal DbContext, Postgres schema and migrations, and no foreign keys into other modules. `RealmWeaver.Infrastructure` holds shared plumbing only and never references a module.
 - **`RealmWeaver.Generation` is pure.** It has no EF Core, no ASP.NET, no I/O, no `System.Random` and no `DateTime.Now`. Randomness comes only from the project's seeded RNG, so the same seed and inputs always give the same realm. `ArchitectureTests` checks this.
 - Each generation step draws from its own `SeededRandom.Fork("purpose")` stream (see ADR 0002). Changing the algorithm means bumping `GeneratorLimits.Version`.

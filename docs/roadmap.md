@@ -40,7 +40,7 @@ Each module exposes only a public `I…Module` interface plus DTOs. The project-
   - Needle: DifficultyTier (1–10), Category, Abilities[]
   - Thread: Biome (forest, desert, tundra, swamp, volcanic, plains…), Element
   - Coating: MobTypes[] (beast, undead, bandit, elemental…), RealmKind (Field | Dungeon | FieldWithDungeon), FloorCount (1–MaxFloors)
-  - Map: Seed (ulong), NeedleId, ThreadId, CoatingId, Width, Height, EventCount, GeneratorVersion, CreatedByPlayerId
+  - Map: Seed (ulong), NeedleId, ThreadId, CoatingId, Width, Height, EventCount, GeneratorVersion, CreatedByPlayerId (null for GM maps), plus a **Recipe** snapshot (Kind, FloorCount, Biome, Element, MobTags, Difficulty) and Threat (milestone 6a, ADR 0006)
 - `Player`: Id, Name. `InventoryItem`: PlayerId, ComponentDefinitionId, Quantity. Postgres `xmin` acts as the concurrency token.
 - `Ritual`: Id, PlayerId, component ids, IdempotencyKey (unique), Status, ResultRealmId, CreatedAt.
 - `Realm`: Id, MapComponentId, DangerModifier, the generated `RealmDocument` stored as jsonb, plus GeneratorVersion.
@@ -123,21 +123,67 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
 4. **Persistence and APIs**: EF models, migrations, seeding, Catalog and Inventory endpoints, integration tests.
 5. **Ritual transaction**: preview, perform, idempotency, concurrency, map creation, mismatch danger.
 6. **Frontend pages**: Ritual (dnd-kit), Components, Player, Realm, with Vitest.
+   - **6a. M6 follow-ups** (feedback after trying M6, done as four small PRs):
+     - **Map recipe snapshot.** A map stores a copy of its recipe: realm kind, floors, biome, element, mob tags and difficulty, plus the threat. A component's recipe fields lock once any map uses it, so admins clone the component to make a variant. Before this, editing a component silently re-shaped every map that used it.
+     - **Naming.** A component's name ends with a word allowed for its type (Coating: Wax, Pitch, Lacquer…). New maps are named `{needle} {thread} {coating} {Biome} {Kind} Map`, with the literal type word stripped.
+     - **Realms list.** Shows the map name, the components used and a **Mirror** badge.
+     - **UI polish.** Placements list entry points first. Component forms open as modals, with Clone and Randomize.
+     - **Player maps.** Per-item notes, and a map details view (seed, kind, threat, mobs, potential loot, resource nodes) composed from module contracts (ADR 0006).
+     - **GM Quick Weave.** Generate a realm from the whole catalog, with no inventory checks and nothing consumed. Components are picked by hand or randomly within limits (rarity set, tier range, biome, kind). It records an unowned, reusable map that can then be assigned to players.
 7. **E2E and release**: Playwright flow, Dockerfiles, GHCR pipeline.
-8. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
+8. **Objectives and map rules** (Notion: "Solo/GM tool" ideas). Domain changes are cheaper in the monolith, so this comes before the split.
+   - **Objectives.** Each seed has 1–3 objectives, and completing any one completes the run.
+     - The pool is the objective hooks of the *placed events* (for example `prison` → Free the captive, `treasure-vault` → Recover the relic, `boss-chamber` → Defeat the guardian), plus realm-wide objectives (Clear the realm, Chart every floor).
+     - They're picked on their own `Fork("objectives")` stream.
+     - Each objective references its event, so the realm page can highlight it.
+     - A GM can pin an objective manually. The pin is stored on the realm, not in the map recipe.
+     - Objectives are recorded per map, so later edits leave maps that players already hold unchanged.
+     - Bumps `GeneratorLimits.Version`.
+   - **Generation order:** layout → events (with the thimble bias, Phase 3) → objectives from the placed events → mobs and encounters.
+   - **Map recording.** Manual completion replaces the automatic map grant. Recording a map requires **Cartographer** status, from either a trained player skill or a needle boon.
+   - **Base needle type and attunement.** Recipes match a needle by its base type (for example any Beginner's Needle), not by instance id. A player has one *attuned* needle, which supplies abilities during an adventure. It's separate from the needle used for weaving.
+   - **Per-map flags.** *Map Required* (no access without the map), *Components Must Match* (no mirrors) and *Unique* (can't be shared). A mirror (off-recipe weave) keeps the layout and rerolls events and objectives, and the realm sheet notes that its objectives differ.
+9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.
    - An orchestrated **saga** in the ritual service runs: Reserve consumables, then Generate realm, then Create map, then Grant map, then Commit reservation. Compensation steps release the reservation and delete the orphan map.
    - **OpenTelemetry** sends traces to the free Aspire Dashboard container.
    - Tests for failure injection in the saga, with ADRs comparing it to the Phase 1 ACID version.
-9. **Content tables** (a later phase, which could become its own `content` service): this moves `IContentCatalog` to Postgres, with admin UI pages that work like the Components page.
+10. **Content tables** (a later phase, which could become its own `content` service): this moves `IContentCatalog` to Postgres, with admin UI pages that work like the Components page.
+   - `AbilityTemplate`: name, **category**, **reach** (self, ally, foe, area, realm), effect text (your own) and minimum tier.
+     - Needle abilities become a multi-select of ability ids, grouped by category.
+     - Fourteen starting categories: Restoration, Support, Assault, Protection, Survival, Provocation, Control, Traversal, Surveying, Foresight, Hazards, Influence, Lore, Stealth.
+   - `RoleTemplate`: a primary category (names the role and grants a signature ability), secondary categories, one built-in **boon**, and tier → ability count.
+     - Tier → ability count: tiers 1–3 = 2, 4–6 = 3, 7–9 = 4, 10 = 5.
+     - Rarity sets the total ability slots. A role locks some of them and the rest are modular.
+     - **Boons** are passive (Cartographer status, friendly NPCs, trap sense…). A role's boon takes no slot. A needle without a role may take one boon at the cost of a slot. There's a maximum of one boon per needle, and it never stacks with a trained skill.
+   - `LevelProfile`: name, level range and tier bands → level ranges. The internal 1–10 difficulty tier stays the generator input, and profiles translate it for display and for "levels x–y" filters. One default profile is seeded (10 levels, bands 1–3 / 4–6 / 7–9 / 10). Other systems are user-entered, and no third-party system data is shipped.
+   - **Numbers tuning.** A `--report` mode on `tools/RealmWeaver.Cli` generates N realms per tier and prints distributions (events, mobs per event, threat, chests) for review before any balancing change.
+   - `EventTemplate` also carries **objective hooks** and, from Phase 3, **archetype tags**.
+   - **Lootable flags** on components. Drop chance comes from mob, biome or element, creature strength and component rarity. Across components, rarity mainly drives drop rates and loot or resource quality, not structure.
+   - **Puzzles**, a nice-to-have: a `Puzzle` event category.
+     - The generator places the structure: a gated room or door, plus key-item rooms reachable before the gate.
+     - It suggests a type: pedestal/collect, rotate pillars, riddle door, pressure plates or sequence.
+     - The GM supplies the riddle and solution. Each puzzle has a "Solve the …" objective hook and is tagged Scholar.
    - `MobTemplate`: name, tags (biome, element, mob type, environment field/dungeon/material), tier/CR, role (minion, brute, skirmisher, caster, boss) and a **stat block reference**. Stat blocks are your own JSON documents, entered by you. No copied DC20 or other licensed text.
    - `EventTemplate`: type, allowed environments and materials, footprint rules (min/max size, room count), mob slots (role × count range), and loot/trap hooks.
    - `DifficultyTemplate`: modifiers such as Elite, Champion, Swarm or Enraged (HP/damage/count multipliers, extra abilities). They're applied from the needle tier and the mismatch `DangerModifier`.
    - `TrapTemplate`, `LootTable` / `ChestTier`.
    - The realm stores resolved references (`eventTemplateId`, `mobTemplateIds`, applied difficulty templates). The Realm page can then show which stat blocks to pull and which templates to apply.
    - The generator version goes up. Older realms keep their stored snapshot.
-10. **Phase 3 (optional)**: thimble archetypes (Merchant, Hunter, Explorer) skew the event weights. Also a configurable max floors, auth (ASP.NET Identity or Keycloak in Docker) and an optional free cloud host.
+11. **Phase 3 (optional)**: Thimbles. Also a configurable max floors, auth (ASP.NET Identity or Keycloak in Docker) and an optional free cloud host.
+   - **Thimble** is a fifth, optional, *consumed* component.
+     - Launch archetypes: Explorer, Hunter, Vanguard, Diplomat and Scholar. Then Delver, Merchant and Guardian. Infiltrator waits for stealth and trap content.
+     - Event templates carry archetype tags (many-to-many). A Thimble guarantees one tagged event and boosts tagged templates by about 3×, on its own `Fork("thimble")` stream.
+     - It shapes objectives only *through* those events.
+     - Rarity raises loot and resource quality inside the tagged events. It never affects the boss.
+     - The Thimble is part of the map recipe, so weaving without it makes a mirror.
+   - **Later (Phase 3+):**
+     - Needle durability and the economy (stack, craft, trade, sell, Needle drops from strong creatures and mirror realms).
+     - Shared Thread (party telepathy, status, direction, then guilds), party completion and map sharing, and guild realm maps (no mobs; special components that aren't consumed).
+     - VTT exports: a PNG render, wall and door geometry from rooms and impassable tiles, and a common VTT interchange format and/or Foundry scene JSON with events as notes. To keep this possible, `RealmDocument` geometry stays complete.
+
+Design notes for these ideas live in the Notion pages "Thimbles, Needle Roles and Objectives — Refined" and "Random unfiltered thoughts — Solo/GM Tool and Multiplayer Ideas".
 
 ## Related portfolio ideas that reuse this core (brief)
 - **Tower-defense prototype**: reuse the field generator for lanes and paths. A wave-simulation service teaches background workers and deterministic simulation tests.

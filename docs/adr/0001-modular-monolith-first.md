@@ -20,7 +20,7 @@ Build Phase 1 as a **modular monolith**:
 - Modules talk only through public contracts.
 - A ritual is a single **local ACID transaction** on PostgreSQL, using an idempotency key and optimistic concurrency.
 
-In Phase 2 (Milestone 8), extract each module into its own service with its own database:
+In Phase 2 (Milestone 9), extract each module into its own service with its own database:
 - RabbitMQ as the message broker.
 - Wolverine for the transactional outbox and inbox.
 - An orchestrated **saga** for rituals: reserve consumables, then generate the realm, then create the map, then grant it, then commit. Compensating steps undo earlier steps when a later one fails.
