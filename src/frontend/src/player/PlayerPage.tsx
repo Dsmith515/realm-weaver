@@ -4,6 +4,7 @@ import { useComponents, useInventory, usePlayers, useSelfAdd, useSettings } from
 import { label } from '../api/types'
 import { describe } from '../catalog/describe'
 import { groupByType } from '../ritual/slots'
+import { ItemModal } from './ItemModal'
 import { usePlayerSelection } from './playerContext'
 
 export function PlayerPage() {
@@ -24,11 +25,14 @@ export function PlayerPage() {
 
 function Inventory({ playerId }: { playerId: string }) {
   const inventory = useInventory(playerId)
+  const [openId, setOpenId] = useState<string>()
   if (inventory.isPending) return <p className="muted">Loading…</p>
   if (inventory.isError) return <p className="error-text">{errorMessage(inventory.error)}</p>
+  const open = inventory.data.find((i) => i.component.id === openId)
 
   return (
     <div className="inventory-groups">
+      {open && <ItemModal playerId={playerId} item={open} onClose={() => setOpenId(undefined)} />}
       {groupByType(inventory.data).map((group) => (
         <section key={group.type} aria-label={`${label(group.type)}s`} className="card">
           <h2>
@@ -40,11 +44,14 @@ function Inventory({ playerId }: { playerId: string }) {
             <ul className="item-grid">
               {group.items.map((item) => (
                 <li key={item.component.id} className={`item item--${item.component.rarity}`}>
-                  <strong>{item.component.name}</strong>
+                  <button type="button" className="item__open" onClick={() => setOpenId(item.component.id)} aria-label={`Open ${item.component.name}`}>
+                    <strong>{item.component.name}</strong>
+                  </button>
                   <span className="item__qty" aria-label={`Quantity ${item.quantity}`}>
                     ×{item.quantity}
                   </span>
                   <span className="muted">{describe(item.component)}</span>
+                  {item.notes && <span className="item__notes">{item.notes}</span>}
                   {item.component.isArchived && <span className="badge">Retired</span>}
                 </li>
               ))}

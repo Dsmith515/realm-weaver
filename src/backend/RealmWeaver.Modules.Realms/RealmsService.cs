@@ -64,6 +64,20 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         return new RealmDto(ToSummary(entity), RealmJson.Deserialize(entity.Document));
     }
 
+    public async Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default)
+    {
+        var original = await db.Realms.AsNoTracking()
+            .Where(r => r.MapComponentId == mapComponentId && r.EncounterVariant == 0)
+            .OrderBy(r => r.CreatedAt)
+            .ThenBy(r => r.Id)
+            .Select(r => new { r.Id, r.Threat, r.Document })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return original is null
+            ? null
+            : new RealmDigestDto(original.Id, original.Threat, RealmDigest.From(RealmJson.Deserialize(original.Document)));
+    }
+
     /// <summary>Newest first. Summaries only; the documents can be large.</summary>
     public async Task<IReadOnlyList<RealmSummaryDto>> ListAsync(Guid? playerId, Guid? mapComponentId, int limit, CancellationToken cancellationToken)
     {

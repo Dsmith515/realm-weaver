@@ -73,6 +73,7 @@ app.MapCatalogModule();
 app.MapInventoryModule();
 app.MapRealmsModule();
 app.MapRitualsModule();
+app.MapMapDetails();
 
 await app.RunAsync();
 

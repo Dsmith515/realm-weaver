@@ -37,6 +37,14 @@ namespace RealmWeaver.Modules.Inventory.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("acquired_at");
 
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasDefaultValue("")
+                        .HasColumnName("notes");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer")
                         .HasColumnName("quantity");
