@@ -137,6 +137,9 @@ public interface ICatalogModule
     /// <summary>Looks up many components at once. Unknown ids are left out of the result.</summary>
     Task<IReadOnlyDictionary<Guid, ComponentDto>> GetComponentsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 
+    /// <summary>Every component of one type, for picking at random (GM Quick Weave).</summary>
+    Task<IReadOnlyList<ComponentDto>> ListByTypeAsync(ComponentType type, bool includeArchived, CancellationToken cancellationToken = default);
+
     Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
 
     Task<StarterKitCandidates> GetStarterKitCandidatesAsync(CancellationToken cancellationToken = default);

@@ -16,6 +16,7 @@ public static class RitualsModule
         services.AddModuleDbContext<RitualsDbContext>(RitualsDbContext.Schema);
         services.AddScoped(sp => ActivatorUtilities.CreateInstance<RitualResolver>(sp, Random.Shared));
         services.AddScoped<RitualService>();
+        services.AddScoped(sp => ActivatorUtilities.CreateInstance<QuickWeaveService>(sp, Random.Shared));
         services.AddScoped<IModuleDatabaseInitializer, RitualsDatabaseInitializer>();
         return services;
     }

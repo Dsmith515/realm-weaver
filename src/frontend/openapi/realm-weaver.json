@@ -655,7 +655,7 @@
         "tags": [
           "Realms"
         ],
-        "description": "Realm summaries, newest first. Filter by player or by the map they were opened from.",
+        "description": "Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.",
         "operationId": "ListRealms",
         "parameters": [
           {
@@ -681,6 +681,14 @@
               "type": "integer",
               "format": "int32",
               "default": 50
+            }
+          },
+          {
+            "name": "gm",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -959,6 +967,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RitualResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gm/weave/preview": {
+      "post": {
+        "tags": [
+          "GM"
+        ],
+        "description": "Resolves a Quick Weave without saving anything: chosen slots as given, empty ones picked at random within the limits.",
+        "operationId": "PreviewQuickWeave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickWeaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickWeavePreviewDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gm/weave": {
+      "post": {
+        "tags": [
+          "GM"
+        ],
+        "description": "Generates a realm from the whole catalog with no inventory checks and nothing consumed. Without a map it records a new, unowned map that can then be assigned to players. Send the ids a preview resolved to weave exactly what was previewed.",
+        "operationId": "QuickWeave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickWeaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickWeaveResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2094,6 +2184,246 @@
           }
         }
       },
+      "QuickWeaveLimits": {
+        "type": "object",
+        "properties": {
+          "rarities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Rarity"
+            }
+          },
+          "minTier": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxTier": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "biomes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Biome"
+            }
+          },
+          "kinds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RealmKind"
+            }
+          },
+          "includeArchived": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "QuickWeavePreviewDto": {
+        "required": [
+          "needle",
+          "thread",
+          "coating",
+          "map",
+          "isMismatch",
+          "mismatchedSlots",
+          "dangerModifier",
+          "createsNewMap",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "needle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "thread": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "coating": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPreview"
+              }
+            ]
+          },
+          "isMismatch": {
+            "type": "boolean"
+          },
+          "mismatchedSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RitualSlot"
+            }
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createsNewMap": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RitualIssue"
+            }
+          },
+          "canWeave": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuickWeaveRequest": {
+        "type": "object",
+        "properties": {
+          "needleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mapId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "limits": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/QuickWeaveLimits"
+              }
+            ]
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "eventCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "QuickWeaveResultDto": {
+        "required": [
+          "realmId",
+          "mapId",
+          "mapCreated",
+          "needleId",
+          "threadId",
+          "coatingId",
+          "isMismatch",
+          "dangerModifier"
+        ],
+        "type": "object",
+        "properties": {
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapCreated": {
+            "type": "boolean"
+          },
+          "needleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "threadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coatingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isMismatch": {
+            "type": "boolean"
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "Rarity": {
         "enum": [
           "common",
@@ -2358,7 +2688,10 @@
             "format": "uuid"
           },
           "playerId": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "mapComponentId": {
@@ -2820,6 +3153,9 @@
     },
     {
       "name": "Rituals"
+    },
+    {
+      "name": "GM"
     }
   ]
 }

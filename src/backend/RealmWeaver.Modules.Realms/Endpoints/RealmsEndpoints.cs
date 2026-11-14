@@ -19,7 +19,7 @@ internal static class RealmsEndpoints
     {
         var realms = app.MapGroup("/api/realms").WithTags("Realms");
         realms.MapGet("/", ListAsync).WithName("ListRealms")
-            .WithDescription("Realm summaries, newest first. Filter by player or by the map they were opened from.");
+            .WithDescription("Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.");
         realms.MapGet("/{id:guid}", GetAsync).WithName("GetRealm");
         realms.MapGet("/{id:guid}/export", ExportAsync).WithName("ExportRealm")
             .Produces<string>(StatusCodes.Status200OK, "image/svg+xml", "text/plain", "text/markdown", "application/json")
@@ -27,14 +27,14 @@ internal static class RealmsEndpoints
     }
 
     private static async Task<Results<Ok<IReadOnlyList<RealmSummaryDto>>, ValidationProblem>> ListAsync(
-        RealmsService realms, CancellationToken cancellationToken, Guid? playerId = null, Guid? mapId = null, int limit = 50)
+        RealmsService realms, CancellationToken cancellationToken, Guid? playerId = null, Guid? mapId = null, int limit = 50, bool gm = false)
     {
         if (limit is < 1 or > RealmsService.MaxListSize)
         {
             return Problems.Validation(new Dictionary<string, string[]> { ["limit"] = [$"Limit must be between 1 and {RealmsService.MaxListSize}."] });
         }
 
-        return TypedResults.Ok(await realms.ListAsync(playerId, mapId, limit, cancellationToken));
+        return TypedResults.Ok(await realms.ListAsync(playerId, mapId, limit, cancellationToken, gmOnly: gm));
     }
 
     private static async Task<Results<Ok<RealmDto>, ProblemHttpResult>> GetAsync(Guid id, RealmsService realms, CancellationToken cancellationToken) =>

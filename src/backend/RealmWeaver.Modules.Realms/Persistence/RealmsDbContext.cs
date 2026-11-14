@@ -12,8 +12,8 @@ internal sealed class Realm
 {
     public Guid Id { get; set; }
 
-    /// <summary>The player who performed the ritual. A plain id: players live in the Inventory module.</summary>
-    public Guid PlayerId { get; set; }
+    /// <summary>The player who performed the ritual, or null for a GM's Quick Weave. A plain id: players live in the Inventory module.</summary>
+    public Guid? PlayerId { get; set; }
 
     /// <summary>The Map component this realm was opened from. A plain id: maps live in the Catalog module.</summary>
     public Guid MapComponentId { get; set; }

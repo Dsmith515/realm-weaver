@@ -36,7 +36,34 @@ internal static class RitualsEndpoints
                 + "422: the key was already used for a different request, or the realm can't be generated.");
 
         rituals.MapGet("/{id:guid}", GetAsync).WithName("GetRitual");
+
+        // GM tools. Like the admin catalog there's no access control yet: a TODO for when authentication arrives.
+        var gm = app.MapGroup("/api/gm/weave").WithTags("GM");
+        gm.MapPost("/preview", QuickWeavePreviewAsync).WithName("PreviewQuickWeave")
+            .WithDescription("Resolves a Quick Weave without saving anything: chosen slots as given, empty ones picked at random within the limits.");
+        gm.MapPost("/", QuickWeaveAsync).WithName("QuickWeave")
+            .Produces<QuickWeaveResultDto>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithDescription(
+                "Generates a realm from the whole catalog with no inventory checks and nothing consumed. Without a map it records a new, "
+                + "unowned map that can then be assigned to players. Send the ids a preview resolved to weave exactly what was previewed.");
     }
+
+    private static async Task<Ok<QuickWeavePreviewDto>> QuickWeavePreviewAsync(
+        [FromBody] QuickWeaveRequest request, QuickWeaveService weaver, CancellationToken cancellationToken) =>
+        TypedResults.Ok((await weaver.ResolveAsync(request, cancellationToken)).Preview);
+
+    private static async Task<IResult> QuickWeaveAsync([FromBody] QuickWeaveRequest request, QuickWeaveService weaver, CancellationToken cancellationToken) =>
+        await weaver.WeaveAsync(request, cancellationToken) switch
+        {
+            QuickWeaveOutcome.Woven woven => TypedResults.Created($"/api/realms/{woven.Result.RealmId}", woven.Result),
+            QuickWeaveOutcome.Invalid invalid => Problems.Validation(invalid.Issues
+                .GroupBy(i => i.Field)
+                .ToDictionary(g => g.Key, g => g.Select(i => i.Message).ToArray())),
+            QuickWeaveOutcome.GenerationFailed failed => Problem(StatusCodes.Status422UnprocessableEntity, "The realm couldn't be generated.", failed.Detail),
+            var other => throw new InvalidOperationException($"Unhandled Quick Weave outcome {other.GetType().Name}."),
+        };
 
     private static async Task<Results<Ok<RitualPreviewDto>, ProblemHttpResult>> PreviewAsync(
         [FromBody] RitualPreviewRequest request, RitualResolver resolver, CancellationToken cancellationToken) =>

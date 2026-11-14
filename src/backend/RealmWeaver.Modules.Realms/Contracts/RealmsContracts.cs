@@ -11,7 +11,7 @@ namespace RealmWeaver.Modules.Realms.Contracts;
 /// </summary>
 public sealed record NewRealm(
     Guid Id,
-    Guid PlayerId,
+    Guid? PlayerId,
     Guid MapComponentId,
     int DangerModifier,
     int EncounterVariant,
@@ -26,7 +26,7 @@ public sealed record RealmComponentsDto(string MapName, ComponentRefDto Needle, 
 
 public sealed record RealmSummaryDto(
     Guid Id,
-    Guid PlayerId,
+    Guid? PlayerId,
     Guid MapComponentId,
     RealmKind Kind,
     Biome Biome,
