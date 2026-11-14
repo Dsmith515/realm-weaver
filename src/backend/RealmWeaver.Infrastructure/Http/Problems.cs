@@ -12,6 +12,9 @@ public static class Problems
     public static ProblemHttpResult Forbidden(string title, string detail) =>
         TypedResults.Problem(statusCode: StatusCodes.Status403Forbidden, title: title, detail: detail);
 
+    public static ProblemHttpResult Conflict(string detail) =>
+        TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "The change conflicts with existing data.", detail: detail);
+
     public static ValidationProblem Validation(IDictionary<string, string[]> errors) =>
         TypedResults.ValidationProblem(errors, title: "One or more fields are invalid.");
 }

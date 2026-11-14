@@ -203,6 +203,55 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
+    public async Task A_map_rebuilds_the_same_realm_even_after_its_coating_is_edited_underneath_it()
+    {
+        using var client = factory.CreateClient();
+        var coating = await (await client.PostJsonAsync("/api/components", new ComponentInput(
+            ComponentType.Coating, "Test Shifting Wax", Rarity.Common, 1, null, false,
+            Coating: new CoatingDetails(["beast"], Generation.Model.RealmKind.Field, 0)))).ReadJsonAsync<ComponentDto>();
+        var player = await CreatePlayerWithAsync(client, MossgreenThread, coating.Id);
+        var first = await PerformOkAsync(client, SmallField(player.Id, coating: coating.Id));
+
+        // The API refuses this edit now, so force it the way M6 allowed: straight into the row.
+        await using (var connection = new Npgsql.NpgsqlConnection(factory.ConnectionString))
+        {
+            await connection.OpenAsync();
+            await using var command = new Npgsql.NpgsqlCommand(
+                """UPDATE catalog.component_definitions SET coating = '{"MobTypes":["undead"],"RealmKind":"Dungeon","FloorCount":1}' WHERE id = @id""",
+                connection);
+            command.Parameters.AddWithValue("id", coating.Id);
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var again = await PerformOkAsync(client, new RitualSelection(player.Id, MapId: first.MapId));
+
+        Assert.False(again.IsMismatch);
+        var original = await GetRealmAsync(client, first.RealmId);
+        var rebuilt = await GetRealmAsync(client, again.RealmId);
+        Assert.Equal(Generation.Model.RealmKind.Field, rebuilt.Summary.Kind);
+        Assert.Equal(original.Document.GetProperty("areas").GetRawText(), rebuilt.Document.GetProperty("areas").GetRawText());
+    }
+
+    [Fact]
+    public async Task A_new_map_is_named_after_its_components_and_records_its_recipe()
+    {
+        using var client = factory.CreateClient();
+        var player = await CreatePlayerWithAsync(client, MossgreenThread, BrigandsPitch);
+
+        var result = await PerformOkAsync(client, SmallField(player.Id, coating: BrigandsPitch));
+
+        var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{result.MapId}");
+        Assert.Equal("Beginner's Mossgreen Brigand's Pitch Forest Field and Dungeon Map", map.Name);
+        Assert.Equal(Generation.Model.RealmKind.FieldWithDungeon, map.Map?.Recipe?.Kind);
+        Assert.Equal(1, map.Map?.Recipe?.FloorCount);
+        Assert.NotNull(map.Map?.Threat);
+
+        var realm = await GetRealmAsync(client, result.RealmId);
+        Assert.Equal(map.Name, realm.Summary.Components?.MapName);
+        Assert.Equal(("Beginner's Needle", "Mossgreen Thread", "Brigand's Pitch"),
+            (realm.Summary.Components?.Needle.Name, realm.Summary.Components?.Thread.Name, realm.Summary.Components?.Coating.Name));    }
+
+    [Fact]
     public async Task Choosing_the_components_of_an_owned_map_fills_in_the_map()
     {
         using var client = factory.CreateClient();
@@ -246,6 +295,10 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         Assert.NotEqual(original.AreasJson("events"), rerolled.AreasJson("events"));
         Assert.Equal(original.Summary.Threat + 1, rerolled.Summary.Threat);
         Assert.Equal(original.Summary.Biome, rerolled.Summary.Biome);
+        var mirror = (await client.GetJsonAsync<List<System.Text.Json.JsonElement>>($"/api/realms?playerId={player.Id}"))
+            .ToDictionary(r => r.GetProperty("id").GetGuid(), r => r.GetProperty("isMirror").GetBoolean());
+        Assert.False(mirror[first.RealmId]);
+        Assert.True(mirror[mismatched.RealmId]);
 
         // The same mismatch again gives the same encounters: rerolls are deterministic.
         var repeat = await PerformOkAsync(client, new RitualSelection(player.Id, ThreadId: WheatgoldThread, MapId: first.MapId));

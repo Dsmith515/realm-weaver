@@ -18,6 +18,7 @@ export function component(type: ComponentType, name: string, overrides: Partial<
     isConsumable: type === 'thread' || type === 'coating',
     isArchived: false,
     createdAt: '2026-11-12T10:00:00Z',
+    usedByMapCount: 0,
     needle: type === 'needle' ? { difficultyTier: 1, category: 'Iron', abilities: [] } : null,
     thread: type === 'thread' ? { biome: 'forest', element: 'earth' } : null,
     coating: type === 'coating' ? { mobTypes: ['beast'], realmKind: 'field', floorCount: 0 } : null,

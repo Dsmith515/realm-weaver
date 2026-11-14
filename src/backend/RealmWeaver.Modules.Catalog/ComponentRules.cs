@@ -20,8 +20,87 @@ internal static partial class ComponentRules
     public const int MaxMobTypes = 6;
     public const int MaxGeneratorVersionLength = 20;
 
+    /// <summary>The words a component's name may end with. The first word of each list is the literal type word.</summary>
+    public static readonly NameSuffixesDto NameSuffixes = new(
+        Needle: ["Needle"],
+        Thread: ["Thread", "Cord", "Twine", "Yarn", "Silk"],
+        Coating: ["Coating", "Wax", "Pitch", "Lacquer", "Tallow", "Resin", "Varnish", "Oil", "Salve"]);
+
     [GeneratedRegex("^[a-z][a-z-]{1,29}$", RegexOptions.CultureInvariant)]
     private static partial Regex MobTypePattern();
+
+    public static IReadOnlyList<string>? SuffixesFor(ComponentType type) => type switch
+    {
+        ComponentType.Needle => NameSuffixes.Needle,
+        ComponentType.Thread => NameSuffixes.Thread,
+        ComponentType.Coating => NameSuffixes.Coating,
+        _ => null,
+    };
+
+    /// <summary>"Beginner's Needle" → "Beginner's"; "Beastward Wax" stays as it is (only the literal type word goes).</summary>
+    public static string WithoutTypeWord(string name, ComponentType type)
+    {
+        var typeWord = SuffixesFor(type)?[0];
+        var trimmed = name.Trim();
+        if (typeWord is null || !trimmed.EndsWith(" " + typeWord, StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        return trimmed[..^(typeWord.Length + 1)].TrimEnd();
+    }
+
+    private static bool EndsWithAllowedSuffix(string name, IReadOnlyList<string> suffixes)
+    {
+        var words = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return words.Length >= 2 && suffixes.Contains(words[^1], StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Fields that decide how a realm is generated. Once a map references a component (<paramref name="usedByMaps"/> &gt; 0)
+    /// these can't change: the admin clones the component instead (ADR 0006).
+    /// </summary>
+    public static IReadOnlyList<string> LockedFieldChanges(ComponentDto existing, ComponentInput input)
+    {
+        var changed = new List<string>();
+        if (existing.Needle is { } n && input.Needle is { } newNeedle && n.DifficultyTier != newNeedle.DifficultyTier)
+        {
+            changed.Add("needle.difficultyTier");
+        }
+
+        if (existing.Thread is { } t && input.Thread is { } newThread)
+        {
+            if (t.Biome != newThread.Biome)
+            {
+                changed.Add("thread.biome");
+            }
+
+            if (t.Element != newThread.Element)
+            {
+                changed.Add("thread.element");
+            }
+        }
+
+        if (existing.Coating is { } c && input.Coating is { } newCoating)
+        {
+            if (!c.MobTypes.SequenceEqual(newCoating.MobTypes ?? [], StringComparer.Ordinal))
+            {
+                changed.Add("coating.mobTypes");
+            }
+
+            if (c.RealmKind != newCoating.RealmKind)
+            {
+                changed.Add("coating.realmKind");
+            }
+
+            if (c.FloorCount != newCoating.FloorCount)
+            {
+                changed.Add("coating.floorCount");
+            }
+        }
+
+        return changed;
+    }
 
     /// <summary>Checks everything that doesn't need the database. Map references are checked by the service.</summary>
     public static ValidationErrors Validate(ComponentInput input)
@@ -34,6 +113,13 @@ internal static partial class ComponentRules
         errors.Require((input.Name?.Trim().Length ?? 0) <= MaxNameLength, "name", $"Use at most {MaxNameLength} characters.");
         errors.Require((input.Description?.Length ?? 0) <= MaxDescriptionLength, "description", $"Use at most {MaxDescriptionLength} characters.");
         errors.Require(input.Rank is >= MinRank and <= MaxRank, "rank", $"Rank must be between {MinRank} and {MaxRank}.");
+        if (SuffixesFor(input.Type) is { } suffixes && !string.IsNullOrWhiteSpace(input.Name))
+        {
+            errors.Require(
+                EndsWithAllowedSuffix(input.Name, suffixes),
+                "name",
+                $"A {input.Type} name ends with one of: {string.Join(", ", suffixes)} (for example \"Mossgreen {suffixes[0]}\").");
+        }
 
         RequireDetailsFor(errors, input.Type, ComponentType.Needle, input.Needle, "needle");
         RequireDetailsFor(errors, input.Type, ComponentType.Thread, input.Thread, "thread");
@@ -97,6 +183,24 @@ internal static partial class ComponentRules
                 !string.IsNullOrWhiteSpace(map.GeneratorVersion) && map.GeneratorVersion.Length <= MaxGeneratorVersionLength,
                 "map.generatorVersion",
                 $"A generator version of at most {MaxGeneratorVersionLength} characters is required.");
+            if (map.Recipe is { } recipe)
+            {
+                errors.Require(Enum.IsDefined(recipe.Kind), "map.recipe.kind", "Unknown realm kind.");
+                errors.Require(Enum.IsDefined(recipe.Biome), "map.recipe.biome", "Unknown biome.");
+                errors.Require(Enum.IsDefined(recipe.Element), "map.recipe.element", "Unknown element.");
+                errors.Require(
+                    recipe.Kind == RealmKind.Field ? recipe.FloorCount == 0 : recipe.FloorCount is >= 1 and <= GeneratorLimits.MaxFloors,
+                    "map.recipe.floorCount",
+                    "Floor count must fit the realm kind.");
+                errors.Require(
+                    recipe.Difficulty is >= GeneratorLimits.MinDifficulty and <= GeneratorLimits.MaxDifficulty,
+                    "map.recipe.difficulty",
+                    $"Difficulty must be between {GeneratorLimits.MinDifficulty} and {GeneratorLimits.MaxDifficulty}.");
+                errors.Require(
+                    (recipe.MobTags ?? []).Count is >= 1 and <= MaxMobTypes && (recipe.MobTags ?? []).All(m => m is not null && MobTypePattern().IsMatch(m)),
+                    "map.recipe.mobTags",
+                    $"Give 1 to {MaxMobTypes} lowercase mob tags.");
+            }
         }
 
         return errors;
@@ -144,11 +248,15 @@ internal static partial class ComponentRules
                 EventCount = m.EventCount,
                 GeneratorVersion = m.GeneratorVersion.Trim(),
                 CreatedByPlayerId = m.CreatedByPlayerId,
+                Recipe = m.Recipe is { } r
+                    ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty }
+                    : null,
+                Threat = m.Threat,
             }
             : null;
     }
 
-    public static ComponentDto ToDto(this ComponentDefinition c) => new(
+    public static ComponentDto ToDto(this ComponentDefinition c, int usedByMapCount = 0) => new(
         c.Id,
         c.Type,
         c.Name,
@@ -163,6 +271,18 @@ internal static partial class ComponentRules
         c.Thread is { } t ? new ThreadDetails(t.Biome, t.Element) : null,
         c.Coating is { } co ? new CoatingDetails(co.MobTypes, co.RealmKind, co.FloorCount) : null,
         c.Map is { } m
-            ? new MapDetails(m.Seed, m.NeedleId, m.ThreadId, m.CoatingId, m.Width, m.Height, m.EventCount, m.GeneratorVersion, m.CreatedByPlayerId)
-            : null);
+            ? new MapDetails(
+                m.Seed,
+                m.NeedleId,
+                m.ThreadId,
+                m.CoatingId,
+                m.Width,
+                m.Height,
+                m.EventCount,
+                m.GeneratorVersion,
+                m.CreatedByPlayerId,
+                m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty) : null,
+                m.Threat)
+            : null,
+        usedByMapCount);
 }

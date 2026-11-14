@@ -36,6 +36,13 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             Document = RealmJson.Serialize(document),
             Areas = JsonSerializer.Serialize(AreasOf(document), RealmJson.Options),
             CreatedAt = clock.GetDatabaseUtcNow(),
+            MapName = realm.Components?.MapName,
+            NeedleId = realm.Components?.Needle.Id,
+            NeedleName = realm.Components?.Needle.Name,
+            ThreadId = realm.Components?.Thread.Id,
+            ThreadName = realm.Components?.Thread.Name,
+            CoatingId = realm.Components?.Coating.Id,
+            CoatingName = realm.Components?.Coating.Name,
         };
 
         db.Realms.Add(entity);
@@ -93,6 +100,13 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 Document = string.Empty, // not loaded
                 Areas = r.Areas,
                 CreatedAt = r.CreatedAt,
+                MapName = r.MapName,
+                NeedleId = r.NeedleId,
+                NeedleName = r.NeedleName,
+                ThreadId = r.ThreadId,
+                ThreadName = r.ThreadName,
+                CoatingId = r.CoatingId,
+                CoatingName = r.CoatingName,
             })
             .ToListAsync(cancellationToken);
 
@@ -117,5 +131,15 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         entity.Seed,
         entity.GeneratorVersion,
         entity.CreatedAt,
-        JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? []);
+        JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? [],
+        ComponentsOf(entity));
+
+    private static RealmComponentsDto? ComponentsOf(Realm entity) =>
+        entity is { MapName: { } mapName, NeedleId: { } needleId, ThreadId: { } threadId, CoatingId: { } coatingId }
+            ? new RealmComponentsDto(
+                mapName,
+                new ComponentRefDto(needleId, entity.NeedleName ?? string.Empty),
+                new ComponentRefDto(threadId, entity.ThreadName ?? string.Empty),
+                new ComponentRefDto(coatingId, entity.CoatingName ?? string.Empty))
+            : null;
 }

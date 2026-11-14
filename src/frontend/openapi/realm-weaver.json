@@ -242,6 +242,7 @@
         "tags": [
           "Components"
         ],
+        "description": "Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409.",
         "operationId": "UpdateComponent",
         "parameters": [
           {
@@ -307,6 +308,27 @@
         "responses": {
           "204": {
             "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/components/name-suffixes": {
+      "get": {
+        "tags": [
+          "Components"
+        ],
+        "description": "The words a Needle, Thread or Coating name may end with.",
+        "operationId": "GetNameSuffixes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameSuffixesDto"
+                }
+              }
+            }
           }
         }
       }
@@ -1047,6 +1069,11 @@
                 "$ref": "#/components/schemas/MapDetails"
               }
             ]
+          },
+          "usedByMapCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -1122,6 +1149,22 @@
                 "$ref": "#/components/schemas/MapDetails"
               }
             ]
+          }
+        }
+      },
+      "ComponentRefDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -1521,6 +1564,59 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "recipe": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MapRecipe"
+              }
+            ]
+          },
+          "threat": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "MapRecipe": {
+        "required": [
+          "kind",
+          "floorCount",
+          "biome",
+          "element",
+          "mobTags",
+          "difficulty"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/RealmKind"
+          },
+          "floorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "biome": {
+            "$ref": "#/components/schemas/Biome"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
+          },
+          "mobTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "difficulty": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1557,6 +1653,34 @@
           "leader",
           "boss"
         ]
+      },
+      "NameSuffixesDto": {
+        "required": [
+          "needle",
+          "thread",
+          "coating"
+        ],
+        "type": "object",
+        "properties": {
+          "needle": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thread": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coating": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "NeedleDetails": {
         "required": [
@@ -1867,6 +1991,29 @@
           }
         }
       },
+      "RealmComponentsDto": {
+        "required": [
+          "mapName",
+          "needle",
+          "thread",
+          "coating"
+        ],
+        "type": "object",
+        "properties": {
+          "mapName": {
+            "type": "string"
+          },
+          "needle": {
+            "$ref": "#/components/schemas/ComponentRefDto"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ComponentRefDto"
+          },
+          "coating": {
+            "$ref": "#/components/schemas/ComponentRefDto"
+          }
+        }
+      },
       "RealmDocument": {
         "required": [
           "generatorVersion",
@@ -2011,6 +2158,19 @@
             "items": {
               "$ref": "#/components/schemas/RealmAreaSummaryDto"
             }
+          },
+          "components": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmComponentsDto"
+              }
+            ]
+          },
+          "isMirror": {
+            "type": "boolean"
           }
         }
       },

@@ -170,6 +170,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                             b1.Property<Guid>("ThreadId");
 
+                            b1.Property<int?>("Threat");
+
                             b1.Property<int>("Width");
 
                             b1.HasKey("ComponentDefinitionId");
@@ -183,6 +185,38 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ComponentDefinitionId")
                                 .HasConstraintName("fk_component_definitions_component_definitions_id");
+
+                            b1.OwnsOne("RealmWeaver.Modules.Catalog.Persistence.MapRecipeData", "Recipe", b2 =>
+                                {
+                                    b2.Property<Guid>("MapDataComponentDefinitionId");
+
+                                    b2.Property<string>("Biome")
+                                        .IsRequired();
+
+                                    b2.Property<int>("Difficulty");
+
+                                    b2.Property<string>("Element")
+                                        .IsRequired();
+
+                                    b2.Property<int>("FloorCount");
+
+                                    b2.Property<string>("Kind")
+                                        .IsRequired();
+
+                                    b2.PrimitiveCollection<string>("MobTags")
+                                        .IsRequired();
+
+                                    b2.HasKey("MapDataComponentDefinitionId")
+                                        .HasName("pk_component_definitions");
+
+                                    b2.ToTable("component_definitions", "catalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("MapDataComponentDefinitionId")
+                                        .HasConstraintName("fk_component_definitions_component_definitions_map_data_componen");
+                                });
+
+                            b1.Navigation("Recipe");
                         });
 
                     b.OwnsOne("RealmWeaver.Modules.Catalog.Persistence.NeedleData", "Needle", b1 =>

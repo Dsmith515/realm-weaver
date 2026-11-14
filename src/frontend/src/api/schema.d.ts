@@ -61,10 +61,28 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GetComponent"];
+        /** @description Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409. */
         put: operations["UpdateComponent"];
         post?: never;
         /** @description Archives the component. It disappears from the catalog but stays readable for players who own it. */
         delete: operations["ArchiveComponent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/components/name-suffixes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The words a Needle, Thread or Coating name may end with. */
+        get: operations["GetNameSuffixes"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -293,6 +311,11 @@ export interface components {
             thread: null | components["schemas"]["ThreadDetails"];
             coating: null | components["schemas"]["CoatingDetails"];
             map: null | components["schemas"]["MapDetails"];
+            /**
+             * Format: int32
+             * @default 0
+             */
+            usedByMapCount: number;
         };
         ComponentInput: {
             type: components["schemas"]["ComponentType"];
@@ -306,6 +329,11 @@ export interface components {
             thread?: null | components["schemas"]["ThreadDetails"];
             coating?: null | components["schemas"]["CoatingDetails"];
             map?: null | components["schemas"]["MapDetails"];
+        };
+        ComponentRefDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         /** @enum {unknown} */
         ComponentType: "needle" | "thread" | "coating" | "map";
@@ -424,6 +452,19 @@ export interface components {
             generatorVersion: string;
             /** Format: uuid */
             createdByPlayerId: null | string;
+            recipe?: null | components["schemas"]["MapRecipe"];
+            /** Format: int32 */
+            threat?: null | number;
+        };
+        MapRecipe: {
+            kind: components["schemas"]["RealmKind"];
+            /** Format: int32 */
+            floorCount: number;
+            biome: components["schemas"]["Biome"];
+            element: components["schemas"]["Element"];
+            mobTags: string[];
+            /** Format: int32 */
+            difficulty: number;
         };
         MobGroup: {
             archetypeId: string;
@@ -434,6 +475,11 @@ export interface components {
         };
         /** @enum {unknown} */
         MobRole: "minion" | "brute" | "skirmisher" | "caster" | "leader" | "boss";
+        NameSuffixesDto: {
+            needle: string[];
+            thread: string[];
+            coating: string[];
+        };
         NeedleDetails: {
             /** Format: int32 */
             difficultyTier: number;
@@ -510,6 +556,12 @@ export interface components {
             /** Format: int32 */
             floorNumber: number;
         };
+        RealmComponentsDto: {
+            mapName: string;
+            needle: components["schemas"]["ComponentRefDto"];
+            thread: components["schemas"]["ComponentRefDto"];
+            coating: components["schemas"]["ComponentRefDto"];
+        };
         RealmDocument: {
             generatorVersion: string;
             /** Format: uint64 */
@@ -553,6 +605,8 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             areas: components["schemas"]["RealmAreaSummaryDto"][];
+            components?: null | components["schemas"]["RealmComponentsDto"];
+            isMirror?: boolean;
         };
         RitualIssue: {
             slot: null | components["schemas"]["RitualSlot"];
@@ -863,6 +917,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GetNameSuffixes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NameSuffixesDto"];
+                };
             };
         };
     };

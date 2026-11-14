@@ -31,7 +31,24 @@ public sealed record ThreadDetails(Biome Biome, Element Element);
 /// <summary>Coating: mob types and realm shape. Consumed by a ritual.</summary>
 public sealed record CoatingDetails(IReadOnlyList<string> MobTypes, RealmKind RealmKind, int FloorCount);
 
-/// <summary>Map: a realm already visited. Its seed rebuilds the same layout.</summary>
+/// <summary>
+/// The generation inputs a map was woven from, copied when the map is created (ADR 0006). Rebuilding the map uses
+/// these, not the components' current values, so editing a component never re-shapes an existing map.
+/// New inputs (a Thimble in Phase 3) are added here as optional members.
+/// </summary>
+public sealed record MapRecipe(
+    RealmKind Kind,
+    int FloorCount,
+    Biome Biome,
+    Element Element,
+    IReadOnlyList<string> MobTags,
+    int Difficulty);
+
+/// <summary>
+/// Map: a realm already visited. Its seed and recipe rebuild the same realm.
+/// <see cref="Recipe"/> is filled in from the referenced components when it's left out of a request.
+/// <see cref="Threat"/> is known only for maps a ritual created.
+/// </summary>
 public sealed record MapDetails(
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
     ulong Seed,
@@ -42,7 +59,9 @@ public sealed record MapDetails(
     int Height,
     int EventCount,
     string GeneratorVersion,
-    Guid? CreatedByPlayerId);
+    Guid? CreatedByPlayerId,
+    MapRecipe? Recipe = null,
+    int? Threat = null);
 
 public sealed record ComponentDto(
     Guid Id,
@@ -58,7 +77,14 @@ public sealed record ComponentDto(
     NeedleDetails? Needle,
     ThreadDetails? Thread,
     CoatingDetails? Coating,
-    MapDetails? Map);
+    MapDetails? Map,
+    int UsedByMapCount = 0);
+
+/// <summary>
+/// The last word a component's name must end with, per type, for example "Wax" or "Lacquer" for a Coating.
+/// Map names drop the literal type word ("Beginner's Needle" → "Beginner's").
+/// </summary>
+public sealed record NameSuffixesDto(IReadOnlyList<string> Needle, IReadOnlyList<string> Thread, IReadOnlyList<string> Coating);
 
 /// <summary>
 /// Body for creating or replacing a component. Exactly one details object must be set, matching <see cref="Type"/>.

@@ -18,8 +18,11 @@ internal static class CatalogEndpoints
 
         components.MapGet("/", SearchAsync).WithName("ListComponents");
         components.MapGet("/{id:guid}", GetAsync).WithName("GetComponent");
+        components.MapGet("/name-suffixes", () => TypedResults.Ok(ComponentRules.NameSuffixes)).WithName("GetNameSuffixes")
+            .WithDescription("The words a Needle, Thread or Coating name may end with.");
         components.MapPost("/", CreateAsync).WithName("CreateComponent");
-        components.MapPut("/{id:guid}", UpdateAsync).WithName("UpdateComponent");
+        components.MapPut("/{id:guid}", UpdateAsync).WithName("UpdateComponent")
+            .WithDescription("Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409.");
         components.MapDelete("/{id:guid}", ArchiveAsync).WithName("ArchiveComponent")
             .WithDescription("Archives the component. It disappears from the catalog but stays readable for players who own it.");
 
@@ -74,7 +77,7 @@ internal static class CatalogEndpoints
     }
 
     private static async Task<Results<Ok<ComponentDto>, ProblemHttpResult>> GetAsync(Guid id, CatalogService catalog, CancellationToken cancellationToken) =>
-        await catalog.GetComponentAsync(id, cancellationToken) is { } component
+        await catalog.GetWithUsageAsync(id, cancellationToken) is { } component
             ? TypedResults.Ok(component)
             : Problems.NotFound("Component", id);
 
@@ -92,6 +95,7 @@ internal static class CatalogEndpoints
             return Problems.Validation(errors.ToDictionary());
         }
 
+        input = await catalog.WithRecipeAsync(input, cancellationToken);
         var created = await catalog.CreateAsync(input, id: null, cancellationToken);
         return TypedResults.Created($"/api/components/{created.Id}", created);
     }
@@ -99,7 +103,7 @@ internal static class CatalogEndpoints
     private static async Task<Results<Ok<ComponentDto>, ProblemHttpResult, ValidationProblem>> UpdateAsync(
         Guid id, [FromBody] ComponentInput input, CatalogService catalog, CancellationToken cancellationToken)
     {
-        var existing = await catalog.GetComponentAsync(id, cancellationToken);
+        var existing = await catalog.GetWithUsageAsync(id, cancellationToken);
         if (existing is null)
         {
             return Problems.NotFound("Component", id);
@@ -117,8 +121,17 @@ internal static class CatalogEndpoints
             return Problems.Validation(errors.ToDictionary());
         }
 
+        // Maps snapshot their recipe, but locking the source fields too keeps the catalog honest about what a map was made of.
+        if (existing.UsedByMapCount > 0 && ComponentRules.LockedFieldChanges(existing, input) is { Count: > 0 } locked)
+        {
+            var maps = existing.UsedByMapCount == 1 ? "1 map" : $"{existing.UsedByMapCount} maps";
+            return Problems.Conflict(
+                $"{existing.Name} is used by {maps}, so {string.Join(", ", locked)} can't change. Clone it to make a variant.");
+        }
+
+        input = await catalog.WithRecipeAsync(input, cancellationToken);
         return await catalog.UpdateAsync(id, input, cancellationToken) is { } updated
-            ? TypedResults.Ok(updated)
+            ? TypedResults.Ok(updated with { UsedByMapCount = existing.UsedByMapCount })
             : Problems.NotFound("Component", id);
     }
 

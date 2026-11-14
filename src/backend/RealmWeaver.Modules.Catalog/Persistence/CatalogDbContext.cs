@@ -46,7 +46,16 @@ internal sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> option
                 coating.ToJson();
                 coating.Property(c => c.RealmKind).HasConversion<string>();
             });
-            component.OwnsOne(c => c.Map, map => map.ToJson());
+            component.OwnsOne(c => c.Map, map =>
+            {
+                map.ToJson();
+                map.OwnsOne(m => m.Recipe, recipe =>
+                {
+                    recipe.Property(r => r.Kind).HasConversion<string>();
+                    recipe.Property(r => r.Biome).HasConversion<string>();
+                    recipe.Property(r => r.Element).HasConversion<string>();
+                });
+            });
         });
 
         modelBuilder.Entity<CatalogSettings>(settings =>

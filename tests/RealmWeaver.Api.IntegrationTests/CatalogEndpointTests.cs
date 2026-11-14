@@ -228,7 +228,7 @@ public class CatalogEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var token = $"arch{Guid.NewGuid():N}"[..12];
-        var input = new ComponentInput(ComponentType.Needle, $"Test {token}", Rarity.Common, 1, null, false, Needle: new NeedleDetails(1, "Iron", []));
+        var input = new ComponentInput(ComponentType.Needle, $"Test {token} Needle", Rarity.Common, 1, null, false, Needle: new NeedleDetails(1, "Iron", []));
         var created = await (await client.PostJsonAsync("/api/components", input)).ReadJsonAsync<ComponentDto>();
 
         var delete = await client.DeleteAsync(new Uri($"/api/components/{created.Id}", UriKind.Relative));
@@ -237,6 +237,73 @@ public class CatalogEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(0, (await client.GetJsonAsync<PagedResult<ComponentDto>>($"/api/components?search={token}")).TotalCount);
         Assert.Equal(1, (await client.GetJsonAsync<PagedResult<ComponentDto>>($"/api/components?search={token}&includeArchived=true")).TotalCount);
         Assert.True((await client.GetJsonAsync<ComponentDto>($"/api/components/{created.Id}")).IsArchived);
+    }
+
+    [Theory]
+    [InlineData(ComponentType.Needle, "Test Sliver")]
+    [InlineData(ComponentType.Thread, "Thread")]
+    [InlineData(ComponentType.Coating, "Test Goo")]
+    public async Task Names_must_end_with_a_word_allowed_for_the_type(ComponentType type, string name)
+    {
+        using var client = factory.CreateClient();
+        var input = type switch
+        {
+            ComponentType.Needle => new ComponentInput(type, name, Rarity.Common, 1, null, false, Needle: new NeedleDetails(1, "Iron", [])),
+            ComponentType.Thread => new ComponentInput(type, name, Rarity.Common, 1, null, false, Thread: new ThreadDetails(Biome.Forest, Element.Earth)),
+            _ => new ComponentInput(type, name, Rarity.Common, 1, null, false, Coating: new CoatingDetails(["beast"], RealmKind.Field, 0)),
+        };
+
+        var problem = await PostExpectingValidationProblemAsync(client, input);
+
+        Assert.Contains("name", problem.Errors!.Keys);
+    }
+
+    [Fact]
+    public async Task Name_suffixes_are_published_for_the_form()
+    {
+        using var client = factory.CreateClient();
+
+        var suffixes = await client.GetJsonAsync<NameSuffixesDto>("/api/components/name-suffixes");
+
+        Assert.Equal("Needle", suffixes.Needle[0]);
+        Assert.Contains("Wax", suffixes.Coating);
+        Assert.Contains("Lacquer", suffixes.Coating);
+    }
+
+    [Fact]
+    public async Task A_map_created_without_a_recipe_copies_it_from_its_components()
+    {
+        using var client = factory.CreateClient();
+        var input = new ComponentInput(ComponentType.Map, "Test Copied Recipe Map", Rarity.Common, 1, null, false,
+            Map: new MapDetails(7, BeginnerNeedleId, MossgreenThreadId, BeastwardWaxId, 40, 30, 10, GeneratorLimits.Version, null));
+
+        var created = await (await client.PostJsonAsync("/api/components", input)).ReadJsonAsync<ComponentDto>();
+
+        var recipe = created.Map?.Recipe;
+        Assert.NotNull(recipe);
+        Assert.Equal((RealmKind.Field, 0, Biome.Forest, Element.Earth, 1), (recipe.Kind, recipe.FloorCount, recipe.Biome, recipe.Element, recipe.Difficulty));
+        Assert.Equal(["beast"], recipe.MobTags);
+    }
+
+    [Fact]
+    public async Task Recipe_fields_of_a_component_used_by_a_map_are_locked()
+    {
+        using var client = factory.CreateClient();
+        var input = new ComponentInput(ComponentType.Coating, "Test Locking Wax", Rarity.Common, 1, null, false,
+            Coating: new CoatingDetails(["beast"], RealmKind.Field, 0));
+        var coating = await (await client.PostJsonAsync("/api/components", input)).ReadJsonAsync<ComponentDto>();
+        Assert.Equal(0, coating.UsedByMapCount);
+        await client.PostJsonAsync("/api/components", new ComponentInput(ComponentType.Map, "Test Locking Map", Rarity.Common, 1, null, false,
+            Map: new MapDetails(9, BeginnerNeedleId, MossgreenThreadId, coating.Id, 40, 30, 10, GeneratorLimits.Version, null)));
+
+        var reshaped = await client.PutJsonAsync($"/api/components/{coating.Id}", input with { Coating = new CoatingDetails(["beast"], RealmKind.Dungeon, 1) });
+        var renamed = await client.PutJsonAsync($"/api/components/{coating.Id}", input with { Name = "Test Relabelled Wax", Description = "Same recipe." });
+
+        Assert.Equal(HttpStatusCode.Conflict, reshaped.StatusCode);
+        Assert.Contains("coating.realmKind", (await reshaped.ReadJsonAsync<Problem>()).Detail, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
+        var fetched = await client.GetJsonAsync<ComponentDto>($"/api/components/{coating.Id}");
+        Assert.Equal(("Test Relabelled Wax", RealmKind.Field, 1), (fetched.Name, fetched.Coating!.RealmKind, fetched.UsedByMapCount));
     }
 
     [Fact]
