@@ -116,7 +116,7 @@ public static class SvgExporter
         {
             var cx = (spawn.X * Tile) + (Tile / 2);
             var cy = (spawn.Y * Tile) + (Tile / 2);
-            Append(svg, $"<g id=\"spawn\"><title>Spawn ({spawn})</title><circle cx=\"{cx}\" cy=\"{cy}\" r=\"8\" fill=\"#ffffff\" stroke=\"#111\" stroke-width=\"2\"/><text x=\"{cx}\" y=\"{cy + 4}\" font-size=\"10\" font-weight=\"700\" text-anchor=\"middle\">S</text></g>");
+            Append(svg, $"<g id=\"spawn\" data-feature-id=\"S\"><title>Spawn ({spawn})</title><circle cx=\"{cx}\" cy=\"{cy}\" r=\"8\" fill=\"#ffffff\" stroke=\"#111\" stroke-width=\"2\"/><text x=\"{cx}\" y=\"{cy + 4}\" font-size=\"10\" font-weight=\"700\" text-anchor=\"middle\">S</text></g>");
         }
 
         foreach (var f in area.Features)

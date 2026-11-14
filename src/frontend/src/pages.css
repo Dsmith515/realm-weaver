@@ -455,9 +455,52 @@ textarea {
   gap: 0.2rem;
 }
 
-.field > span:first-child {
+.field__label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.field__label > span:first-child {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.field__hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.form__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.form__row .field {
+  flex: 1;
+}
+
+/* Modal dialogs (native <dialog>) */
+.modal {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.modal::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.modal__body {
+  padding: 1rem 1.25rem;
+}
+
+.modal .form {
+  max-width: none;
 }
 
 /* Realms */
@@ -524,7 +567,8 @@ textarea {
   display: block;
 }
 
-.svg-viewer__content .rw-highlight rect {
+.svg-viewer__content .rw-highlight rect,
+.svg-viewer__content .rw-highlight circle {
   stroke: var(--highlight);
   stroke-width: 4;
   fill-opacity: 0.6;
@@ -562,6 +606,16 @@ textarea {
 .placements li button[aria-pressed="true"] {
   border-color: var(--highlight);
   box-shadow: inset 3px 0 0 var(--highlight);
+}
+
+.placements__entry button {
+  border-left: 4px solid var(--accent);
+}
+
+.realm-list__components {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .placements__mobs {

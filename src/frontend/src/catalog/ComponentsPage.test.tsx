@@ -12,6 +12,7 @@ function routes(overrides: Record<string, unknown> = {}) {
     'GET /api/players': [player, otherPlayer],
     'GET /api/settings': { playersCanSelfAssign: true },
     'GET /api/components': { items: [needle, moss, wax], page: 1, pageSize: 25, totalCount: 3 },
+    'GET /api/components/name-suffixes': { needle: ['Needle'], thread: ['Thread', 'Cord'], coating: ['Coating', 'Wax'] },
     ...overrides,
   }
 }
@@ -98,6 +99,73 @@ describe('Components page', () => {
     await user.click(within(form).getByRole('button', { name: 'Assign' }))
 
     await waitFor(() => expect(api.callsTo('POST', `/api/components/${moss.id}/assign`)[0]?.body).toEqual({ playerId: otherPlayer.id, quantity: 4 }))
+  })
+
+  it('opens the forms in a dialog and closes it on cancel', async () => {
+    fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: 'New component' }))
+    const dialog = screen.getByRole('dialog', { name: 'New component' })
+    expect(within(dialog).getByText('Ends with: Needle')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('locks the recipe fields of a component that maps were woven from', async () => {
+    const used = { ...wax, usedByMapCount: 2 }
+    const api = fakeApi(routes({ 'GET /api/components': { items: [used], page: 1, pageSize: 25, totalCount: 1 }, 'PUT /api/components/:id': used }))
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    expect(await screen.findByText('2 maps')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Edit Beastward Wax' }))
+    const form = screen.getByRole('form', { name: 'Edit Beastward Wax' })
+
+    expect(within(form).getByRole('note')).toHaveTextContent('Used by 2 maps')
+    expect(within(form).getByRole('combobox', { name: 'Realm kind' })).toBeDisabled()
+    expect(within(form).getByRole('textbox', { name: 'Mob types (comma separated)' })).toBeDisabled()
+    await user.type(within(form).getByRole('textbox', { name: 'Description' }), 'Still the same wax.')
+    await user.click(within(form).getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(api.callsTo('PUT', `/api/components/${wax.id}`)[0]?.body).toMatchObject({ description: 'Still the same wax.' }))
+  })
+
+  it('clones a component into a new one', async () => {
+    const api = fakeApi(routes({ 'POST /api/components': () => json(wax, 201) }))
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: 'Clone Beastward Wax' }))
+    const form = screen.getByRole('form', { name: 'Clone Beastward Wax' })
+    const name = within(form).getByRole('textbox', { name: 'Name' })
+    await user.clear(name)
+    await user.type(name, 'Deepward Wax')
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'Realm kind' }), 'dungeon')
+    await user.click(within(form).getByRole('button', { name: 'Create copy' }))
+
+    await waitFor(() =>
+      expect(api.callsTo('POST', '/api/components')[0]?.body).toMatchObject({
+        type: 'coating',
+        name: 'Deepward Wax',
+        coating: { mobTypes: ['beast'], realmKind: 'dungeon', floorCount: 1 },
+      }),
+    )
+  })
+
+  it('randomizes the new component form', async () => {
+    fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: 'New component' }))
+    const form = screen.getByRole('form', { name: 'New component' })
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'Type' }), 'thread')
+    await user.click(within(form).getByRole('button', { name: 'Randomize' }))
+
+    expect((within(form).getByRole('textbox', { name: 'Name' }) as HTMLInputElement).value).toMatch(/ (Thread|Cord)$/)
+    expect(within(form).getByRole('combobox', { name: 'Type' })).toHaveValue('thread')
   })
 
   it('archives after confirming, and toggles self-assign', async () => {

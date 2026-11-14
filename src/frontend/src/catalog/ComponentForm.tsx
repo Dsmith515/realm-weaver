@@ -1,25 +1,41 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError, errorMessage } from '../api/client'
-import { useSaveComponent } from '../api/queries'
+import { useNameSuffixes, useSaveComponent } from '../api/queries'
 import type { Component, ComponentInput, ComponentType } from '../api/types'
 import { biomes, elements, label, rarities, realmKinds } from '../api/types'
+import { creatableTypes, fallbackSuffixes, randomComponent, type RandomizableType, type Rng } from './randomComponent'
 
 interface ComponentFormProps {
   /** Edit this component, or create a new one when undefined. */
   component?: Component
+  /** Create a new component pre-filled from this one (Clone). Ignored when editing. */
+  template?: Component
   onDone: () => void
+  /** For tests: the randomness behind the Randomize button. */
+  rng?: Rng
 }
 
-const creatableTypes = ['needle', 'thread', 'coating'] as const satisfies readonly ComponentType[]
-
 /** Create or edit a component. Validation is the server's: its field errors are shown next to the fields. */
-export function ComponentForm({ component, onDone }: ComponentFormProps) {
-  const [input, setInput] = useState<ComponentInput>(() => (component ? toInput(component) : blank('needle')))
+export function ComponentForm({ component, template, onDone, rng }: ComponentFormProps) {
+  const [input, setInput] = useState<ComponentInput>(() => (component ? toInput(component) : template ? toInput(template) : blank('needle')))
   const [abilities, setAbilities] = useState(() => (input.needle?.abilities ?? []).join(', '))
   const [mobTypes, setMobTypes] = useState(() => (input.coating?.mobTypes ?? []).join(', '))
   const save = useSaveComponent()
+  const suffixes = useNameSuffixes().data ?? fallbackSuffixes
   const error = save.error instanceof ApiError ? save.error : undefined
   const fieldError = (field: string) => error?.fieldError(field)
+  const usedBy = component?.usedByMapCount ?? 0
+  // Once a map was woven from it, the fields that shape a realm can't change (the server answers 409).
+  const locked = usedBy > 0
+  const allowedSuffixes = input.type === 'map' ? undefined : suffixes[input.type]
+  const title = component ? `Edit ${component.name}` : template ? `Clone ${template.name}` : 'New component'
+
+  const randomize = () => {
+    const next = randomComponent(input.type as RandomizableType, suffixes, rng)
+    setInput(next)
+    setAbilities((next.needle?.abilities ?? []).join(', '))
+    setMobTypes((next.coating?.mobTypes ?? []).join(', '))
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -37,21 +53,31 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
   }
 
   return (
-    <form className="card form" onSubmit={(e) => void submit(e)} aria-label={component ? `Edit ${component.name}` : 'New component'}>
-      <h2>{component ? `Edit ${component.name}` : 'New component'}</h2>
+    <form className="form" onSubmit={(e) => void submit(e)} aria-label={title}>
+      <h2>{title}</h2>
 
-      {!component && (
-        <Field label="Type" error={fieldError('type')}>
-          <select value={input.type} onChange={(e) => setInput(blank(e.target.value as ComponentType, input))}>
-            {creatableTypes.map((t) => (
-              <option key={t} value={t}>
-                {label(t)}
-              </option>
-            ))}
-          </select>
-        </Field>
+      {!component && !template && (
+        <div className="form__row">
+          <Field label="Type" error={fieldError('type')}>
+            <select value={input.type} onChange={(e) => setInput(blank(e.target.value as ComponentType, input))}>
+              {creatableTypes.map((t) => (
+                <option key={t} value={t}>
+                  {label(t)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <button type="button" onClick={randomize}>
+            Randomize
+          </button>
+        </div>
       )}
-      <Field label="Name" error={fieldError('name')}>
+      {locked && (
+        <p className="banner banner--warn" role="note">
+          Used by {usedBy === 1 ? '1 map' : `${usedBy} maps`}, so the fields that shape a realm are locked. Clone it to make a variant.
+        </p>
+      )}
+      <Field label="Name" error={fieldError('name')} hint={allowedSuffixes && `Ends with: ${allowedSuffixes.join(', ')}`}>
         <input value={input.name} onChange={(e) => setInput({ ...input, name: e.target.value })} />
       </Field>
       <Field label="Rarity" error={fieldError('rarity')}>
@@ -81,6 +107,7 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
             <input
               type="number"
               value={input.needle.difficultyTier}
+              disabled={locked}
               onChange={(e) => setInput({ ...input, needle: { ...input.needle!, difficultyTier: Number(e.target.value) } })}
             />
           </Field>
@@ -97,7 +124,7 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
         <fieldset>
           <legend>Thread</legend>
           <Field label="Biome" error={fieldError('thread.biome')}>
-            <select value={input.thread.biome} onChange={(e) => setInput({ ...input, thread: { ...input.thread!, biome: e.target.value as (typeof biomes)[number] } })}>
+            <select value={input.thread.biome} disabled={locked} onChange={(e) => setInput({ ...input, thread: { ...input.thread!, biome: e.target.value as (typeof biomes)[number] } })}>
               {biomes.map((b) => (
                 <option key={b} value={b}>
                   {label(b)}
@@ -108,6 +135,7 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
           <Field label="Element" error={fieldError('thread.element')}>
             <select
               value={input.thread.element}
+              disabled={locked}
               onChange={(e) => setInput({ ...input, thread: { ...input.thread!, element: e.target.value as (typeof elements)[number] } })}
             >
               {elements.map((el) => (
@@ -124,11 +152,12 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
         <fieldset>
           <legend>Coating</legend>
           <Field label="Mob types (comma separated)" error={fieldError('coating.mobTypes')}>
-            <input value={mobTypes} onChange={(e) => setMobTypes(e.target.value)} placeholder="beast, undead" />
+            <input value={mobTypes} disabled={locked} onChange={(e) => setMobTypes(e.target.value)} placeholder="beast, undead" />
           </Field>
           <Field label="Realm kind" error={fieldError('coating.realmKind')}>
             <select
               value={input.coating.realmKind}
+              disabled={locked}
               onChange={(e) => {
                 const realmKind = e.target.value as (typeof realmKinds)[number]
                 setInput({ ...input, coating: { ...input.coating!, realmKind, floorCount: realmKind === 'field' ? 0 : Math.max(1, input.coating!.floorCount) } })
@@ -145,7 +174,7 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
             <input
               type="number"
               value={input.coating.floorCount}
-              disabled={input.coating.realmKind === 'field'}
+              disabled={locked || input.coating.realmKind === 'field'}
               onChange={(e) => setInput({ ...input, coating: { ...input.coating!, floorCount: Number(e.target.value) } })}
             />
           </Field>
@@ -161,7 +190,7 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
       )}
       <div className="actions">
         <button type="submit" className="button--primary" disabled={save.isPending}>
-          {component ? 'Save' : 'Create'}
+          {component ? 'Save' : template ? 'Create copy' : 'Create'}
         </button>
         <button type="button" className="button--quiet" onClick={onDone}>
           Cancel
@@ -171,13 +200,16 @@ export function ComponentForm({ component, onDone }: ComponentFormProps) {
   )
 }
 
-function Field({ label: text, error, children }: { label: string; error?: string; children: ReactNode }) {
+function Field({ label: text, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) {
   return (
-    <label className="field">
-      <span>{text}</span>
-      {children}
+    <div className="field">
+      <label className="field__label">
+        <span>{text}</span>
+        {children}
+      </label>
+      {hint && !error && <span className="field__hint">{hint}</span>}
       {error && <span className="error-text">{error}</span>}
-    </label>
+    </div>
   )
 }
 

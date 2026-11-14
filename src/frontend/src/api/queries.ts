@@ -64,6 +64,11 @@ export function useComponents(filters: ComponentFilters) {
   })
 }
 
+/** The words a Needle, Thread or Coating name may end with. They never change while the app runs. */
+export function useNameSuffixes() {
+  return useQuery({ queryKey: ['name-suffixes'], queryFn: () => unwrap(api.GET('/api/components/name-suffixes')), staleTime: Infinity })
+}
+
 export function useSaveComponent() {
   const queryClient = useQueryClient()
   return useMutation({

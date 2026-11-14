@@ -40,11 +40,22 @@ export const enumListsAreComplete: [
   Exhaustive<RitualSlot, (typeof ritualSlots)[number]>,
 ] = [true, true, true, true, true, true]
 
+export type NameSuffixes = Schemas['NameSuffixesDto']
+
 const labels: Record<string, string> = {
-  fieldWithDungeon: 'Field + dungeon',
+  fieldWithDungeon: 'Field + Dungeon',
 }
 
-/** "fieldWithDungeon" → "Field + dungeon", "forest" → "Forest". */
+/** A tile's label as the exports print it: column letters then a 1-based row, so (2, 11) → "C12". */
+export function tileLabel(x: number, y: number): string {
+  let column = ''
+  for (let n = x + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+    column = String.fromCharCode(65 + ((n - 1) % 26)) + column
+  }
+  return `${column}${y + 1}`
+}
+
+/** "fieldWithDungeon" → "Field + Dungeon", "forest" → "Forest". */
 export function label(value: string): string {
   return labels[value] ?? value.charAt(0).toUpperCase() + value.slice(1).replace(/([A-Z])/g, ' $1').toLowerCase()
 }

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/client'
 import { exportUrl, useRealm, useRealms, useRealmSvg } from '../api/queries'
-import type { Realm, RealmSummary } from '../api/types'
-import { label } from '../api/types'
+import type { Realm, RealmArea, RealmSummary } from '../api/types'
+import { label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
 import { SvgViewer } from './SvgViewer'
 
@@ -23,12 +23,16 @@ export function RealmsPage() {
       )}
       <ul className="realm-list">
         {realms.data?.map((realm) => (
-          <li key={realm.id} className="card">
-            <Link to={`/realms/${realm.id}`}>
-              <strong>{title(realm)}</strong>
-            </Link>
+          <li key={realm.id} className="card realm-list__item">
+            <div>
+              <Link to={`/realms/${realm.id}`}>
+                <strong>{title(realm)}</strong>
+              </Link>
+              {realm.isMirror && <MirrorBadge />}
+              {realm.components && <p className="realm-list__components">{componentsLine(realm)}</p>}
+            </div>
             <span className="muted">
-              {realm.width}×{realm.height} · threat {realm.threat}
+              {label(realm.kind)} · threat {realm.threat}
               {realm.dangerModifier > 0 && ` (danger +${realm.dangerModifier})`} · {new Date(realm.createdAt).toLocaleString()}
             </span>
           </li>
@@ -72,9 +76,13 @@ function RealmView({ realm }: { realm: Realm }) {
       <p>
         <Link to="/realms">← Realms</Link>
       </p>
-      <h1>{title(summary)}</h1>
+      <h1>
+        {title(summary)}
+        {summary.isMirror && <MirrorBadge />}
+      </h1>
+      {summary.components && <p>{componentsLine(summary)}</p>}
       <p className="muted">
-        Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
+        {label(summary.kind)} · Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}
       </p>
 
@@ -113,20 +121,12 @@ function RealmView({ realm }: { realm: Realm }) {
           <h2>Placements</h2>
           <p className="muted">Click one to highlight it on the map.</p>
           <ul>
-            {area?.events.map((e) => (
-              <li key={e.id}>
-                <button type="button" aria-pressed={highlight === e.id} onClick={() => setHighlight(highlight === e.id ? undefined : e.id)}>
-                  <strong>{e.id}</strong> {e.name} <span className="muted">{e.location}</span>
+            {area && placementsOf(area).map((p) => (
+              <li key={p.id} className={p.isEntry ? 'placements__entry' : undefined}>
+                <button type="button" aria-pressed={highlight === p.id} onClick={() => setHighlight(highlight === p.id ? undefined : p.id)}>
+                  <strong>{p.id}</strong> {p.name} <span className="muted">{p.location}</span>
                 </button>
-                {e.mobs && e.mobs.length > 0 && <span className="placements__mobs">{e.mobs.map((m) => `${m.count}× ${m.name}`).join(', ')}</span>}
-              </li>
-            ))}
-            {area?.features?.map((f) => (
-              <li key={f.id}>
-                <button type="button" aria-pressed={highlight === f.id} onClick={() => setHighlight(highlight === f.id ? undefined : f.id)}>
-                  <strong>{f.id}</strong> {label(f.kind)} <span className="muted">{f.location}</span>
-                </button>
-                <span className="placements__mobs">{f.description}</span>
+                {p.detail && <span className="placements__mobs">{p.detail}</span>}
               </li>
             ))}
           </ul>
@@ -137,5 +137,52 @@ function RealmView({ realm }: { realm: Realm }) {
 }
 
 function title(realm: RealmSummary) {
-  return `${label(realm.biome)} ${label(realm.kind).toLowerCase()}`
+  return realm.components?.mapName ?? `${label(realm.biome)} ${label(realm.kind).toLowerCase()}`
+}
+
+function componentsLine(realm: RealmSummary) {
+  const c = realm.components!
+  return [c.needle.name, c.thread.name, c.coating.name].join(' · ')
+}
+
+function MirrorBadge() {
+  return (
+    <span className="badge badge--warn" title="Woven from a recorded map with different components: same layout, rerolled encounters.">
+      Mirror
+    </span>
+  )
+}
+
+interface Placement {
+  id: string
+  name: string
+  location: string
+  detail?: string
+  /** Where the party enters the area: the spawn, a dungeon entrance, the way up, or the host structure. */
+  isEntry: boolean
+}
+
+const entryFeatures = new Set(['dungeonEntrance', 'stairsUp'])
+
+/** Events and features for the placements list, with the ways in first so they're easy to find. */
+function placementsOf(area: RealmArea): Placement[] {
+  const spawn: Placement[] = area.spawn
+    ? [{ id: 'S', name: 'Spawn point', location: tileLabel(area.spawn.x ?? 0, area.spawn.y ?? 0), isEntry: true }]
+    : []
+  const events: Placement[] = area.events.map((e) => ({
+    id: e.id,
+    name: e.name,
+    location: e.location ?? '',
+    detail: e.mobs && e.mobs.length > 0 ? e.mobs.map((m) => `${m.count}× ${m.name}`).join(', ') : undefined,
+    isEntry: e.category === 'structure',
+  }))
+  const features: Placement[] = (area.features ?? []).map((f) => ({
+    id: f.id,
+    name: label(f.kind),
+    location: f.location ?? '',
+    detail: f.description,
+    isEntry: entryFeatures.has(f.kind),
+  }))
+  const all = [...events, ...features]
+  return [...spawn, ...all.filter((p) => p.isEntry), ...all.filter((p) => !p.isEntry)]
 }
