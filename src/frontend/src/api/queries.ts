@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from './client'
-import type { ComponentInput, RitualPreviewRequest, RitualSelection } from './types'
+import type { ComponentInput, QuickWeaveRequest, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
 export const keys = {
@@ -133,6 +133,33 @@ export function useRealms(playerId: string | undefined) {
     queryKey: keys.realms(playerId ?? ''),
     queryFn: () => unwrap(api.GET('/api/realms', { params: { query: { playerId } } })),
     enabled: !!playerId,
+  })
+}
+
+/** Realms a GM wove with Quick Weave: they belong to no player. */
+export function useGmRealms(enabled: boolean) {
+  return useQuery({
+    queryKey: ['realms', 'gm'],
+    queryFn: () => unwrap(api.GET('/api/realms', { params: { query: { gm: true } } })),
+    enabled,
+  })
+}
+
+/** Resolves a Quick Weave (random picks included) without saving anything. */
+export function useQuickWeavePreview() {
+  return useMutation({
+    mutationFn: (request: QuickWeaveRequest) => unwrap(api.POST('/api/gm/weave/preview', { body: request })),
+  })
+}
+
+export function useQuickWeave() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: QuickWeaveRequest) => unwrap(api.POST('/api/gm/weave', { body: request })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.allRealms })
+      void queryClient.invalidateQueries({ queryKey: keys.allComponents })
+    },
   })
 }
 

@@ -70,7 +70,9 @@ internal sealed class RitualService(
         var coating = preview.Coating!.Component;
         var existingMap = preview.Map?.Component;
         var variant = RitualResolver.EncounterVariantFor(preview.IsMismatch, needle.Id, thread.Id, coating.Id);
-        var request = BuildRequest(selection, resolution, existingMap?.Map, needle, thread, coating, preview.DangerModifier, variant);
+        var recipe = resolution.MapRecipe ?? (existingMap is null ? null : LegacyRecipe(resolution));
+        var request = BuildRequest(
+            existingMap?.Map, recipe, preview.IsMismatch, needle, thread, coating, preview.DangerModifier, variant, selection.Width, selection.Height, selection.EventCount);
 
         RealmDocument document;
         try
@@ -170,21 +172,27 @@ internal sealed class RitualService(
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg
         && pg.ConstraintName == RitualsDbContext.IdempotencyKeyIndex;
 
-    private static GenerationRequest BuildRequest(
-        RitualSelection selection,
-        RitualResolution resolution,
+    /// <summary>
+    /// The generator input for a ritual or a GM Quick Weave. <paramref name="recipe"/> is the map's recorded recipe,
+    /// or null when a new map is being made; the size options only apply to a new map.
+    /// </summary>
+    internal static GenerationRequest BuildRequest(
         MapDetails? map,
+        MapRecipe? recipe,
+        bool isMismatch,
         ComponentDto needle,
         ComponentDto thread,
         ComponentDto coating,
         int dangerModifier,
-        int variant)
+        int variant,
+        int? width,
+        int? height,
+        int? eventCount)
     {
         // Layout (shape, size, biome) comes from the map's recorded recipe (ADR 0006), so editing a component never
         // re-shapes an existing map. A matching ritual takes its encounter inputs from the recipe too and rebuilds the
         // realm exactly; a mismatch (a mirror) takes them from what's in the slots.
-        var recipe = resolution.MapRecipe ?? (map is null ? null : LegacyRecipe(resolution));
-        var useRecipeEncounters = recipe is not null && !resolution.Preview.IsMismatch;
+        var useRecipeEncounters = recipe is not null && !isMismatch;
         var kind = recipe?.Kind ?? coating.Coating!.RealmKind;
 
         return new GenerationRequest
@@ -198,9 +206,9 @@ internal sealed class RitualService(
             Difficulty = useRecipeEncounters ? recipe!.Difficulty : needle.Needle!.DifficultyTier,
             DangerModifier = dangerModifier,
             EncounterVariant = variant,
-            Width = map?.Width ?? selection.Width,
-            Height = map?.Height ?? selection.Height,
-            EventCount = map is null ? selection.EventCount : (kind == RealmKind.Dungeon ? null : map.EventCount),
+            Width = map?.Width ?? width,
+            Height = map?.Height ?? height,
+            EventCount = map is null ? eventCount : (kind == RealmKind.Dungeon ? null : map.EventCount),
         };
     }
 
@@ -244,7 +252,8 @@ internal sealed class RitualService(
         }
     }
 
-    private static NewMap NewMapFor(Guid id, RealmDocument document, ComponentDto needle, ComponentDto thread, ComponentDto coating, Guid playerId)
+    /// <summary>A new Map component for a realm just generated. <paramref name="playerId"/> is null for a GM's Quick Weave.</summary>
+    internal static NewMap NewMapFor(Guid id, RealmDocument document, ComponentDto needle, ComponentDto thread, ComponentDto coating, Guid? playerId)
     {
         var first = document.Areas[0];
         var seedTag = SeedTag(document.Seed);

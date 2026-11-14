@@ -194,7 +194,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Realm summaries, newest first. Filter by player or by the map they were opened from. */
+        /** @description Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves. */
         get: operations["ListRealms"];
         put?: never;
         post?: never;
@@ -281,6 +281,40 @@ export interface paths {
         get: operations["GetRitual"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gm/weave/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Resolves a Quick Weave without saving anything: chosen slots as given, empty ones picked at random within the limits. */
+        post: operations["PreviewQuickWeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gm/weave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Generates a realm from the whole catalog with no inventory checks and nothing consumed. Without a map it records a new, unowned map that can then be assigned to players. Send the ids a preview resolved to weave exactly what was previewed. */
+        post: operations["QuickWeave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -588,6 +622,63 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        QuickWeaveLimits: {
+            rarities?: null | components["schemas"]["Rarity"][];
+            /** Format: int32 */
+            minTier?: null | number;
+            /** Format: int32 */
+            maxTier?: null | number;
+            biomes?: null | components["schemas"]["Biome"][];
+            kinds?: null | components["schemas"]["RealmKind"][];
+            /** @default false */
+            includeArchived: boolean;
+        };
+        QuickWeavePreviewDto: {
+            needle: null | components["schemas"]["SlotPreview"];
+            thread: null | components["schemas"]["SlotPreview"];
+            coating: null | components["schemas"]["SlotPreview"];
+            map: null | components["schemas"]["SlotPreview"];
+            isMismatch: boolean;
+            mismatchedSlots: components["schemas"]["RitualSlot"][];
+            /** Format: int32 */
+            dangerModifier: number;
+            createsNewMap: boolean;
+            issues: components["schemas"]["RitualIssue"][];
+            canWeave?: boolean;
+        };
+        QuickWeaveRequest: {
+            /** Format: uuid */
+            needleId?: null | string;
+            /** Format: uuid */
+            threadId?: null | string;
+            /** Format: uuid */
+            coatingId?: null | string;
+            /** Format: uuid */
+            mapId?: null | string;
+            limits?: null | components["schemas"]["QuickWeaveLimits"];
+            /** Format: int32 */
+            width?: null | number;
+            /** Format: int32 */
+            height?: null | number;
+            /** Format: int32 */
+            eventCount?: null | number;
+        };
+        QuickWeaveResultDto: {
+            /** Format: uuid */
+            realmId: string;
+            /** Format: uuid */
+            mapId: string;
+            mapCreated: boolean;
+            /** Format: uuid */
+            needleId: string;
+            /** Format: uuid */
+            threadId: string;
+            /** Format: uuid */
+            coatingId: string;
+            isMismatch: boolean;
+            /** Format: int32 */
+            dangerModifier: number;
+        };
         /** @enum {unknown} */
         Rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
         RealmArea: {
@@ -651,7 +742,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            playerId: string;
+            playerId: null | string;
             /** Format: uuid */
             mapComponentId: string;
             kind: components["schemas"]["RealmKind"];
@@ -1249,6 +1340,7 @@ export interface operations {
                 playerId?: string;
                 mapId?: string;
                 limit?: number;
+                gm?: boolean;
             };
             header?: never;
             path?: never;
@@ -1448,6 +1540,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RitualResultDto"];
+                };
+            };
+        };
+    };
+    PreviewQuickWeave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickWeaveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickWeavePreviewDto"];
+                };
+            };
+        };
+    };
+    QuickWeave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickWeaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickWeaveResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

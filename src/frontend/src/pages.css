@@ -520,6 +520,56 @@ textarea {
   flex: 1;
 }
 
+/* Quick Weave */
+.quick-weave {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.quick-weave .card {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  margin: 0;
+}
+
+.quick-weave h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.limit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.limit-chips .muted {
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.limit-chips button {
+  border-radius: 999px;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+}
+
+.limit-chips button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.rolled {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
 /* Modal dialogs (native <dialog>) */
 .modal {
   width: min(560px, calc(100vw - 2rem));

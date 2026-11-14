@@ -7,6 +7,7 @@ const links = [
   { to: '/player', label: 'Player' },
   { to: '/realms', label: 'Realms' },
   { to: '/components', label: 'Components' },
+  { to: '/gm/weave', label: 'Quick Weave' },
 ]
 
 export function Layout() {

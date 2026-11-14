@@ -79,12 +79,17 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
     }
 
     /// <summary>Newest first. Summaries only; the documents can be large.</summary>
-    public async Task<IReadOnlyList<RealmSummaryDto>> ListAsync(Guid? playerId, Guid? mapComponentId, int limit, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<RealmSummaryDto>> ListAsync(Guid? playerId, Guid? mapComponentId, int limit, CancellationToken cancellationToken, bool gmOnly = false)
     {
         var realms = db.Realms.AsNoTracking();
         if (playerId is { } player)
         {
             realms = realms.Where(r => r.PlayerId == player);
+        }
+
+        if (gmOnly)
+        {
+            realms = realms.Where(r => r.PlayerId == null);
         }
 
         if (mapComponentId is { } map)

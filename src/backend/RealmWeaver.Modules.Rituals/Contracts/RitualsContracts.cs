@@ -79,6 +79,57 @@ public sealed record RitualPreviewDto(
     public bool CanPerform => Issues.Count == 0;
 }
 
+/// <summary>
+/// Limits for the slots a GM leaves empty in a Quick Weave. Every limit is optional: rarities apply to all three,
+/// the tier range to the Needle, biomes to the Thread and realm kinds to the Coating.
+/// </summary>
+public sealed record QuickWeaveLimits(
+    IReadOnlyList<Rarity>? Rarities = null,
+    int? MinTier = null,
+    int? MaxTier = null,
+    IReadOnlyList<Generation.Model.Biome>? Biomes = null,
+    IReadOnlyList<Generation.Model.RealmKind>? Kinds = null,
+    bool IncludeArchived = false);
+
+/// <summary>
+/// A GM weaving from the whole catalog: no inventory, nothing consumed. A chosen slot is used as is; an empty one is
+/// picked at random within <see cref="Limits"/>. With a Map the realm reuses its seed (a mirror if the slots differ);
+/// without one a new, unowned Map is recorded.
+/// </summary>
+public sealed record QuickWeaveRequest(
+    Guid? NeedleId = null,
+    Guid? ThreadId = null,
+    Guid? CoatingId = null,
+    Guid? MapId = null,
+    QuickWeaveLimits? Limits = null,
+    int? Width = null,
+    int? Height = null,
+    int? EventCount = null);
+
+public sealed record QuickWeavePreviewDto(
+    SlotPreview? Needle,
+    SlotPreview? Thread,
+    SlotPreview? Coating,
+    SlotPreview? Map,
+    bool IsMismatch,
+    IReadOnlyList<RitualSlot> MismatchedSlots,
+    int DangerModifier,
+    bool CreatesNewMap,
+    IReadOnlyList<RitualIssue> Issues)
+{
+    public bool CanWeave => Issues.Count == 0;
+}
+
+public sealed record QuickWeaveResultDto(
+    Guid RealmId,
+    Guid MapId,
+    bool MapCreated,
+    Guid NeedleId,
+    Guid ThreadId,
+    Guid CoatingId,
+    bool IsMismatch,
+    int DangerModifier);
+
 public sealed record RitualResultDto(
     Guid RitualId,
     Guid PlayerId,

@@ -30,6 +30,16 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
         return entities.ToDictionary(c => c.Id, c => c.ToDto());
     }
 
+    public async Task<IReadOnlyList<ComponentDto>> ListByTypeAsync(ComponentType type, bool includeArchived, CancellationToken cancellationToken = default)
+    {
+        var entities = await db.Components.AsNoTracking()
+            .Where(c => c.Type == type && (includeArchived || !c.IsArchived))
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
+            .ToListAsync(cancellationToken);
+        return [.. entities.Select(c => c.ToDto())];
+    }
+
     public async Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
     {
         var settings = await db.Settings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);

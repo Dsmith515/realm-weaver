@@ -96,6 +96,17 @@ describe('Realm pages', () => {
     expect(api.callsTo('GET', '/api/realms')[0].query.get('playerId')).toBe(player.id)
   })
 
+  it('lists GM Quick Weaves on their own tab', async () => {
+    const api = fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/realms')
+
+    await user.click(await screen.findByRole('tab', { name: 'GM Quick Weaves' }))
+
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms').some((c) => c.query.get('gm') === 'true')).toBe(true))
+    expect(screen.getByRole('tab', { name: 'GM Quick Weaves' })).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('names a realm after its map, lists its components and flags mirrors', async () => {
     fakeApi(routes())
     renderApp('/realms')

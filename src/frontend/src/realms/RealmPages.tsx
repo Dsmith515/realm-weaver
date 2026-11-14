@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/client'
-import { exportUrl, useRealm, useRealms, useRealmSvg } from '../api/queries'
+import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api/queries'
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
@@ -9,16 +9,27 @@ import { SvgViewer } from './SvgViewer'
 
 export function RealmsPage() {
   const { playerId } = usePlayerSelection()
-  const realms = useRealms(playerId)
+  const [gm, setGm] = useState(false)
+  const playerRealms = useRealms(gm ? undefined : playerId)
+  const gmRealms = useGmRealms(gm)
+  const realms = gm ? gmRealms : playerRealms
 
   return (
     <section>
       <h1>Realms</h1>
-      {!playerId && <p>Choose a player in the header.</p>}
+      <div role="tablist" aria-label="Whose realms" className="tabs">
+        <button type="button" role="tab" aria-selected={!gm} onClick={() => setGm(false)}>
+          Player
+        </button>
+        <button type="button" role="tab" aria-selected={gm} onClick={() => setGm(true)}>
+          GM Quick Weaves
+        </button>
+      </div>
+      {!gm && !playerId && <p>Choose a player in the header.</p>}
       {realms.isError && <p className="error-text">{errorMessage(realms.error)}</p>}
       {realms.data?.length === 0 && (
         <p>
-          No realms yet. <Link to="/ritual">Perform a ritual</Link> to open one.
+          No realms yet. {gm ? <Link to="/gm/weave">Quick Weave</Link> : <Link to="/ritual">Perform a ritual</Link>} to open one.
         </p>
       )}
       <ul className="realm-list">
