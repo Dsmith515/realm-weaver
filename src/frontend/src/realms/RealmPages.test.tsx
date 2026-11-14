@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { fakeApi, type ApiCall } from '../test/fakeApi'
 import { player } from '../test/fixtures'
@@ -172,5 +172,57 @@ describe('Realm pages', () => {
     await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/export').at(-1)!.query.get('area')).toBe('floor-1'))
     expect(screen.getByRole('link', { name: 'Download SVG' })).toHaveAttribute('href', '/api/realms/realm-1/export?format=svg&area=floor-1')
     expect(screen.getByRole('link', { name: 'JSON' })).toHaveAttribute('href', '/api/realms/realm-1/export?format=json')
+  })
+
+  it('shows the image prompt in a window that copies and downloads it', async () => {
+    const api = fakeApi({
+      ...routes(),
+      'GET /api/realms/:id/export': (call: ApiCall) =>
+        call.query.get('format') === 'prompt'
+          ? new Response(`Top-down battle map of ${call.query.get('area')}.`, { headers: { 'content-type': 'text/plain' } })
+          : svgFor(call),
+    })
+    const user = userEvent.setup() // installs its own clipboard stub, so ours goes on afterwards
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    renderApp('/realms/realm-1')
+
+    await user.click(await screen.findByRole('button', { name: 'Image prompt' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Image prompt' })
+    expect(await within(dialog).findByText('Top-down battle map of field.')).toBeInTheDocument()
+    expect(api.callsTo('GET', '/api/realms/realm-1/export').some((c) => c.query.get('format') === 'prompt')).toBe(true)
+    expect(within(dialog).getByRole('link', { name: 'Download prompt' })).toHaveAttribute(
+      'href',
+      '/api/realms/realm-1/export?format=prompt&area=field',
+    )
+
+    await user.click(within(dialog).getByRole('button', { name: 'Copy to clipboard' }))
+    expect(writeText).toHaveBeenCalledWith('Top-down battle map of field.')
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Copied to the clipboard.')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog', { name: 'Image prompt' })).not.toBeInTheDocument()
+  })
+
+  it('says so when the prompt cannot be copied', async () => {
+    fakeApi({
+      ...routes(),
+      'GET /api/realms/:id/export': (call: ApiCall) =>
+        call.query.get('format') === 'prompt' ? new Response('A prompt.') : svgFor(call),
+    })
+    const user = userEvent.setup()
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+      configurable: true,
+    })
+    renderApp('/realms/realm-1')
+
+    await user.click(await screen.findByRole('button', { name: 'Image prompt' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Image prompt' })
+    await within(dialog).findByText('A prompt.')
+    await user.click(within(dialog).getByRole('button', { name: 'Copy to clipboard' }))
+
+    expect(within(dialog).getByRole('status')).toHaveTextContent("Couldn't copy")
   })
 })

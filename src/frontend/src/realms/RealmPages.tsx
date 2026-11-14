@@ -5,6 +5,7 @@ import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
+import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
 
 export function RealmsPage() {
@@ -74,6 +75,7 @@ function RealmView({ realm }: { realm: Realm }) {
   const { summary, document } = realm
   const [areaId, setAreaId] = useState(summary.areas[0]?.id)
   const [highlight, setHighlight] = useState<string>()
+  const [promptOpen, setPromptOpen] = useState(false)
   const svg = useRealmSvg(summary.id, areaId)
   const area = document.areas.find((a) => a.id === areaId)
 
@@ -116,9 +118,9 @@ function RealmView({ realm }: { realm: Realm }) {
             <a className="button" href={exportUrl(summary.id, 'svg', areaId)} download>
               Download SVG
             </a>
-            <a className="button" href={exportUrl(summary.id, 'prompt', areaId)} download>
+            <button type="button" onClick={() => setPromptOpen(true)}>
               Image prompt
-            </a>
+            </button>
             <a className="button" href={exportUrl(summary.id, 'md')} download>
               Placement sheet (Markdown)
             </a>
@@ -126,6 +128,7 @@ function RealmView({ realm }: { realm: Realm }) {
               JSON
             </a>
           </div>
+          {promptOpen && <PromptDialog realmId={summary.id} areaId={areaId} onClose={() => setPromptOpen(false)} />}
         </div>
 
         <aside className="placements" aria-label="Placements">

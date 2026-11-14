@@ -185,6 +185,20 @@ export function useRealmSvg(id: string, area: string | undefined) {
   })
 }
 
+/** The image prompt for one area, as plain text. Fetched only while the prompt window is open. */
+export function useRealmPrompt(id: string, area: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['realm-prompt', id, area],
+    queryFn: async () => {
+      const response = await fetch(exportUrl(id, 'prompt', area))
+      if (!response.ok) throw new Error(`The image prompt couldn't be loaded (${response.status}).`)
+      return response.text()
+    },
+    enabled: enabled && !!area,
+    staleTime: Infinity,
+  })
+}
+
 export function exportUrl(realmId: string, format: 'svg' | 'prompt' | 'json' | 'md', area?: string) {
   const query = new URLSearchParams({ format })
   if (area) query.set('area', area)

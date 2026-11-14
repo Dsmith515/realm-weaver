@@ -593,6 +593,25 @@ textarea {
   max-width: none;
 }
 
+.prompt-text {
+  max-height: 50vh;
+  overflow: auto;
+  margin: 0 0 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+
+/* About */
+.about {
+  max-width: 46rem;
+  line-height: 1.55;
+}
+
 /* Realms */
 .realm-list {
   list-style: none;

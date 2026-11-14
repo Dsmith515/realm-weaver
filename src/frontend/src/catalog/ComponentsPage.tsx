@@ -114,29 +114,31 @@ export function ComponentsPage() {
               <td>{c.rank}</td>
               <td className="muted">{describe(c)}</td>
               <td>{c.isPlayerAssignable ? 'Yes' : 'No'}</td>
-              <td className="row-actions">
-                <button type="button" onClick={() => setEditing({ mode: 'edit', component: c })} aria-label={`Edit ${c.name}`}>
-                  Edit
-                </button>
-                {canClone(c) && (
-                  <button type="button" onClick={() => setEditing({ mode: 'clone', component: c })} aria-label={`Clone ${c.name}`}>
-                    Clone
+              <td>
+                <div className="row-actions">
+                  <button type="button" onClick={() => setEditing({ mode: 'edit', component: c })} aria-label={`Edit ${c.name}`}>
+                    Edit
                   </button>
-                )}
-                <button type="button" onClick={() => setAssigning(c)} disabled={c.isArchived} aria-label={`Assign ${c.name}`}>
-                  Assign
-                </button>
-                <button
-                  type="button"
-                  className="button--quiet"
-                  disabled={c.isArchived || archive.isPending}
-                  aria-label={`Archive ${c.name}`}
-                  onClick={() => {
-                    if (window.confirm(`Archive ${c.name}? Players keep the ones they own.`)) archive.mutate(c.id)
-                  }}
-                >
-                  Archive
-                </button>
+                  {canClone(c) && (
+                    <button type="button" onClick={() => setEditing({ mode: 'clone', component: c })} aria-label={`Clone ${c.name}`}>
+                      Clone
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setAssigning(c)} disabled={c.isArchived} aria-label={`Assign ${c.name}`}>
+                    Assign
+                  </button>
+                  <button
+                    type="button"
+                    className="button--quiet"
+                    disabled={c.isArchived || archive.isPending}
+                    aria-label={`Archive ${c.name}`}
+                    onClick={() => {
+                      if (window.confirm(`Archive ${c.name}? Players keep the ones they own.`)) archive.mutate(c.id)
+                    }}
+                  >
+                    Archive
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

@@ -8,6 +8,7 @@ const links = [
   { to: '/realms', label: 'Realms' },
   { to: '/components', label: 'Components' },
   { to: '/gm/weave', label: 'Quick Weave' },
+  { to: '/about', label: 'About' },
 ]
 
 export function Layout() {
