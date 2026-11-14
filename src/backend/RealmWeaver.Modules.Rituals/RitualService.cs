@@ -122,7 +122,15 @@ internal sealed class RitualService(
 
                     // 5. Store the realm snapshot.
                     await realms.SaveAsync(
-                        new NewRealm(ritual.RealmId, selection.PlayerId, map.Id, ritual.DangerModifier, ritual.EncounterVariant, document), ct);
+                        new NewRealm(
+                            ritual.RealmId,
+                            selection.PlayerId,
+                            map.Id,
+                            ritual.DangerModifier,
+                            ritual.EncounterVariant,
+                            document,
+                            new RealmComponentsDto(map.Name, new(needle.Id, needle.Name), new(thread.Id, thread.Name), new(coating.Id, coating.Name))),
+                        ct);
 
                     return ToResult(ritual);
                 },
@@ -172,43 +180,79 @@ internal sealed class RitualService(
         int dangerModifier,
         int variant)
     {
-        // Layout (shape, size, biome) comes from the map's own Thread and Coating; the encounters come
-        // from what's in the slots. A matching ritual therefore rebuilds the map's realm exactly.
-        var layoutThread = resolution.LayoutThread?.Thread ?? throw new InvalidOperationException("The realm has no layout thread.");
-        var layoutCoating = resolution.LayoutCoating?.Coating ?? throw new InvalidOperationException("The realm has no layout coating.");
+        // Layout (shape, size, biome) comes from the map's recorded recipe (ADR 0006), so editing a component never
+        // re-shapes an existing map. A matching ritual takes its encounter inputs from the recipe too and rebuilds the
+        // realm exactly; a mismatch (a mirror) takes them from what's in the slots.
+        var recipe = resolution.MapRecipe ?? (map is null ? null : LegacyRecipe(resolution));
+        var useRecipeEncounters = recipe is not null && !resolution.Preview.IsMismatch;
+        var kind = recipe?.Kind ?? coating.Coating!.RealmKind;
 
         return new GenerationRequest
         {
             Seed = map?.Seed ?? NewSeed(),
-            Kind = layoutCoating.RealmKind,
-            FloorCount = Math.Max(1, layoutCoating.FloorCount),
-            Biome = layoutThread.Biome,
-            Element = thread.Thread!.Element,
-            MobTags = coating.Coating!.MobTypes,
-            Difficulty = needle.Needle!.DifficultyTier,
+            Kind = kind,
+            FloorCount = Math.Max(1, recipe?.FloorCount ?? coating.Coating!.FloorCount),
+            Biome = recipe?.Biome ?? thread.Thread!.Biome,
+            Element = useRecipeEncounters ? recipe!.Element : thread.Thread!.Element,
+            MobTags = useRecipeEncounters ? recipe!.MobTags : coating.Coating!.MobTypes,
+            Difficulty = useRecipeEncounters ? recipe!.Difficulty : needle.Needle!.DifficultyTier,
             DangerModifier = dangerModifier,
             EncounterVariant = variant,
             Width = map?.Width ?? selection.Width,
             Height = map?.Height ?? selection.Height,
-            EventCount = map is null ? selection.EventCount : (layoutCoating.RealmKind == RealmKind.Dungeon ? null : map.EventCount),
+            EventCount = map is null ? selection.EventCount : (kind == RealmKind.Dungeon ? null : map.EventCount),
         };
+    }
+
+    /// <summary>A map from before the recipe snapshot: fall back to its recorded components' current values.</summary>
+    private static MapRecipe LegacyRecipe(RitualResolution resolution)
+    {
+        var thread = resolution.LayoutThread?.Thread ?? throw new InvalidOperationException("The map has no layout thread.");
+        var coating = resolution.LayoutCoating?.Coating ?? throw new InvalidOperationException("The map has no layout coating.");
+        var needle = resolution.Preview.Needle?.Component.Needle ?? throw new InvalidOperationException("The ritual has no needle.");
+        return new MapRecipe(coating.RealmKind, coating.FloorCount, thread.Biome, thread.Element, coating.MobTypes, needle.DifficultyTier);
+    }
+
+    /// <summary>The recipe a new map records: exactly the inputs its realm was generated from.</summary>
+    private static MapRecipe RecipeOf(GenerationRequest request) => new(
+        request.Kind,
+        request.Kind == RealmKind.Field ? 0 : request.FloorCount,
+        request.Biome,
+        request.Element,
+        [.. request.MobTags],
+        request.Difficulty);
+
+    /// <summary>"Beginner's Reedwoven Beastward Wax Swamp Field and Dungeon Map": the components without their type word.</summary>
+    internal static string MapNameFor(ComponentDto needle, ComponentDto thread, ComponentDto coating, Biome biome, RealmKind kind)
+    {
+        var kindWords = kind switch
+        {
+            RealmKind.Field => "Field",
+            RealmKind.Dungeon => "Dungeon",
+            _ => "Field and Dungeon",
+        };
+
+        return string.Join(
+            ' ',
+            new[] { Strip(needle, "Needle"), Strip(thread, "Thread"), Strip(coating, "Coating"), biome.ToString(), kindWords, "Map" }
+                .Where(part => part.Length > 0));
+
+        static string Strip(ComponentDto component, string typeWord)
+        {
+            var name = component.Name.Trim();
+            return name.EndsWith(" " + typeWord, StringComparison.OrdinalIgnoreCase) ? name[..^(typeWord.Length + 1)].TrimEnd() : name;
+        }
     }
 
     private static NewMap NewMapFor(Guid id, RealmDocument document, ComponentDto needle, ComponentDto thread, ComponentDto coating, Guid playerId)
     {
         var first = document.Areas[0];
-        var kind = document.Request.Kind switch
-        {
-            RealmKind.Field => "field",
-            RealmKind.Dungeon => "dungeon",
-            _ => "field and dungeon",
-        };
-        var seedTag = document.Seed.ToString("X16", CultureInfo.InvariantCulture)[..6];
+        var seedTag = SeedTag(document.Seed);
 
         return new NewMap(
             id,
-            $"{document.Request.Biome} {kind} map {seedTag}",
-            $"Opened with {needle.Name}, {thread.Name} and {coating.Name}.",
+            MapNameFor(needle, thread, coating, document.Request.Biome, document.Request.Kind),
+            $"Opened with {needle.Name}, {thread.Name} and {coating.Name}. Seed tag {seedTag}.",
             new MapDetails(
                 document.Seed,
                 needle.Id,
@@ -218,8 +262,12 @@ internal sealed class RitualService(
                 first.Height,
                 Math.Clamp(first.Events.Count, GeneratorLimits.MinEvents, GeneratorLimits.AbsoluteMaxEvents),
                 document.GeneratorVersion,
-                playerId));
+                playerId,
+                RecipeOf(document.Request),
+                document.Threat));
     }
+
+    internal static string SeedTag(ulong seed) => seed.ToString("X16", CultureInfo.InvariantCulture)[..6];
 
     private static ulong NewSeed() => BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)));
 

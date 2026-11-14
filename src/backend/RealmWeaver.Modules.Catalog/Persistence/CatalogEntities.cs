@@ -87,6 +87,26 @@ internal sealed class MapData
     public string GeneratorVersion { get; set; } = string.Empty;
 
     public Guid? CreatedByPlayerId { get; set; }
+
+    /// <summary>A copy of the generation inputs (ADR 0006). Null only before the snapshot migration backfills it.</summary>
+    public MapRecipeData? Recipe { get; set; }
+
+    public int? Threat { get; set; }
+}
+
+internal sealed class MapRecipeData
+{
+    public RealmKind Kind { get; set; }
+
+    public int FloorCount { get; set; }
+
+    public Biome Biome { get; set; }
+
+    public Element Element { get; set; }
+
+    public List<string> MobTags { get; set; } = [];
+
+    public int Difficulty { get; set; }
 }
 
 /// <summary>A single-row table of global settings.</summary>

@@ -116,7 +116,7 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
             AdvancedOptionsIgnored: map is not null && advancedUsed,
             issues);
 
-        return new RitualResolution(result, layoutThread, layoutCoating);
+        return new RitualResolution(result, map?.Component.Map?.Recipe, layoutThread, layoutCoating);
 
         SlotPreview? Selected(RitualSlot slot, ComponentType type, Guid? id)
         {
@@ -227,5 +227,8 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
     };
 }
 
-/// <summary>The preview plus the components the realm's layout comes from (the map's own, when there is a map).</summary>
-internal sealed record RitualResolution(RitualPreviewDto Preview, ComponentDto? LayoutThread, ComponentDto? LayoutCoating);
+/// <summary>
+/// The preview plus where the realm's layout comes from: the map's recorded recipe when there is a map (ADR 0006),
+/// otherwise the slotted Thread and Coating. The layout components are the fallback for maps from before the snapshot.
+/// </summary>
+internal sealed record RitualResolution(RitualPreviewDto Preview, MapRecipe? MapRecipe, ComponentDto? LayoutThread, ComponentDto? LayoutCoating);

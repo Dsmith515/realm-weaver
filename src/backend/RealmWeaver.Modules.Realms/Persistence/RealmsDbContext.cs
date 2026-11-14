@@ -44,6 +44,21 @@ internal sealed class Realm
     public required string Areas { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
+
+    // Copies of names at weaving time (ADR 0006). Null for realms stored before they were recorded.
+    public string? MapName { get; set; }
+
+    public Guid? NeedleId { get; set; }
+
+    public string? NeedleName { get; set; }
+
+    public Guid? ThreadId { get; set; }
+
+    public string? ThreadName { get; set; }
+
+    public Guid? CoatingId { get; set; }
+
+    public string? CoatingName { get; set; }
 }
 
 internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options) : DbContext(options)
@@ -64,6 +79,10 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.GeneratorVersion).HasMaxLength(20);
             realm.Property(r => r.Document).HasColumnType("jsonb");
             realm.Property(r => r.Areas).HasColumnType("jsonb");
+            realm.Property(r => r.MapName).HasMaxLength(100);
+            realm.Property(r => r.NeedleName).HasMaxLength(100);
+            realm.Property(r => r.ThreadName).HasMaxLength(100);
+            realm.Property(r => r.CoatingName).HasMaxLength(100);
             realm.HasIndex(r => new { r.PlayerId, r.CreatedAt });
             realm.HasIndex(r => r.MapComponentId);
         });

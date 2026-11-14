@@ -112,7 +112,58 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<ComponentDto>([.. items.Select(c => c.ToDto())], page, pageSize, total);
+        var usage = await UsageCountsAsync([.. items.Select(c => c.Id)], cancellationToken);
+        return new PagedResult<ComponentDto>([.. items.Select(c => c.ToDto(usage.GetValueOrDefault(c.Id)))], page, pageSize, total);
+    }
+
+    /// <summary>The component with how many maps were woven from it, which decides whether its recipe fields are locked.</summary>
+    public async Task<ComponentDto?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var entity = await db.Components.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var usage = await UsageCountsAsync([id], cancellationToken);
+        return entity.ToDto(usage.GetValueOrDefault(id));
+    }
+
+    /// <summary>How many maps reference each of the given Needles, Threads or Coatings.</summary>
+    public async Task<IReadOnlyDictionary<Guid, int>> UsageCountsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        var wanted = ids.ToHashSet();
+        var maps = await db.Components.AsNoTracking()
+            .Where(c => c.Type == ComponentType.Map && c.Map != null)
+            .Select(c => new { c.Map!.NeedleId, c.Map.ThreadId, c.Map.CoatingId })
+            .ToListAsync(cancellationToken);
+
+        return maps
+            .SelectMany(m => new[] { m.NeedleId, m.ThreadId, m.CoatingId })
+            .Where(wanted.Contains)
+            .GroupBy(id => id)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    /// <summary>A map created without a recipe gets one copied from the components it references (ADR 0006).</summary>
+    public async Task<ComponentInput> WithRecipeAsync(ComponentInput input, CancellationToken cancellationToken)
+    {
+        if (input.Map is not { Recipe: null } map)
+        {
+            return input;
+        }
+
+        var referenced = await GetComponentsAsync([map.NeedleId, map.ThreadId, map.CoatingId], cancellationToken);
+        var needle = referenced[map.NeedleId].Needle!;
+        var thread = referenced[map.ThreadId].Thread!;
+        var coating = referenced[map.CoatingId].Coating!;
+        var recipe = new MapRecipe(coating.RealmKind, coating.FloorCount, thread.Biome, thread.Element, coating.MobTypes, needle.DifficultyTier);
+        return input with { Map = map with { Recipe = recipe } };
     }
 
     /// <summary>A Map must point at an existing Needle, Thread and Coating.</summary>

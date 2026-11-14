@@ -41,6 +41,15 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasColumnType("character varying(24)")
                         .HasColumnName("biome");
 
+                    b.Property<Guid?>("CoatingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("coating_id");
+
+                    b.Property<string>("CoatingName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("coating_name");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -82,6 +91,20 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("map_component_id");
 
+                    b.Property<string>("MapName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("map_name");
+
+                    b.Property<Guid?>("NeedleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("needle_id");
+
+                    b.Property<string>("NeedleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("needle_name");
+
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -89,6 +112,15 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                     b.Property<decimal>("Seed")
                         .HasColumnType("numeric(20,0)")
                         .HasColumnName("seed");
+
+                    b.Property<Guid?>("ThreadId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("thread_id");
+
+                    b.Property<string>("ThreadName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("thread_name");
 
                     b.Property<int>("Threat")
                         .HasColumnType("integer")
