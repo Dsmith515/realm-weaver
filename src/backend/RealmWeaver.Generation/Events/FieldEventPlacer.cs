@@ -99,19 +99,39 @@ public sealed class FieldEventPlacer
         }
 
         // Number events in reading order (top-left to bottom-right) so the list is easy to follow on the map.
-        var events = placed
-            .OrderBy(p => p.Footprint.Y)
-            .ThenBy(p => p.Footprint.X)
-            .Select((p, i) => BuildEvent(i + 1, p.Template, p.Footprint, mobs, mobRng.Fork(i.ToString(CultureInfo.InvariantCulture))))
-            .ToList();
+        var events = new List<PlacedEvent>(placed.Count);
+        var nextStructure = 1;
+        foreach (var (p, i) in placed.OrderBy(p => p.Footprint.Y).ThenBy(p => p.Footprint.X).Select((p, i) => (p, i)))
+        {
+            var built = BuildEvent(i + 1, p.Template, p.Footprint, mobs, mobRng.Fork(i.ToString(CultureInfo.InvariantCulture)), nextStructure);
+            nextStructure += built.Structures.Count;
+            events.Add(built);
+        }
 
         var hostEvent = hostFootprint is { } hf ? events.Single(e => e.Footprint == hf) : null;
         return new Result(spawn, events, hostEvent);
     }
 
-    private static PlacedEvent BuildEvent(int number, EventTemplate template, GridRect footprint, MobResolver mobs, SeededRandom rng)
+    private PlacedEvent BuildEvent(int number, EventTemplate template, GridRect footprint, MobResolver mobs, SeededRandom rng, int firstStructure)
     {
-        var groups = mobs.Resolve(template, rng);
+        SettlementPopulation? population = null;
+        IReadOnlyList<PlacedStructure> structures = [];
+        IReadOnlyList<MobGroup> groups;
+        if (template.Category == EventCategory.Settlement)
+        {
+            var level = Settlements.RollPopulation(_request, rng.Fork("population"));
+            population = level;
+            groups = mobs.ResolveSettlement(template, footprint.Area, level, rng);
+            if (_request.IncludeStructures)
+            {
+                structures = Settlements.PlaceStructures(footprint, level, _catalog, _request, rng.Fork("structures"), firstStructure);
+            }
+        }
+        else
+        {
+            groups = mobs.Resolve(template, rng);
+        }
+
         return new PlacedEvent
         {
             Id = "E" + number.ToString(CultureInfo.InvariantCulture),
@@ -122,6 +142,8 @@ public sealed class FieldEventPlacer
             Mobs = groups,
             DifficultyTemplateIds = groups.Count > 0 ? mobs.DifficultyTemplates(rng) : [],
             Notes = template.Description,
+            Population = population,
+            Structures = structures,
         };
     }
 

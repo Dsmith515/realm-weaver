@@ -187,7 +187,19 @@ internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule re
         var existingMap = preview.Map?.Component;
         var variant = RitualResolver.EncounterVariantFor(preview.IsMismatch, needle.Id, thread.Id, coating.Id);
         var generation = RitualService.BuildRequest(
-            existingMap?.Map, recipe, preview.IsMismatch, needle, thread, coating, preview.DangerModifier, variant, request.Width, request.Height, request.EventCount);
+            existingMap?.Map,
+            recipe,
+            preview.IsMismatch,
+            needle,
+            thread,
+            coating,
+            preview.DangerModifier,
+            variant,
+            request.Width,
+            request.Height,
+            request.EventCount,
+            request.Population,
+            request.IncludeStructures);
 
         RealmDocument document;
         try

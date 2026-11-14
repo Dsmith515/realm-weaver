@@ -24,7 +24,7 @@ public static class SvgExporter
         var legendTop = TopGutter + mapHeight + 24;
         var terrains = area.TerrainRows.SelectMany(r => r).Distinct().Select(TerrainInfo.FromCode).OrderBy(t => t.Terrain).ToList();
         var materials = area.Rooms.Select(r => r.Material).Distinct().Order().Select(DungeonMaterials.Of).ToList();
-        var legendLines = 2 + terrains.Count + materials.Count + area.Events.Count + area.Features.Count + 4;
+        var legendLines = 2 + terrains.Count + materials.Count + area.Events.Count + area.Events.Sum(e => e.Structures.Count) + area.Features.Count + 4;
         var totalWidth = LeftGutter + mapWidth + 16;
         var totalHeight = legendTop + (legendLines * LegendLine) + 16;
 
@@ -108,6 +108,13 @@ public static class SvgExporter
             Append(svg, $"<g data-event-id=\"{e.Id}\" data-template=\"{Escape(e.TemplateId)}\">");
             Append(svg, $"<title>{e.Id} {Escape(e.Name)} ({e.Location})</title>");
             Append(svg, $"<rect x=\"{(r.X * Tile) + 1}\" y=\"{(r.Y * Tile) + 1}\" width=\"{(r.Width * Tile) - 2}\" height=\"{(r.Height * Tile) - 2}\" rx=\"3\" fill=\"{color}\" fill-opacity=\"0.35\" stroke=\"{color}\" stroke-width=\"2\"/>");
+            foreach (var b in e.Structures)
+            {
+                var f = b.Footprint;
+                var ruined = b.Ruined ? " stroke-dasharray=\"3 2\" fill-opacity=\"0.45\"" : "";
+                Append(svg, $"<g data-structure-id=\"{b.Id}\" data-template=\"{Escape(b.TemplateId)}\"><title>{b.Id} {Escape(b.Name)}{(b.Ruined ? " (ruined)" : "")} ({b.Location})</title><rect x=\"{(f.X * Tile) + 3}\" y=\"{(f.Y * Tile) + 3}\" width=\"{(f.Width * Tile) - 6}\" height=\"{(f.Height * Tile) - 6}\" fill=\"#efe6d2\" stroke=\"#5b4636\" stroke-width=\"1.5\"{ruined}/><text x=\"{(f.X * Tile) + (f.Width * Tile / 2)}\" y=\"{(f.Y * Tile) + (f.Height * Tile / 2) + 3}\" font-size=\"8\" fill=\"#3b2f23\" text-anchor=\"middle\">{b.Id}</text></g>");
+            }
+
             Append(svg, $"<text x=\"{(r.X * Tile) + (r.Width * Tile / 2)}\" y=\"{(r.Y * Tile) + (r.Height * Tile / 2) + 4}\" font-size=\"10\" font-weight=\"700\" fill=\"#111\" text-anchor=\"middle\">{e.Id}</text>");
             AppendRaw(svg, "</g>");
         }
@@ -156,8 +163,14 @@ public static class SvgExporter
         foreach (var e in area.Events)
         {
             var mobs = e.Mobs.Count == 0 ? "" : " - " + string.Join(", ", e.Mobs.Select(m => $"{m.Count}x {m.Name}"));
-            Append(svg, $"<text x=\"{LeftGutter}\" y=\"{line}\"><tspan font-weight=\"700\" fill=\"{CategoryColor(e.Category)}\">{e.Id}</tspan> {Escape(e.Name)} ({e.Location}){Escape(mobs)}</text>");
+            var population = e.Population is { } p ? $" [{p}]" : "";
+            Append(svg, $"<text x=\"{LeftGutter}\" y=\"{line}\"><tspan font-weight=\"700\" fill=\"{CategoryColor(e.Category)}\">{e.Id}</tspan> {Escape(e.Name)}{population} ({e.Location}){Escape(mobs)}</text>");
             line += LegendLine;
+            foreach (var b in e.Structures)
+            {
+                Append(svg, $"<text x=\"{LeftGutter + 24}\" y=\"{line}\">{b.Id} {Escape(b.Name)}{(b.Ruined ? " (ruined)" : "")} ({b.Location})</text>");
+                line += LegendLine;
+            }
         }
 
         foreach (var f in area.Features)

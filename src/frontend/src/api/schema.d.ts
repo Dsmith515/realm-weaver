@@ -465,6 +465,8 @@ export interface components {
             floorCount?: number;
             /** Format: int32 */
             floorEventCount?: null | number;
+            settlementPopulation?: null | components["schemas"]["SettlementPopulation"];
+            includeStructures?: boolean;
         };
         GridPoint: {
             /** Format: int32 */
@@ -550,6 +552,9 @@ export interface components {
             mobTags: string[];
             /** Format: int32 */
             difficulty: number;
+            settlementPopulation?: null | components["schemas"]["SettlementPopulation"];
+            /** @default true */
+            includeStructures: boolean;
         };
         MobGroup: {
             archetypeId: string;
@@ -597,6 +602,8 @@ export interface components {
             difficultyTemplateIds?: string[];
             roomIds?: string[];
             notes?: null | string;
+            population?: null | components["schemas"]["SettlementPopulation"];
+            structures?: components["schemas"]["PlacedStructure"][];
         };
         PlacedFeature: {
             id: string;
@@ -606,6 +613,14 @@ export interface components {
             location?: null | string;
             templateId?: null | string;
             roomId?: null | string;
+        };
+        PlacedStructure: {
+            id: string;
+            templateId: string;
+            name: string;
+            footprint: components["schemas"]["GridRect"];
+            location?: null | string;
+            ruined?: boolean;
         };
         PlayerDto: {
             /** Format: uuid */
@@ -662,6 +677,9 @@ export interface components {
             height?: null | number;
             /** Format: int32 */
             eventCount?: null | number;
+            population?: null | components["schemas"]["SettlementPopulation"];
+            /** @default true */
+            includeStructures: boolean;
         };
         QuickWeaveResultDto: {
             /** Format: uuid */
@@ -856,6 +874,8 @@ export interface components {
         RitualSlot: "needle" | "thread" | "coating" | "map";
         /** @enum {unknown} */
         RoomStyle: "masonry" | "mine" | "cave";
+        /** @enum {unknown} */
+        SettlementPopulation: "abandoned" | "sparse" | "modest" | "bustling" | "overcrowded" | null;
         SlotPreview: {
             component: components["schemas"]["ComponentDto"];
             source: components["schemas"]["SlotSource"];

@@ -107,6 +107,12 @@ internal sealed class MapRecipeData
     public List<string> MobTags { get; set; } = [];
 
     public int Difficulty { get; set; }
+
+    /// <summary>Null means each settlement's population was rolled.</summary>
+    public SettlementPopulation? SettlementPopulation { get; set; }
+
+    /// <summary>Null on maps recorded before structures existed, which means true.</summary>
+    public bool? IncludeStructures { get; set; }
 }
 
 /// <summary>A single-row table of global settings.</summary>

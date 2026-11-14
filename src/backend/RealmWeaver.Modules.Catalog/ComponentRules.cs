@@ -249,7 +249,7 @@ internal static partial class ComponentRules
                 GeneratorVersion = m.GeneratorVersion.Trim(),
                 CreatedByPlayerId = m.CreatedByPlayerId,
                 Recipe = m.Recipe is { } r
-                    ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty }
+                    ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty, SettlementPopulation = r.SettlementPopulation, IncludeStructures = r.IncludeStructures }
                     : null,
                 Threat = m.Threat,
             }
@@ -281,7 +281,7 @@ internal static partial class ComponentRules
                 m.EventCount,
                 m.GeneratorVersion,
                 m.CreatedByPlayerId,
-                m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty) : null,
+                m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true) : null,
                 m.Threat)
             : null,
         usedByMapCount);

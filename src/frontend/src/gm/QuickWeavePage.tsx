@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { errorMessage } from '../api/client'
 import { useComponents, useQuickWeave, useQuickWeavePreview } from '../api/queries'
-import type { Biome, QuickWeaveLimits, QuickWeavePreview, QuickWeaveRequest, Rarity, RealmKind } from '../api/types'
+import type { Biome, QuickWeaveLimits, QuickWeavePreview, QuickWeaveRequest, Rarity, RealmKind, SettlementPopulation } from '../api/types'
 import { biomes, label, rarities, realmKinds } from '../api/types'
 import { describe } from '../catalog/describe'
 
@@ -10,6 +10,7 @@ type Slot = 'needle' | 'thread' | 'coating' | 'map'
 type Picks = Partial<Record<Slot, string>>
 
 const slots: Slot[] = ['needle', 'thread', 'coating', 'map']
+const populations: SettlementPopulation[] = ['abandoned', 'sparse', 'modest', 'bustling', 'overcrowded']
 
 /**
  * GM Quick Weave: a realm from anything in the catalog, for a one-shot. Pick a slot or leave it random within the
@@ -19,6 +20,8 @@ export function QuickWeavePage() {
   const [picks, setPicks] = useState<Picks>({})
   const [limits, setLimits] = useState<QuickWeaveLimits>({ rarities: [], biomes: [], kinds: [], includeArchived: false })
   const [size, setSize] = useState({ width: '', height: '', eventCount: '' })
+  const [population, setPopulation] = useState<SettlementPopulation | ''>('')
+  const [includeStructures, setIncludeStructures] = useState(true)
   const preview = useQuickWeavePreview()
   const weave = useQuickWeave()
   const navigate = useNavigate()
@@ -33,6 +36,8 @@ export function QuickWeavePage() {
     width: toNumber(size.width),
     height: toNumber(size.height),
     eventCount: toNumber(size.eventCount),
+    population: population || null,
+    includeStructures,
   })
 
   const roll = () => preview.mutate(request(picks))
@@ -64,6 +69,27 @@ export function QuickWeavePage() {
                   <input type="number" value={size[field]} onChange={(e) => setSize({ ...size, [field]: e.target.value })} />
                 </label>
               ))}
+            </div>
+          </details>
+
+          <details className="advanced">
+            <summary>Settlements (new maps only)</summary>
+            <div className="advanced__fields">
+              <label>
+                Population
+                <select value={population} onChange={(e) => setPopulation(e.target.value as SettlementPopulation | '')}>
+                  <option value="">Random per settlement</option>
+                  {populations.map((p) => (
+                    <option key={p} value={p}>
+                      {label(p)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="checkbox">
+                <input type="checkbox" checked={includeStructures} onChange={(e) => setIncludeStructures(e.target.checked)} />
+                Include structures
+              </label>
             </div>
           </details>
         </div>

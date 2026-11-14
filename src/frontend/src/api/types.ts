@@ -43,6 +43,7 @@ export const enumListsAreComplete: [
 export type NameSuffixes = Schemas['NameSuffixesDto']
 export type MapDetails = Schemas['MapDetailsDto']
 export type QuickWeaveRequest = Schemas['QuickWeaveRequest']
+export type SettlementPopulation = NonNullable<Schemas['SettlementPopulation']>
 export type QuickWeaveLimits = Schemas['QuickWeaveLimits']
 export type QuickWeavePreview = Schemas['QuickWeavePreviewDto']
 export type DigestEntry = Schemas['DigestEntry']

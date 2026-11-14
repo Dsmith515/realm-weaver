@@ -125,6 +125,31 @@ public sealed record PlacedEvent
     public IReadOnlyList<string> RoomIds { get; init; } = [];
 
     public string? Notes { get; init; }
+
+    /// <summary>Settlements only: how crowded it is. Mob counts scale with this and the footprint.</summary>
+    public SettlementPopulation? Population { get; init; }
+
+    /// <summary>Field settlements only: buildings and grounds inside the footprint.</summary>
+    public IReadOnlyList<PlacedStructure> Structures { get; init; } = [];
+}
+
+/// <summary>A building or ground inside a settlement, e.g. "B3 Training pit".</summary>
+public sealed record PlacedStructure
+{
+    /// <summary>Short id, unique within the area, e.g. "B3".</summary>
+    public required string Id { get; init; }
+
+    /// <summary>The <see cref="StructureTemplate.Id"/> used.</summary>
+    public required string TemplateId { get; init; }
+
+    public required string Name { get; init; }
+
+    public required GridRect Footprint { get; init; }
+
+    public string Location => TileLabels.Range(Footprint);
+
+    /// <summary>True in abandoned settlements.</summary>
+    public bool Ruined { get; init; }
 }
 
 /// <summary>A number of mobs of one archetype in an event.</summary>

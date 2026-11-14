@@ -35,6 +35,16 @@ public enum RealmKind
     FieldWithDungeon,
 }
 
+/// <summary>How many people live in a settlement for its size. Abandoned settlements have no residents.</summary>
+public enum SettlementPopulation
+{
+    Abandoned,
+    Sparse,
+    Modest,
+    Bustling,
+    Overcrowded,
+}
+
 public enum AreaKind
 {
     Field,

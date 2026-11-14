@@ -96,7 +96,19 @@ internal static class DungeonEventPlacer
             .Select((p, i) =>
             {
                 var mobRng = eventRng.Fork(i.ToString(CultureInfo.InvariantCulture));
-                var groups = mobs.Resolve(p.Template, mobRng);
+                SettlementPopulation? population = null;
+                IReadOnlyList<MobGroup> groups;
+                if (p.Template.Category == EventCategory.Settlement)
+                {
+                    var level = Settlements.RollPopulation(ctx.Request, mobRng.Fork("population"));
+                    population = level;
+                    groups = mobs.ResolveSettlement(p.Template, p.Rooms.Sum(r => r.Floor.Count), level, mobRng);
+                }
+                else
+                {
+                    groups = mobs.Resolve(p.Template, mobRng);
+                }
+
                 var materials = string.Join(" / ", p.Rooms.Select(r => DungeonMaterials.Of(r.Material).Name).Distinct());
                 return new PlacedEvent
                 {
@@ -109,6 +121,7 @@ internal static class DungeonEventPlacer
                     Mobs = groups,
                     DifficultyTemplateIds = groups.Count > 0 ? mobs.DifficultyTemplates(mobRng) : [],
                     Notes = $"{p.Template.Description} ({materials})",
+                    Population = population,
                 };
             })
             .ToList();

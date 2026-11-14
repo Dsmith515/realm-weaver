@@ -734,6 +734,15 @@ textarea {
   padding: 0.15rem 0.5rem 0;
 }
 
+.placements__structures {
+  margin: 0.15rem 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+
 @media (max-width: 860px) {
   .ritual,
   .realm {

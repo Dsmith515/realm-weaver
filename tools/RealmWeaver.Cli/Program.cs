@@ -19,6 +19,8 @@ const string Usage = """
       --difficulty <n>    Needle difficulty 1-10 (default: 1)
       --danger <n>        Extra danger, e.g. mismatched map (default: 0)
       --variant <n>       Encounter variant (default: 0)
+      --population <name> abandoned|sparse|modest|bustling|overcrowded for every settlement (default: rolled)
+      --structures <on|off>  Buildings inside field settlements (default: on)
       --out <dir>         Output directory (default: samples)
     """;
 
@@ -68,6 +70,8 @@ var request = new GenerationRequest
     Difficulty = IntOpt("difficulty") ?? 1,
     DangerModifier = IntOpt("danger") ?? 0,
     EncounterVariant = IntOpt("variant") ?? 0,
+    SettlementPopulation = Opt("population") is { } p ? Enum.Parse<SettlementPopulation>(p, ignoreCase: true) : null,
+    IncludeStructures = !string.Equals(Opt("structures"), "off", StringComparison.OrdinalIgnoreCase),
 };
 
 RealmDocument realm;

@@ -62,6 +62,24 @@ describe('Quick Weave page', () => {
     await waitFor(() => expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ needleId: needle.id, threadId: wheat.id, coatingId: wax.id, mapId: null }))
   })
 
+  it('sends the settlement population and structures choice', async () => {
+    const api = fakeApi(routes([rolled()]))
+    const user = userEvent.setup()
+    renderApp('/gm/weave')
+
+    await screen.findByRole('option', { name: needle.name })
+    await user.click(screen.getByRole('button', { name: 'Roll' }))
+    await screen.findByRole('region', { name: 'Rolled components' })
+    expect(api.callsTo('POST', '/api/gm/weave/preview')[0].body).toMatchObject({ population: null, includeStructures: true })
+
+    await user.click(screen.getByText('Settlements (new maps only)'))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Population' }), 'bustling')
+    await user.click(screen.getByRole('checkbox', { name: 'Include structures' }))
+    await user.click(screen.getByRole('button', { name: 'Weave' }))
+
+    await waitFor(() => expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ population: 'bustling', includeStructures: false }))
+  })
+
   it('shows why nothing can be woven', async () => {
     fakeApi(routes([{ ...rolled(), coating: null, canWeave: false, issues: [{ slot: 'coating', field: 'coatingId', code: 'no-candidates', message: 'No Coating in the catalog fits the limits.' }] }]))
     const user = userEvent.setup()
