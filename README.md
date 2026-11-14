@@ -32,7 +32,7 @@ Prerequisites: .NET 10 SDK, Node 24+ and Docker Desktop.
 # 1. Database
 docker compose up -d
 
-# 2. API  ->  http://localhost:5080  (OpenAPI document at /openapi/v1.json)
+# 2. API  ->  http://localhost:5080  (OpenAPI document at /openapi/v1.json, interactive reference at /scalar)
 #    Applies migrations and seeds the starter catalog and a demo player ("Wanderer") on startup.
 dotnet run --project src/backend/RealmWeaver.Api
 

@@ -11,6 +11,8 @@ using RealmWeaver.Modules.Inventory;
 using RealmWeaver.Modules.Realms;
 using RealmWeaver.Modules.Rituals;
 
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi(options => options.AddSchemaTransformer((schema, context, _) =>
@@ -63,6 +65,14 @@ app.UseCors();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Interactive API reference at /scalar, reading the document above (/openapi/v1.json).
+    app.MapScalarApiReference(options => options
+        .WithTitle("Realm Weaver API")
+        .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultHttpClient(ScalarTarget.JavaScript, ScalarClient.Fetch)
+        .DisableAgent()            // no "Ask AI" chat (it runs on Scalar's servers)
+        .DisableDefaultFonts());   // system fonts instead of loading them from Scalar's CDN
 }
 
 app.MapHealthChecks("/health");
