@@ -125,7 +125,9 @@ public class DungeonInvariantTests
         var roomIds = svg.Descendants(ns + "g").Select(g => (string?)g.Attribute("data-room-id")).Where(id => id is not null);
         var featureIds = svg.Descendants(ns + "g").Select(g => (string?)g.Attribute("data-feature-id")).Where(id => id is not null);
         Assert.Equal(floor.Rooms.Select(r => r.Id), roomIds);
-        Assert.Equal(floor.Features.Select(f => f.Id), featureIds);
+        // The spawn is tagged "S" so the realm page can highlight it like any other feature.
+        var expected = floor.Features.Select(f => f.Id).Prepend("S").Skip(floor.Spawn is null ? 1 : 0);
+        Assert.Equal(expected, featureIds);
     }
 
     [Fact]

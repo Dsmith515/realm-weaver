@@ -64,11 +64,23 @@ const svgFor = (call: ApiCall) =>
     { headers: { 'content-type': 'image/svg+xml' } },
   )
 
+const mirror: RealmSummary = {
+  ...summary,
+  id: 'realm-2',
+  components: {
+    mapName: "Beginner's Mossgreen Beastward Wax Forest Field and Dungeon Map",
+    needle: { id: 'n', name: "Beginner's Needle" },
+    thread: { id: 't', name: 'Wheatgold Thread' },
+    coating: { id: 'c', name: 'Beastward Wax' },
+  },
+  isMirror: true,
+}
+
 function routes() {
   return {
     'GET /api/info': { name: 'Realm Weaver', version: '1.0.0' },
     'GET /api/players': [player],
-    'GET /api/realms': [summary],
+    'GET /api/realms': [summary, mirror],
     'GET /api/realms/:id': realm,
     'GET /api/realms/:id/export': svgFor,
   }
@@ -80,8 +92,43 @@ describe('Realm pages', () => {
     renderApp('/realms')
 
     expect(await screen.findByRole('link', { name: 'Forest field + dungeon' })).toHaveAttribute('href', '/realms/realm-1')
-    expect(screen.getByText(/danger \+1/)).toBeInTheDocument()
+    expect(screen.getAllByText(/danger \+1/)).toHaveLength(2)
     expect(api.callsTo('GET', '/api/realms')[0].query.get('playerId')).toBe(player.id)
+  })
+
+  it('names a realm after its map, lists its components and flags mirrors', async () => {
+    fakeApi(routes())
+    renderApp('/realms')
+
+    const link = await screen.findByRole('link', { name: "Beginner's Mossgreen Beastward Wax Forest Field and Dungeon Map" })
+    const item = link.closest('li')!
+    expect(within(item).getByText("Beginner's Needle · Wheatgold Thread · Beastward Wax")).toBeInTheDocument()
+    expect(within(item).getByText('Mirror')).toBeInTheDocument()
+    expect(within(item).getByText(/Field \+ Dungeon · threat 2/)).toBeInTheDocument()
+    expect(within(screen.getByRole('link', { name: 'Forest field + dungeon' }).closest('li')!).queryByText('Mirror')).not.toBeInTheDocument()
+  })
+
+  it('lists the spawn point first and highlights it on the map', async () => {
+    const withSpawn = {
+      ...realm,
+      document: { ...realm.document, areas: [{ ...area('field', 'E1', 'Wolf den'), spawn: { x: 2, y: 11 } }, area('floor-1', 'E2', 'Guard post')] },
+    } as unknown as Realm
+    fakeApi({
+      ...routes(),
+      'GET /api/realms/:id': withSpawn,
+      'GET /api/realms/:id/export': () => new Response('<svg xmlns="http://www.w3.org/2000/svg"><g id="spawn" data-feature-id="S"><circle/></g></svg>'),
+    })
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const placements = await screen.findByRole('complementary', { name: 'Placements' })
+    const buttons = await within(placements).findAllByRole('button')
+    expect(buttons[0]).toHaveAccessibleName(/S Spawn point C12/)
+
+    const svg = await screen.findByTestId('realm-svg')
+    await waitFor(() => expect(svg.querySelector('[data-feature-id="S"]')).not.toBeNull())
+    await user.click(buttons[0])
+    expect(svg.querySelector('[data-feature-id="S"]')).toHaveClass('rw-highlight')
   })
 
   it('highlights a placement on the map when it is clicked', async () => {
