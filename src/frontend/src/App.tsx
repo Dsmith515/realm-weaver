@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router'
+import { AboutPage } from './about/AboutPage'
 import { ComponentsPage } from './catalog/ComponentsPage'
 import { Layout } from './components/Layout'
 import { QuickWeavePage } from './gm/QuickWeavePage'
@@ -19,6 +20,7 @@ export function App() {
           <Route path="realms/:id" element={<RealmPage />} />
           <Route path="components" element={<ComponentsPage />} />
           <Route path="gm/weave" element={<QuickWeavePage />} />
+          <Route path="about" element={<AboutPage />} />
         </Route>
       </Routes>
     </PlayerProvider>

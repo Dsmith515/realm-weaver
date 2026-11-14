@@ -130,6 +130,9 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - **UI polish.** Placements list entry points first. Component forms open as modals, with Clone and Randomize.
      - **Player maps.** Per-item notes, and a map details view (seed, kind, threat, mobs, potential loot, resource nodes) composed from module contracts (ADR 0006).
      - **GM Quick Weave.** Generate a realm from the whole catalog, with no inventory checks and nothing consumed. Components are picked by hand or randomly within limits (rarity set, tier range, biome, kind). It records an unowned, reusable map that can then be assigned to players.
+   - **6b. Feedback round 2** (two PRs):
+     - **UI.** The Image prompt opens a window showing the text, with Copy to clipboard and Download prompt. An About page explains the project's goal. Long component names no longer misalign the table's row borders.
+     - **Settlement population and structures.** Settlement events (villages, outposts, underground settlements) get a population level: Abandoned, Sparse, Modest, Bustling or Overcrowded. Mob counts scale with the settlement's footprint and population instead of fixed slot counts, so a large village is no longer guarded by 3 mobs. Field settlements can contain structures matched to their inhabitants (huts, training pits, farms, wells…), with a toggle to leave them out. Bumps `GeneratorLimits.Version`.
 7. **E2E and release**: Playwright flow, Dockerfiles, GHCR pipeline.
 8. **Objectives and map rules** (Notion: "Solo/GM tool" ideas). Domain changes are cheaper in the monolith, so this comes before the split.
    - **Objectives.** Each seed has 1–3 objectives, and completing any one completes the run.
@@ -178,10 +181,22 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - It shapes objectives only *through* those events.
      - Rarity raises loot and resource quality inside the tagged events. It never affects the boss.
      - The Thimble is part of the map recipe, so weaving without it makes a mirror.
+   - **Settlement wealth and settlement realms** (Notion: "Settlement Wealth and Population — Refined").
+     - Each settlement records Population, Wealth, Specialty and an optional Condition.
+     - Wealth levels 0–5 (Destitute, Impoverished, Struggling, Stable, Prosperous, Affluent), each capping the rarity of stock for sale. Population and wealth are independent axes.
+     - The highest component rarity caps wealth. A rare **hidden hoard** roll covers the abandoned-but-legendary case, and only high-rarity components or a Merchant's Thimble raise its chance.
+     - The **Merchant's Thimble** strongly boosts settlement and trade events and nudges wealth up, but is never required: settlements still appear naturally in fields and dungeons.
+     - **Settlement focus.** A settlement realm is a focus (Wilderness or Settlement) layered on the existing kinds, not a fourth kind: a field town, an underground city, or a town above catacombs. This reuses the terrain and dungeon generators.
+     - Guild realms, possibly from a non-consumable guild Thimble that always produces a settlement. Structures inside dungeon settlements.
    - **Later (Phase 3+):**
      - Needle durability and the economy (stack, craft, trade, sell, Needle drops from strong creatures and mirror realms).
      - Shared Thread (party telepathy, status, direction, then guilds), party completion and map sharing, and guild realm maps (no mobs; special components that aren't consumed).
      - VTT exports: a PNG render, wall and door geometry from rooms and impassable tiles, and a common VTT interchange format and/or Foundry scene JSON with events as notes. To keep this possible, `RealmDocument` geometry stays complete.
+   - **Tools, editing and distribution** (no paid services):
+     - **Generated map names.** A short seeded name from word and syllable tables ("Hollowmere", "The Gnawed Steppe"), with today's component-based name kept as a subtitle. No AI, so it's free and deterministic.
+     - **AI agents as callers.** A local MCP server (`tools/RealmWeaver.Mcp`, the official C# MCP SDK over stdio) wraps the pure generator with tools such as `generate_realm`, `export_prompt` and `export_svg`. It runs on the user's machine, so there's no per-call cost. Ships as a `dotnet tool`.
+     - **Map edits.** Edit the realm document, not pixels: move or reroll one event, repaint terrain, or lock parts and reroll the rest, then re-render. It stays deterministic (edits stored as a list on the realm). AI image edits (inpainting by tile mask) could come later with a local model or the user's own key.
+     - **Distribution, in tiers.** A browser-only generator (WASM or a static site, nothing to expose). GHCR images plus docker compose for self-hosting (milestone 7). The CLI and MCP server as `dotnet tool`s. An optional hosted demo with auth, rate limits, a private database and a read-only demo mode.
 
 Design notes for these ideas live in the Notion pages "Thimbles, Needle Roles and Objectives — Refined" and "Random unfiltered thoughts — Solo/GM Tool and Multiplayer Ideas".
 
