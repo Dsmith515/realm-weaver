@@ -53,7 +53,8 @@ public sealed record RealmSummaryDto(
     DateTimeOffset CreatedAt,
     IReadOnlyList<RealmAreaSummaryDto> Areas,
     RealmComponentsDto? Components = null,
-    RealmObjective? PinnedObjective = null)
+    RealmObjective? PinnedObjective = null,
+    RealmCompletionDto? Completion = null)
 {
     /// <summary>A mirror: a recorded map woven with different components. Same layout, rerolled encounters.</summary>
     public bool IsMirror => EncounterVariant != 0;
@@ -63,6 +64,24 @@ public sealed record RealmSummaryDto(
 public sealed record RealmAreaSummaryDto(string Id, AreaKind Kind, string Name, int FloorNumber);
 
 public sealed record RealmDto(RealmSummaryDto Summary, RealmDocument Document);
+
+/// <summary>
+/// A completed run: the objective that completed it, and whether a Cartographer recorded the map into the weaver's
+/// inventory as a result.
+/// </summary>
+public sealed record RealmCompletionDto(RealmObjective Objective, DateTimeOffset CompletedAt, bool MapRecorded);
+
+public enum CompletionResult
+{
+    Completed,
+    NotFound,
+
+    /// <summary>The key isn't one of the realm's rolled objectives or its GM pin.</summary>
+    UnknownObjective,
+    AlreadyCompleted,
+}
+
+public sealed record RealmCompletionResult(CompletionResult Result, RealmSummaryDto? Summary = null);
 
 /// <summary>Body for a GM pinning an objective: the <see cref="RealmObjective.Key"/> of a rolled or candidate objective.</summary>
 public sealed record PinObjectiveInput(string Key);
@@ -74,6 +93,12 @@ public interface IRealmsModule
     Task<RealmSummaryDto> SaveAsync(NewRealm realm, CancellationToken cancellationToken = default);
 
     Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Marks the run complete with one of its rolled objectives or its pin. Only the first completion counts, even when
+    /// two race. Joins the caller's unit of work when one is running.
+    /// </summary>
+    Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.

@@ -42,6 +42,7 @@ export function RealmsPage() {
                 <strong>{title(realm)}</strong>
               </Link>
               {realm.isMirror && <MirrorBadge />}
+              {realm.completion && <span className="badge badge--ok">Complete</span>}
               {realm.components && <p className="realm-list__components">{componentsLine(realm)}</p>}
             </div>
             <span className="muted">

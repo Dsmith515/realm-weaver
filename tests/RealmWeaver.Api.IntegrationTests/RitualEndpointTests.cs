@@ -34,7 +34,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(before[MossgreenThread] - 1, after[MossgreenThread]);
         Assert.Equal(before[BeastwardWax] - 1, after[BeastwardWax]);
         Assert.Equal(1, after[BeginnerNeedle]);
-        Assert.Equal(1, after[result.MapId]);
+        Assert.False(after.ContainsKey(result.MapId), "The map is recorded when a Cartographer completes the run, not by the ritual.");
 
         var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{result.MapId}");
         Assert.Equal(ComponentType.Map, map.Type);
@@ -185,7 +185,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BrigandsPitch);
-        var first = await PerformOkAsync(client, SmallField(player.Id, coating: BrigandsPitch));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id, coating: BrigandsPitch));
 
         // Only the map: the other slots fill in from it.
         var preview = await PreviewAsync(client, new RitualPreviewRequest(player.Id, MapId: first.MapId));
@@ -210,7 +210,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
             ComponentType.Coating, "Test Shifting Wax", Rarity.Common, 1, null, false,
             Coating: new CoatingDetails(["beast"], Generation.Model.RealmKind.Field, 0)))).ReadJsonAsync<ComponentDto>();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, coating.Id);
-        var first = await PerformOkAsync(client, SmallField(player.Id, coating: coating.Id));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id, coating: coating.Id));
 
         // The API refuses this edit now, so force it the way M6 allowed: straight into the row.
         await using (var connection = new Npgsql.NpgsqlConnection(factory.ConnectionString))
@@ -256,7 +256,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        var first = await PerformOkAsync(client, SmallField(player.Id));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id));
 
         var preview = await PreviewAsync(client, new RitualPreviewRequest(player.Id, BeginnerNeedle, MossgreenThread, BeastwardWax));
         var again = await PerformOkAsync(client, new RitualSelection(player.Id, BeginnerNeedle, MossgreenThread, BeastwardWax));
@@ -273,7 +273,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, WheatgoldThread, BeastwardWax);
-        var first = await PerformOkAsync(client, SmallField(player.Id));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id));
 
         var preview = await PreviewAsync(client, new RitualPreviewRequest(player.Id, ThreadId: WheatgoldThread, MapId: first.MapId));
         var mismatched = await PerformOkAsync(client, new RitualSelection(player.Id, ThreadId: WheatgoldThread, MapId: first.MapId));
@@ -310,7 +310,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, WheatgoldThread, BeastwardWax, BrigandsPitch);
-        var first = await PerformOkAsync(client, SmallField(player.Id));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id));
 
         var preview = await PreviewAsync(client, new RitualPreviewRequest(player.Id, ThreadId: WheatgoldThread, CoatingId: BrigandsPitch, MapId: first.MapId));
 
@@ -387,5 +387,8 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
 
         public Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default) =>
             Task.FromResult<RealmDigestDto?>(null);
+
+        public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new RealmCompletionResult(CompletionResult.NotFound));
     }
 }

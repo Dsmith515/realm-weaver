@@ -7,7 +7,7 @@ namespace RealmWeaver.Modules.Realms.Persistence;
 /// <summary>
 /// A generated realm. <see cref="Document"/> is the full <see cref="RealmDocument"/> as jsonb; the other columns
 /// are copies of a few of its values for listing without parsing. The document never changes; only the GM's
-/// <see cref="PinnedObjective"/> can be set later.
+/// <see cref="PinnedObjective"/> and the run's completion are set later.
 /// </summary>
 internal sealed class Realm
 {
@@ -69,6 +69,15 @@ internal sealed class Realm
     /// map, so it never changes the map's recipe or recorded objectives.
     /// </summary>
     public string? PinnedObjective { get; set; }
+
+    /// <summary>When the run was completed. Null while it's in progress. Set once.</summary>
+    public DateTimeOffset? CompletedAt { get; set; }
+
+    /// <summary>The <see cref="RealmObjective"/> that completed the run, as jsonb.</summary>
+    public string? CompletedObjective { get; set; }
+
+    /// <summary>True when completing the run recorded the map into the weaver's inventory.</summary>
+    public bool MapRecorded { get; set; }
 }
 
 internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options) : DbContext(options)
@@ -91,6 +100,7 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.Areas).HasColumnType("jsonb");
             realm.Property(r => r.PinnedObjective).HasColumnType("jsonb");
             realm.Property(r => r.AttunedNeedle).HasColumnType("jsonb");
+            realm.Property(r => r.CompletedObjective).HasColumnType("jsonb");
             realm.Property(r => r.MapName).HasMaxLength(100);
             realm.Property(r => r.NeedleName).HasMaxLength(100);
             realm.Property(r => r.ThreadName).HasMaxLength(100);

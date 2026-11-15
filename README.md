@@ -66,7 +66,7 @@ dotnet test RealmWeaver.slnx      # API tests start their own Postgres container
 cd src/frontend && npm run lint && npm test
 ```
 
-End-to-end tests (Playwright) run against the containerized stack. They cover a new player's random ritual, the map in their inventory, the realm page and its exports, and a GM Quick Weave. Each test creates its own player, so they run against any database.
+End-to-end tests (Playwright) run against the containerized stack. They cover a new player's random ritual, the realm page and its exports, completing an objective as a Cartographer to record the map, and a GM Quick Weave. Each test creates its own player, so they run against any database.
 
 ```bash
 docker compose --profile full up -d --build --wait   # from the repo root
@@ -97,6 +97,7 @@ npm run e2e                                          # E2E_BASE_URL=... to test 
 | `GET /api/realms/{id}/export?format=svg\|prompt\|json\|md&area=` | Exports. `svg` and `prompt` are per area (field or `floor-N`). |
 | `GET /api/realms/{id}/objectives/candidates` | Every objective a GM can pin: the rolled ones, then the other event hooks and realm-wide objectives |
 | `PUT` / `DELETE /api/realms/{id}/pinned-objective` | Pin an objective (body `{ key }`) or clear the pin. Stored on the realm, never on the map. |
+| `POST /api/realms/{id}/completion` | Complete the run with one of its objectives (body `{ objectiveKey }`). A Cartographer weaver gets the map recorded into their inventory; rituals no longer grant maps. |
 | `POST /api/gm/weave/preview`, `POST /api/gm/weave` | GM Quick Weave: resolve a realm from the whole catalog (chosen slots as given, empty ones random within the limits) without saving, then weave it. Nothing is consumed. |
 
 Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.
@@ -105,9 +106,9 @@ Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a co
 
 | Page | What it does |
 |---|---|
-| **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. |
-| **Player** | Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). Open an item to keep your own notes on it; a map also shows its details (seed, recipe, threat, mobs, potential loot and resource nodes). |
-| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
+| **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. Any needle you own can weave; a needle of the map's base type (any Beginner's Needle) still matches it. |
+| **Player** | Your attuned needle (its abilities and boon go on the realm sheet) and Cartographer status, with the GM's *Trained Cartographer* switch. Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). Open an item to keep your own notes on it; a map also shows its details (seed, recipe, threat, mobs, potential loot and resource nodes). |
+| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; Its **Objectives** (1–3, complete any one) jump to their event on the map; a GM can pin any candidate objective, and **Complete** ends the run, recording the map when the weaver is a Cartographer. Click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
 | **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. |
 | **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options, **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
 | **About** | What Realm Weaver is for and how a ritual works. |

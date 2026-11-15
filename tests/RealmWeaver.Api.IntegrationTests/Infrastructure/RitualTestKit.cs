@@ -67,6 +67,29 @@ internal static class RitualTestKit
     public static async Task<RealmView> GetRealmAsync(HttpClient client, Guid realmId) =>
         await client.GetJsonAsync<RealmView>($"/api/realms/{realmId}");
 
+    /// <summary>
+    /// Completes a ritual's run with its first objective as a trained Cartographer, which records the map into the
+    /// player's inventory. Rituals no longer grant maps themselves (Milestone 8).
+    /// </summary>
+    public static async Task<RunCompletionDto> RecordMapAsync(HttpClient client, RitualResultDto ritual)
+    {
+        var trained = await client.PutJsonAsync($"/api/players/{ritual.PlayerId}/skills", new PlayerSkillsInput([PlayerSkill.Cartographer]));
+        Assert.Equal(HttpStatusCode.OK, trained.StatusCode);
+        var realm = await GetRealmAsync(client, ritual.RealmId);
+        var key = realm.Document.GetProperty("objectives")[0].GetProperty("key").GetString()!;
+        var response = await client.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", new CompleteRunInput(key));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.ReadJsonAsync<RunCompletionDto>();
+    }
+
+    /// <summary>Performs a ritual and records its map, as a Cartographer completing the run would.</summary>
+    public static async Task<RitualResultDto> PerformAndRecordAsync(HttpClient client, RitualSelection selection)
+    {
+        var ritual = await PerformOkAsync(client, selection);
+        await RecordMapAsync(client, ritual);
+        return ritual;
+    }
+
     /// <summary>A small field ritual: quick to generate.</summary>
     public static RitualSelection SmallField(Guid playerId, Guid? thread = null, Guid? coating = null) =>
         new(playerId, BeginnerNeedle, thread ?? MossgreenThread, coating ?? BeastwardWax, Width: 24, Height: 20);

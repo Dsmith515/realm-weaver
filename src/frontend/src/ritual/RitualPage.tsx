@@ -178,7 +178,9 @@ function Ritual({ playerId }: { playerId: string }) {
           )}
           {result && (
             <div className="banner banner--ok" role="status">
-              <strong>The portal opens.</strong> {result.mapCreated ? 'A new map was added to your inventory.' : 'You reopened a map you own.'}
+              <strong>The portal opens.</strong> {result.mapCreated
+                ? 'A new realm was charted. Complete one of its objectives as a Cartographer to record the map.'
+                : 'You reopened a map you own.'}
               {result.isMismatch && ` Danger +${result.dangerModifier}.`} <Link to={`/realms/${result.realmId}`}>View the realm</Link>
             </div>
           )}

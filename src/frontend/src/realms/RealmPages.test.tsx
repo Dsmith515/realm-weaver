@@ -279,7 +279,7 @@ describe('Realm pages', () => {
     await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/export').at(-1)!.query.get('area')).toBe('floor-1'))
     const svg = await screen.findByTestId('realm-svg')
     await waitFor(() => expect(svg.querySelector('[data-event-id="E2"]')).toHaveClass('rw-highlight'))
-    expect(within(objectives).getByRole('button', { name: /Take the post/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(objectives).getByRole('button', { name: /^Take the post/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('lets a GM pin a candidate objective and unpin it', async () => {
@@ -301,7 +301,7 @@ describe('Realm pages', () => {
 
     expect(api.callsTo('PUT', '/api/realms/realm-1/pinned-objective')[0].body).toEqual({ key: 'field/E1/slay-the-beast' })
     expect(await within(objectives).findByText('GM pin')).toBeInTheDocument()
-    expect(within(objectives).getByRole('button', { name: /Slay or drive off the beast/ })).toBeInTheDocument()
+    expect(within(objectives).getByRole('button', { name: /^Slay or drive off the beast/ })).toBeInTheDocument()
 
     await user.click(within(objectives).getByRole('button', { name: 'Unpin' }))
     await waitFor(() => expect(within(objectives).queryByText('GM pin')).not.toBeInTheDocument())
@@ -315,5 +315,30 @@ describe('Realm pages', () => {
     const objectives = await screen.findByRole('region', { name: 'Objectives' })
     expect(within(objectives).getByText(/This is a mirror/)).toBeInTheDocument()
     expect(within(objectives).getByText(/woven before objectives existed/)).toBeInTheDocument()
+  })
+
+  it('completes the run with an objective and says whether the map was recorded', async () => {
+    let current: Realm = realm
+    const objective = realm.document.objectives![1]
+    const api = fakeApi({
+      ...routes(),
+      'GET /api/realms/:id': () => current,
+      'POST /api/realms/:id/completion': () => {
+        current = { ...realm, summary: { ...summary, completion: { objective, completedAt: '2026-11-15T12:00:00Z', mapRecorded: false } } }
+        return { realmId: summary.id, objective, completedAt: '2026-11-15T12:00:00Z', mapRecorded: false, mapId: 'map-1', mapNotRecordedReason: 'not-cartographer' }
+      },
+    })
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const objectives = await screen.findByRole('region', { name: 'Objectives' })
+    await user.click(within(objectives).getByRole('button', { name: 'Complete: Clear the realm' }))
+
+    expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toEqual({ objectiveKey: 'realm/clear-the-realm' })
+    const status = await within(objectives).findByRole('status')
+    expect(status).toHaveTextContent('Run complete: Clear the realm.')
+    expect(status).toHaveTextContent('isn’t a Cartographer')
+    expect(within(objectives).queryByRole('button', { name: /^Complete:/ })).not.toBeInTheDocument()
+    expect(within(objectives).queryByRole('button', { name: /Pin an objective/ })).not.toBeInTheDocument()
   })
 })

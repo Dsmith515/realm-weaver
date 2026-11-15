@@ -79,7 +79,7 @@ public class RealmEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        var first = await PerformOkAsync(client, SmallField(player.Id));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id));
         var second = await PerformOkAsync(client, new Modules.Rituals.Contracts.RitualSelection(player.Id, MapId: first.MapId));
 
         var byPlayer = await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}");

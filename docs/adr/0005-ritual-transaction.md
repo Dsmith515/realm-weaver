@@ -17,7 +17,7 @@ The roadmap leaves open what a mismatched map changes and by how much.
 1. Insert the `Ritual` row, which claims the unique idempotency key.
 2. Spend one Thread and one Coating with `UPDATE … WHERE xmin = <loaded>`.
 3. Create the Map, if it is new. Its id is chosen up front by the orchestrator.
-4. Grant the map. If the player already owns it, nothing changes.
+4. ~~Grant the map.~~ Since Milestone 8, a Cartographer records the map when the run is completed instead (ADR 0008).
 5. Store the realm snapshot.
 
 All ids (ritual, map, realm) are allocated before the transaction. The Phase 2 saga needs this too, so its steps can be retried safely.
