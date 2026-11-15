@@ -9,6 +9,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - E2E (in `src/frontend`): start the full stack, then `npm run e2e` (Playwright, specs in `e2e/`). Tests create their own player instead of relying on seeded data. CI runs them in `e2e.yml`.
 - API contract: after changing an endpoint or DTO, run `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests`, then `npm run api:types` in `src/frontend`, and commit both generated files. CI checks both.
 - Full stack in containers: `docker compose --profile full up -d --build` (web at http://localhost:8080; the API runs in Production, so no /scalar). Images: `src/backend/RealmWeaver.Api/Dockerfile` (context: repo root) and `src/frontend/Dockerfile`.
+- Release: `release.yml` pushes both images to GHCR on main (`edge`, `sha-*`) and on `v*.*.*` tags (`1.2.3`, `1.2`, `latest`). On PRs that touch a Dockerfile or the workflow, it only builds.
 - Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only). The API migrates and seeds on startup.
 - New migration (per module): `dotnet tool restore`, then `dotnet ef migrations add <Name> --context <Module>DbContext --project src/backend/RealmWeaver.Modules.<Module> --startup-project src/backend/RealmWeaver.Api -o Persistence/Migrations`
 - API integration tests use Testcontainers, so Docker must be running for `dotnet test`.

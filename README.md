@@ -1,6 +1,8 @@
 # Realm Weaver
 
 [![CI](https://github.com/Dsmith515/realm-weaver/actions/workflows/ci.yml/badge.svg)](https://github.com/Dsmith515/realm-weaver/actions/workflows/ci.yml)
+[![E2E](https://github.com/Dsmith515/realm-weaver/actions/workflows/e2e.yml/badge.svg)](https://github.com/Dsmith515/realm-weaver/actions/workflows/e2e.yml)
+[![Release](https://github.com/Dsmith515/realm-weaver/actions/workflows/release.yml/badge.svg)](https://github.com/Dsmith515/realm-weaver/actions/workflows/release.yml)
 
 A procedural map generator for grid-based tactics and TTRPG play, inspired by the "keyword" portals of .Hack.
 
@@ -48,6 +50,14 @@ docker compose --profile full down            # stop it; add -v to also drop the
 ```
 
 The containers run the API in Production, so `/scalar` and `/openapi/v1.json` are only available from `dotnet run`.
+
+**Published images.** Every push to `main` publishes `ghcr.io/dsmith515/realm-weaver-api` and `ghcr.io/dsmith515/realm-weaver-web` to GitHub Container Registry, tagged `edge` and `sha-<commit>`. A `v1.2.3` tag adds `1.2.3`, `1.2` and `latest`. To run them instead of building locally:
+
+```bash
+export REALMWEAVER_API_IMAGE=ghcr.io/dsmith515/realm-weaver-api:edge
+export REALMWEAVER_WEB_IMAGE=ghcr.io/dsmith515/realm-weaver-web:edge
+docker compose --profile full up -d --no-build
+```
 
 ### Tests
 
@@ -151,8 +161,9 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 4: persistence and APIs (catalog, players, inventory)
 - [x] Milestone 5: ritual transaction (preview, idempotent perform, realms and exports)
 - [x] Milestone 6: frontend pages (ritual with drag and drop, player, realms, components)
-- [ ] Milestone 6a: M6 follow-ups (map recipe snapshot, naming, UI polish, player map details, GM Quick Weave)
-- [ ] Milestone 7: E2E tests and release images
+- [x] Milestone 6a: M6 follow-ups (map recipe snapshot, naming, UI polish, player map details, GM Quick Weave)
+- [x] Milestone 6b: feedback round 2 (image prompt window, About page, settlement population and structures)
+- [x] Milestone 7: E2E tests and release images (Dockerfiles, compose `full` profile, Playwright, GHCR)
 - [ ] Milestone 8: objectives and map rules
 - [ ] Milestone 9: microservices (saga and outbox)
 - [ ] Milestone 10: content tables (mobs, events, abilities, roles, level profiles)

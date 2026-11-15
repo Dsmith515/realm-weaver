@@ -1,0 +1,91 @@
+name: Release
+
+# Builds the API and web images and pushes them to GitHub Container Registry.
+#   push to main   -> :edge and :sha-<short>
+#   tag v1.2.3     -> :1.2.3, :1.2 and :latest (plus :sha-<short>)
+#   pull request   -> builds both images without pushing, to check this workflow before it matters
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - '**/Dockerfile'
+      - '**/.dockerignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never cancel a push halfway through
+
+jobs:
+  image:
+    name: Image (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: .
+            dockerfile: src/backend/RealmWeaver.Api/Dockerfile
+            title: Realm Weaver API
+          - name: web
+            context: src/frontend
+            dockerfile: src/frontend/Dockerfile
+            title: Realm Weaver web
+    steps:
+      - uses: actions/checkout@v7
+
+      # GHCR image names must be lowercase, and the owner name may not be.
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${OWNER,,}/realm-weaver-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+          # latest only for release tags, so it never points at an untagged main build.
+          flavor: |
+            latest=${{ startsWith(github.ref, 'refs/tags/v') }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          # Build provenance and an SBOM are attached to pushed images (GHCR shows them as attestations).
+          provenance: ${{ github.event_name != 'pull_request' && 'mode=max' || 'false' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
