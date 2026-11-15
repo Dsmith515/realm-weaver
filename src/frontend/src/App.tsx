@@ -13,7 +13,7 @@ export function App() {
     <PlayerProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/ritual" replace />} />
+          <Route index element={<Navigate to="/gm/weave" replace />} />
           <Route path="ritual" element={<RitualPage />} />
           <Route path="player" element={<PlayerPage />} />
           <Route path="realms" element={<RealmsPage />} />

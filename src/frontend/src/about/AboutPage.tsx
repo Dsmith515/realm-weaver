@@ -4,14 +4,16 @@ export function AboutPage() {
     <section className="about">
       <h1>About Realm Weaver</h1>
       <p>
-        Realm Weaver generates realms for tabletop role-playing games: battle maps for fields and dungeons, the events
-        and creatures placed on them, and the exports a game master needs to run them. The same inputs always weave the
-        same realm, so a map can be shared, reopened and played again.
+        Realm Weaver is a game master&apos;s tool for tabletop role-playing games. It weaves realms (battle maps for fields
+        and dungeons, the events and creatures placed on them, and the exports needed to run them) and keeps a
+        repository of the components you create and hand out to players. The same ingredients always weave the same
+        realm, so a realm can be reopened and played again.
       </p>
 
       <h2>How it works</h2>
       <p>
-        Realms are woven in a <strong>ritual</strong> from components a player owns:
+        For a one-shot or a story beat, <strong>Quick Weave</strong> builds a realm straight from the catalog. In play,
+        realms are woven in a <strong>ritual</strong> from components a player owns:
       </p>
       <ul>
         <li>
@@ -24,12 +26,13 @@ export function AboutPage() {
           <strong>Coating</strong>: who lives there, plus the realm's kind and number of dungeon floors.
         </li>
         <li>
-          <strong>Map</strong>: the recorded recipe and seed, so the realm can be woven again.
+          <strong>Map</strong>: the recorded recipe and seed. Weaving the same Needle, Thread and Coating reopens the
+          same realm without it; a map the GM marks <em>Map required</em> is sealed and only opens for its holders.
         </li>
       </ul>
       <p>
-        Game masters can skip the inventory with <strong>Quick Weave</strong>, which builds a realm from the whole
-        catalog for a one-shot.
+        When the party finishes, the GM completes the run on the realm page and hands its map to the players who should
+        keep it.
       </p>
 
       <h2>What you get</h2>
@@ -56,8 +59,9 @@ export function AboutPage() {
 
       <h2>Where it's heading</h2>
       <p>
-        Next up are richer settlements (population, structures and wealth), objectives tied to events, Thimbles that
-        steer what a realm contains, and easier ways to install and share the tool. The full plan is in{' '}
+        The player pages are a preview. Shared sessions, where players log in, watch a ritual together and trade
+        components, belong to a later session client built on this API. Also ahead: Thimbles that steer what a realm
+        contains, richer settlements, and easier ways to share the tool. The full plan is in{' '}
         <code>docs/roadmap.md</code> in the repository.
       </p>
       <p className="muted">

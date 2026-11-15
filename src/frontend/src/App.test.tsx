@@ -10,16 +10,22 @@ const shellRoutes = {
   'GET /api/players': [player, otherPlayer],
   'GET /api/players/:id/inventory': inventory,
   'POST /api/rituals/preview': preview({ canPerform: false }),
+  'GET /api/components': { items: [], page: 1, pageSize: 50, totalCount: 0 },
 }
 
 describe('App shell', () => {
-  it('redirects the root to the ritual page and shows navigation', async () => {
+  it('opens on the GM Quick Weave page, with GM links first and the player pages as a preview', async () => {
     fakeApi(shellRoutes)
     renderApp('/')
 
-    expect(screen.getByRole('heading', { name: 'Ritual' })).toBeInTheDocument()
-    for (const label of ['Ritual', 'Player', 'Realms', 'Components']) {
-      expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Quick Weave' })).toBeInTheDocument()
+    const gm = screen.getByRole('group', { name: 'GM' })
+    for (const label of ['Quick Weave', 'Realms', 'Components']) {
+      expect(within(gm).getByRole('link', { name: label })).toBeInTheDocument()
+    }
+    const players = screen.getByRole('group', { name: 'Player preview' })
+    for (const label of ['Ritual', 'Player']) {
+      expect(within(players).getByRole('link', { name: label })).toBeInTheDocument()
     }
     expect(await screen.findByText('API: 1.0.0')).toBeInTheDocument()
   })

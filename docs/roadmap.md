@@ -49,13 +49,13 @@ Each module exposes only a public `I…Module` interface plus DTOs. The project-
 
 ## Ritual rules (Rituals module)
 1. **Choosing a map** fills in its Needle, Thread and Coating. Any the player doesn't own are flagged. If the player picks different non-map components, the map is marked as a **mismatch**: same seed, `DangerModifier += 1–2`, encounters rerolled with the new thread and coating.
-2. **Choosing a Needle, Thread and Coating** checks whether the player owns a Map with exactly those three. If so, the Map slot fills in automatically.
+2. **Choosing a Needle, Thread and Coating** looks for a Map made with exactly those three (the needle by base type): one the player owns, otherwise the oldest in the catalog. The Map slot fills in, so the same ingredients reopen the same realm without the map. A map the GM marks *Map required* is sealed and only opens for its holders. Advanced size options skip this and weave a custom realm (ADR 0010).
 3. **Random** fills the non-map slots from the player's own items (consumables need a quantity of at least 1), then runs rule 2.
 4. **Perform ritual** runs `POST /api/rituals` with an `Idempotency-Key`. It runs in **one DB transaction**:
    - Check ownership.
    - Decrement Thread and Coating. An `xmin` conflict returns 409 and the call is retried.
    - Reuse the map seed, or create a new `Map` ComponentDefinition with a fresh seed. A new map appears in the admin catalog automatically.
-   - Add the map to inventory (skip if already owned).
+   - The map is **not** granted. The GM hands it out when completing the run (ADR 0010).
    - Generate the realm (a pure call) and save the `Realm` and `Ritual`.
    - Commit.
 
@@ -147,12 +147,19 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
    - **Map recording.** Manual completion replaces the automatic map grant. Recording a map requires **Cartographer** status, from either a trained player skill or a needle boon.
    - **Base needle type and attunement.** Recipes match a needle by its base type (for example any Beginner's Needle), not by instance id. A player has one *attuned* needle, which supplies abilities during an adventure. It's separate from the needle used for weaving.
    - **Per-map flags.** *Map Required* (no access without the map), *Components Must Match* (no mirrors) and *Unique* (can't be shared). A mirror (off-recipe weave) keeps the layout and rerolls events and objectives, and the realm sheet notes that its objectives differ.
+   - **8e. GM first** (feedback after trying M8, ADR 0010). Realm Weaver is a GM tool first:
+     - The same ingredients reopen the same realm, and maps are open unless the GM seals them (*Map required*).
+     - The GM completes a run (optional objective) and hands its map to chosen players in one transaction.
+     - Cartographer status is parked until player sessions exist. Attunement stays.
+     - The navigation leads with GM pages; Ritual and Player are a *Player preview*.
+     - The catalog no longer crashes on maps whose stored JSON lacks objectives.
 9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.
    - An orchestrated **saga** in the ritual service runs: Reserve consumables, then Generate realm, then Create map, then Grant map, then Commit reservation. Compensation steps release the reservation and delete the orphan map.
    - **OpenTelemetry** sends traces to the free Aspire Dashboard container.
    - Tests for failure injection in the saga, with ADRs comparing it to the Phase 1 ACID version.
+   - **Player sessions are a separate client.** Logins, parties, a shared ritual view, player-run completion and trading belong to a future session/VTT project that consumes these services. It is the split's first external consumer, and it shouldn't shape the generator's core (ADR 0010).
 10. **Content tables** (a later phase, which could become its own `content` service): this moves `IContentCatalog` to Postgres, with admin UI pages that work like the Components page.
    - `AbilityTemplate`: name, **category**, **reach** (self, ally, foe, area, realm), effect text (your own) and minimum tier.
      - Needle abilities become a multi-select of ability ids, grouped by category.

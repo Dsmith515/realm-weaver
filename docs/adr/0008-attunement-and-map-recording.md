@@ -1,6 +1,6 @@
 # ADR 0008: Needles match by base type, players attune one needle, and Cartographers record maps on completion
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0010](0010-gm-first.md)
 - **Date:** 2026-11-15
 - **Amends:** ADR 0005, whose step 4 (grant the map) moves out of the ritual.
 

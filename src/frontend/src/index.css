@@ -61,8 +61,29 @@ body {
 
 .app-header nav {
   display: flex;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
   flex: 1;
+}
+
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-group + .nav-group {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border);
+}
+
+.nav-group__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .app-header nav a {
