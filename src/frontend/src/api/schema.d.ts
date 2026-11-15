@@ -220,6 +220,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realms/{id}/objectives/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every objective a GM can pin: the rolled objectives first, then the other hooks of the placed events and the realm-wide objectives. */
+        get: operations["ListObjectiveCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/realms/{id}/pinned-objective": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Pins one candidate objective, by key, for this run. Stored on the realm, never on the map. */
+        put: operations["PinObjective"];
+        post?: never;
+        delete: operations["UnpinObjective"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/realms/{id}/export": {
         parameters: {
             query?: never;
@@ -535,6 +569,7 @@ export interface components {
             recipe?: null | components["schemas"]["MapRecipe"];
             /** Format: int32 */
             threat?: null | number;
+            objectives?: null | components["schemas"]["RealmObjective"][];
         };
         MapDetailsDto: {
             map: components["schemas"]["ComponentDto"];
@@ -582,6 +617,8 @@ export interface components {
             category: string;
             abilities: string[];
         };
+        /** @enum {unknown} */
+        ObjectiveScope: "event" | "realm";
         PagedResultOfComponentDto: {
             items: components["schemas"]["ComponentDto"][];
             /** Format: int32 */
@@ -590,6 +627,9 @@ export interface components {
             pageSize: number;
             /** Format: int32 */
             totalCount: number;
+        };
+        PinObjectiveInput: {
+            key: string;
         };
         PlacedEvent: {
             id: string;
@@ -749,6 +789,7 @@ export interface components {
             threat: number;
             theme?: null | components["schemas"]["DungeonTheme"];
             areas: components["schemas"]["RealmArea"][];
+            objectives?: components["schemas"]["RealmObjective"][];
         };
         RealmDto: {
             summary: components["schemas"]["RealmSummaryDto"];
@@ -756,6 +797,18 @@ export interface components {
         };
         /** @enum {unknown} */
         RealmKind: "field" | "dungeon" | "fieldWithDungeon";
+        RealmObjective: {
+            id: string;
+            key: string;
+            templateId: string;
+            title: string;
+            description: string;
+            scope: components["schemas"]["ObjectiveScope"];
+            areaId?: null | string;
+            eventId?: null | string;
+            eventName?: null | string;
+            location?: null | string;
+        };
         RealmSummaryDto: {
             /** Format: uuid */
             id: string;
@@ -784,6 +837,7 @@ export interface components {
             createdAt: string;
             areas: components["schemas"]["RealmAreaSummaryDto"][];
             components?: null | components["schemas"]["RealmComponentsDto"];
+            pinnedObjective?: null | components["schemas"]["RealmObjective"];
             isMirror?: boolean;
         };
         RitualIssue: {
@@ -1406,6 +1460,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RealmDto"];
+                };
+            };
+        };
+    };
+    ListObjectiveCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmObjective"][];
+                };
+            };
+        };
+    };
+    PinObjective: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PinObjectiveInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmSummaryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    UnpinObjective: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmSummaryDto"];
                 };
             };
         };

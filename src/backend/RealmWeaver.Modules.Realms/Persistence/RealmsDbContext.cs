@@ -6,7 +6,8 @@ namespace RealmWeaver.Modules.Realms.Persistence;
 
 /// <summary>
 /// A generated realm. <see cref="Document"/> is the full <see cref="RealmDocument"/> as jsonb; the other columns
-/// are copies of a few of its values for listing without parsing. Realms are never updated.
+/// are copies of a few of its values for listing without parsing. The document never changes; only the GM's
+/// <see cref="PinnedObjective"/> can be set later.
 /// </summary>
 internal sealed class Realm
 {
@@ -59,6 +60,12 @@ internal sealed class Realm
     public Guid? CoatingId { get; set; }
 
     public string? CoatingName { get; set; }
+
+    /// <summary>
+    /// A GM's chosen objective for this run, as jsonb (a <see cref="RealmObjective"/>). Stored on the realm, not the
+    /// map, so it never changes the map's recipe or recorded objectives.
+    /// </summary>
+    public string? PinnedObjective { get; set; }
 }
 
 internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options) : DbContext(options)
@@ -79,6 +86,7 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.GeneratorVersion).HasMaxLength(20);
             realm.Property(r => r.Document).HasColumnType("jsonb");
             realm.Property(r => r.Areas).HasColumnType("jsonb");
+            realm.Property(r => r.PinnedObjective).HasColumnType("jsonb");
             realm.Property(r => r.MapName).HasMaxLength(100);
             realm.Property(r => r.NeedleName).HasMaxLength(100);
             realm.Property(r => r.ThreadName).HasMaxLength(100);

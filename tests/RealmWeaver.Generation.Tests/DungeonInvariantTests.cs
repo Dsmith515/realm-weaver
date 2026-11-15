@@ -268,5 +268,7 @@ public class DungeonInvariantTests
         public IReadOnlyList<TrapTemplate> TrapTemplates => Inner.TrapTemplates;
 
         public IReadOnlyList<StructureTemplate> StructureTemplates => Inner.StructureTemplates;
+
+        public IReadOnlyList<RealmObjectiveTemplate> RealmObjectives => Inner.RealmObjectives;
     }
 }

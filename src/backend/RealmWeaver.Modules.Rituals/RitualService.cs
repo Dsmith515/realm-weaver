@@ -281,7 +281,8 @@ internal sealed class RitualService(
                 document.GeneratorVersion,
                 playerId,
                 RecipeOf(document.Request),
-                document.Threat));
+                document.Threat,
+                document.Objectives.Count == 0 ? null : document.Objectives));
     }
 
     internal static string SeedTag(ulong seed) => seed.ToString("X16", CultureInfo.InvariantCulture)[..6];

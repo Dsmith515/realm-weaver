@@ -56,6 +56,19 @@ function MapDetailsView({ mapId }: { mapId: string }) {
         <dd>{[needle?.name, thread?.name, coating?.name].filter(Boolean).join(' · ') || '—'}</dd>
       </dl>
 
+      {map.map?.objectives && map.map.objectives.length > 0 && (
+        <>
+          <h3>Objectives (complete any one)</h3>
+          <ul className="digest" aria-label="Recorded objectives">
+            {map.map.objectives.map((o) => (
+              <li key={o.key}>
+                {o.title} <span className="muted">{o.eventId ? `${o.eventName}, ${o.location}` : 'whole realm'}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       {!originalRealm && <p className="muted">No realm has been opened from this map yet.</p>}
       {digest && (
         <>

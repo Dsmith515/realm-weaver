@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from './client'
-import type { ComponentInput, QuickWeaveRequest, RitualPreviewRequest, RitualSelection } from './types'
+import type { ComponentInput, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
 export const keys = {
@@ -167,7 +167,32 @@ export function useRealm(id: string) {
   return useQuery({
     queryKey: keys.realm(id),
     queryFn: () => unwrap(api.GET('/api/realms/{id}', { params: { path: { id } } })),
-    staleTime: Infinity, // realms never change
+    staleTime: Infinity, // the document never changes; a pin updates the cache below
+  })
+}
+
+/** Every objective a GM can pin on a realm, rolled ones first. */
+export function useObjectiveCandidates(realmId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['objective-candidates', realmId],
+    queryFn: () => unwrap(api.GET('/api/realms/{id}/objectives/candidates', { params: { path: { id: realmId } } })),
+    enabled,
+    staleTime: Infinity,
+  })
+}
+
+/** Pins an objective by key, or clears the pin with null. */
+export function usePinObjective(realmId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (key: string | null) =>
+      key === null
+        ? unwrap(api.DELETE('/api/realms/{id}/pinned-objective', { params: { path: { id: realmId } } }))
+        : unwrap(api.PUT('/api/realms/{id}/pinned-objective', { params: { path: { id: realmId } }, body: { key } })),
+    onSuccess: (summary) => {
+      queryClient.setQueryData<Realm>(keys.realm(realmId), (old) => (old ? { ...old, summary } : old))
+      void queryClient.invalidateQueries({ queryKey: keys.allRealms })
+    },
   })
 }
 

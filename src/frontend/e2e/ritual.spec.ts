@@ -25,6 +25,11 @@ test('a new player performs a random ritual, gets the map, views the realm and d
   await realms.click()
   await expectMapDrawn(page)
 
+  // The run has one to three objectives; completing any one completes it.
+  const objectives = page.getByRole('region', { name: 'Objectives' })
+  await expect(objectives).toContainText('Complete any one to complete the run.')
+  await expect(objectives.locator('.objectives__list li')).not.toHaveCount(0)
+
   for (const [link, extension] of [['Download SVG', '.svg'], ['Placement sheet (Markdown)', '.md'], ['JSON', '.json']] as const) {
     const download = page.waitForEvent('download')
     await page.getByRole('link', { name: link }).click()

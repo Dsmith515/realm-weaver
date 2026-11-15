@@ -50,6 +50,9 @@ public sealed record MapRecipe(
 /// Map: a realm already visited. Its seed and recipe rebuild the same realm.
 /// <see cref="Recipe"/> is filled in from the referenced components when it's left out of a request.
 /// <see cref="Threat"/> is known only for maps a ritual created.
+/// <see cref="Objectives"/> are the objectives the map was recorded with, kept so later content or generator changes
+/// leave maps players already hold unchanged. Null for maps made by hand or before objectives existed; an update that
+/// leaves them out keeps the recorded ones.
 /// </summary>
 public sealed record MapDetails(
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
@@ -63,7 +66,8 @@ public sealed record MapDetails(
     string GeneratorVersion,
     Guid? CreatedByPlayerId,
     MapRecipe? Recipe = null,
-    int? Threat = null);
+    int? Threat = null,
+    IReadOnlyList<RealmObjective>? Objectives = null);
 
 public sealed record ComponentDto(
     Guid Id,

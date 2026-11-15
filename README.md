@@ -93,6 +93,8 @@ npm run e2e                                          # E2E_BASE_URL=... to test 
 | `POST /api/rituals` (header `Idempotency-Key`), `GET /api/rituals/{id}` | Perform a ritual in one transaction. Retrying with the same key replays the result. |
 | `GET /api/realms?playerId=&mapId=`, `GET /api/realms/{id}` | Realm summaries, and a full realm with its generated document |
 | `GET /api/realms/{id}/export?format=svg\|prompt\|json\|md&area=` | Exports. `svg` and `prompt` are per area (field or `floor-N`). |
+| `GET /api/realms/{id}/objectives/candidates` | Every objective a GM can pin: the rolled ones, then the other event hooks and realm-wide objectives |
+| `PUT` / `DELETE /api/realms/{id}/pinned-objective` | Pin an objective (body `{ key }`) or clear the pin. Stored on the realm, never on the map. |
 | `POST /api/gm/weave/preview`, `POST /api/gm/weave` | GM Quick Weave: resolve a realm from the whole catalog (chosen slots as given, empty ones random within the limits) without saving, then weave it. Nothing is consumed. |
 
 Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.

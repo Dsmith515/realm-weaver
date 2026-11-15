@@ -17,6 +17,9 @@ public interface IContentCatalog
     IReadOnlyList<TrapTemplate> TrapTemplates { get; }
 
     IReadOnlyList<StructureTemplate> StructureTemplates { get; }
+
+    /// <summary>Objectives about the whole realm rather than one event, e.g. "Clear the realm".</summary>
+    IReadOnlyList<RealmObjectiveTemplate> RealmObjectives { get; }
 }
 
 [Flags]
@@ -113,7 +116,32 @@ public sealed record EventTemplate
     public DungeonMaterial? HostMaterial { get; init; }
 
     public bool IsDungeonHost => HostMaterial is not null;
+
+    /// <summary>Objectives this event can offer once placed, e.g. a prison offers "Free the captive".</summary>
+    public IReadOnlyList<ObjectiveHook> ObjectiveHooks { get; init; } = [];
 }
+
+/// <summary>
+/// An objective an event offers. <see cref="NeedsResidents"/> hooks are skipped for abandoned settlements,
+/// where there is nobody left to settle a dispute with.
+/// </summary>
+public sealed record ObjectiveHook(string Id, string Title, string Description, int Weight = 10)
+{
+    public bool NeedsResidents { get; init; }
+}
+
+/// <summary>When a realm-wide objective can be offered.</summary>
+public enum ObjectiveRequirement
+{
+    /// <summary>Always.</summary>
+    None,
+
+    /// <summary>The realm has at least one dungeon floor.</summary>
+    DungeonFloors,
+}
+
+/// <summary>An objective about the whole realm, such as clearing it or charting every floor.</summary>
+public sealed record RealmObjectiveTemplate(string Id, string Title, string Description, int Weight, ObjectiveRequirement Requirement);
 
 /// <summary>
 /// A building or ground inside a settlement. <see cref="Tags"/> match the Coating's mob tags (empty means any

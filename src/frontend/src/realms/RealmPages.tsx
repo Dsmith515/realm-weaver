@@ -5,6 +5,7 @@ import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
+import { ObjectivesPanel } from './ObjectivesPanel'
 import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
 
@@ -98,6 +99,16 @@ function RealmView({ realm }: { realm: Realm }) {
         {label(summary.kind)} · Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}
       </p>
+
+      <ObjectivesPanel
+        realm={realm}
+        highlighted={highlight ? `${areaId}/${highlight}` : undefined}
+        onShow={(objective) => {
+          if (!objective.eventId) return
+          if (objective.areaId) setAreaId(objective.areaId)
+          setHighlight(objective.eventId)
+        }}
+      />
 
       {summary.areas.length > 1 && (
         <div role="tablist" aria-label="Areas" className="tabs">

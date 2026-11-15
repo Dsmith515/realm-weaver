@@ -766,3 +766,78 @@ textarea {
     overflow-x: auto;
   }
 }
+
+.objectives {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.objectives h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.objectives p {
+  margin: 0;
+}
+
+.objectives__mirror {
+  font-size: 0.9rem;
+  color: var(--warn);
+}
+
+.objectives__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.objectives__objective {
+  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.objectives__objective[aria-pressed="true"] {
+  border-color: var(--highlight);
+  box-shadow: inset 3px 0 0 var(--highlight);
+}
+
+.objectives__item--pinned .objectives__objective {
+  border-left: 4px solid var(--accent);
+}
+
+.objectives__pinned {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.objectives__pinned .objectives__objective {
+  width: auto;
+  flex: 1 1 16rem;
+}
+
+.objectives__chooser {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 40rem;
+}
+
+.objectives__chooser select {
+  width: 100%;
+}

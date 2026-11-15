@@ -20,6 +20,7 @@ export type SlotSource = Schemas['SlotSource']
 export type RealmSummary = Schemas['RealmSummaryDto']
 export type Realm = Schemas['RealmDto']
 export type RealmArea = Schemas['RealmArea']
+export type RealmObjective = Schemas['RealmObjective']
 
 // Runtime lists of the API's enums. `satisfies` plus the exhaustiveness checks below make the compiler
 // fail if the backend adds a value the frontend doesn't list.
