@@ -49,17 +49,24 @@ cd src/frontend && npm run lint && npm test
 
 ### API
 
+**Reference.** With the API running in Development, open http://localhost:5080/scalar for an interactive reference where you can try requests. The raw OpenAPI document is at `/openapi/v1.json`. Without a running API, the committed copy at [`src/frontend/openapi/realm-weaver.json`](src/frontend/openapi/realm-weaver.json) is the same document, and CI keeps it in sync (see **API contract** below). Both the reference and the document are Development-only, since there's no authentication yet.
+
 | Endpoint | What it does |
 |---|---|
+| `GET /api/info` | API name and version |
 | `GET/POST /api/components`, `GET/PUT/DELETE /api/components/{id}` | Component catalog. Filter with `type`, `rarity`, `biome`, `search`, `assignable`, `includeArchived`, `page`, `pageSize`. Delete archives. |
+| `GET /api/components/name-suffixes` | The words a Needle, Thread or Coating name may end with |
 | `POST /api/components/{id}/assign` | Admin: give a component to a player |
 | `GET/PUT /api/settings` | The global `playersCanSelfAssign` toggle |
 | `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit. |
 | `GET/POST /api/players/{id}/inventory` | A player's inventory, and adding to it yourself (when allowed) |
+| `PUT /api/players/{id}/inventory/{componentId}/notes` | Replace a player's notes on an item they own |
+| `GET /api/maps/{id}/details` | Map details: seed, kind, threat, mobs, potential loot and resource nodes |
 | `POST /api/rituals/preview` | Resolve the four slots: map auto-fill, `randomize`, mismatch and danger, and what's missing |
 | `POST /api/rituals` (header `Idempotency-Key`), `GET /api/rituals/{id}` | Perform a ritual in one transaction. Retrying with the same key replays the result. |
 | `GET /api/realms?playerId=&mapId=`, `GET /api/realms/{id}` | Realm summaries, and a full realm with its generated document |
 | `GET /api/realms/{id}/export?format=svg\|prompt\|json\|md&area=` | Exports. `svg` and `prompt` are per area (field or `floor-N`). |
+| `POST /api/gm/weave/preview`, `POST /api/gm/weave` | GM Quick Weave: resolve a realm from the whole catalog (chosen slots as given, empty ones random within the limits) without saving, then weave it. Nothing is consumed. |
 
 Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.
 
