@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { errorMessage } from '../api/client'
 import { useAttune, useInventory, useSetSkills } from '../api/queries'
 import type { Player } from '../api/types'
@@ -13,7 +14,12 @@ export function AttunementCard({ player }: { player: Player }) {
   const setSkills = useSetSkills(player.id)
   const needles = inventory.data?.filter((i) => i.component.type === 'needle') ?? []
   const attuned = needles.find((i) => i.component.id === player.attunedNeedleId)?.component
-  const trained = player.skills?.includes('cartographer') ?? false
+  // What the user just asked for, shown until the server's answer arrives. Local state updates within the click,
+  // so the controlled inputs never snap back to the old value while the request is in flight.
+  const [askedTrained, setAskedTrained] = useState<boolean>()
+  const [askedNeedle, setAskedNeedle] = useState<string>()
+  const trained = askedTrained ?? player.skills?.includes('cartographer') ?? false
+  const attunedId = askedNeedle ?? player.attunedNeedleId ?? ''
 
   return (
     <section className="card attunement" aria-label="Attunement">
@@ -21,9 +27,12 @@ export function AttunementCard({ player }: { player: Player }) {
       <label className="field__label">
         <span>Attuned needle</span>
         <select
-          value={player.attunedNeedleId ?? ''}
+          value={attunedId}
           disabled={attune.isPending || inventory.isPending}
-          onChange={(e) => attune.mutate(e.target.value || null)}
+          onChange={(e) => {
+            setAskedNeedle(e.target.value)
+            attune.mutate(e.target.value || null, { onSettled: () => setAskedNeedle(undefined) })
+          }}
         >
           <option value="">None</option>
           {needles.map((n) => (
@@ -53,7 +62,10 @@ export function AttunementCard({ player }: { player: Player }) {
           type="checkbox"
           checked={trained}
           disabled={setSkills.isPending}
-          onChange={(e) => setSkills.mutate(e.target.checked ? ['cartographer'] : [])}
+          onChange={(e) => {
+            setAskedTrained(e.target.checked)
+            setSkills.mutate(e.target.checked ? ['cartographer'] : [], { onSettled: () => setAskedTrained(undefined) })
+          }}
         />
         Trained Cartographer (GM)
       </label>

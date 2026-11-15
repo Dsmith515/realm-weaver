@@ -1,6 +1,6 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from './client'
-import type { ComponentInput, PlayerSkill, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
+import type { ComponentInput, Player, PlayerSkill, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
 export const keys = {
@@ -47,7 +47,7 @@ export function useAttune(playerId: string) {
       needleId === null
         ? unwrap(api.DELETE('/api/players/{id}/attunement', { params: { path: { id: playerId } } }))
         : unwrap(api.PUT('/api/players/{id}/attunement', { params: { path: { id: playerId } }, body: { needleId } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.players }),
+    onSuccess: (player) => replacePlayer(queryClient, player),
   })
 }
 
@@ -56,8 +56,14 @@ export function useSetSkills(playerId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (skills: PlayerSkill[]) => unwrap(api.PUT('/api/players/{id}/skills', { params: { path: { id: playerId } }, body: { skills } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.players }),
+    onSuccess: (player) => replacePlayer(queryClient, player),
   })
+}
+
+/** Puts the player the API returned into the cached list, so the page updates without waiting for a refetch. */
+function replacePlayer(queryClient: QueryClient, player: Player) {
+  queryClient.setQueryData<Player[]>(keys.players, (old) => old?.map((p) => (p.id === player.id ? player : p)))
+  void queryClient.invalidateQueries({ queryKey: keys.players })
 }
 
 export function useInventory(playerId: string | undefined) {
