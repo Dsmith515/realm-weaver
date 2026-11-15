@@ -37,6 +37,19 @@ public class ApiSmokeTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
+    public async Task Scalar_api_reference_page_is_served_and_points_at_the_openapi_document()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync(new Uri("/scalar", UriKind.Relative));
+        var page = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Realm Weaver API", page, StringComparison.Ordinal);
+        Assert.Contains("openapi/v1.json", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Malformed_json_body_returns_bad_request_not_server_error()
     {
         using var client = factory.CreateClient();

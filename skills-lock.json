@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "scalar-api-reference": {
+      "source": "scalar/scalar",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/scalar-api-reference/SKILL.md",
+      "computedHash": "fb512ea6ed4896323a9d54b35e23c390a6367747e237af641a90abdb4a8e2d4d"
+    }
+  }
+}

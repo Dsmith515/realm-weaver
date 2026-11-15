@@ -4,7 +4,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 
 ## Commands
 - Backend build/test: `dotnet build RealmWeaver.slnx` and `dotnet test RealmWeaver.slnx`
-- Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080)
+- Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080; API reference at /scalar in Development)
 - Frontend (in `src/frontend`): `npm run dev`, `npm run lint`, `npm test`, `npm run build`
 - API contract: after changing an endpoint or DTO, run `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests`, then `npm run api:types` in `src/frontend`, and commit both generated files. CI checks both.
 - Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only). The API migrates and seeds on startup.
