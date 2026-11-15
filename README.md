@@ -92,9 +92,11 @@ Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a co
 | Page | What it does |
 |---|---|
 | **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. |
-| **Player** | Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). |
-| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; click a placement to highlight it. Exports download as SVG, image prompt, Markdown or JSON. |
+| **Player** | Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). Open an item to keep your own notes on it; a map also shows its details (seed, recipe, threat, mobs, potential loot and resource nodes). |
+| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
 | **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. |
+| **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options, **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
+| **About** | What Realm Weaver is for and how a ritual works. |
 
 The player switcher is in the header (there's no login yet).
 
