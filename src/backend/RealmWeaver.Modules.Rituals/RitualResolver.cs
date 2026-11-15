@@ -10,8 +10,10 @@ namespace RealmWeaver.Modules.Rituals;
 /// Applies the slot rules from the roadmap to a selection. Used by preview and, unchanged, by perform,
 /// so what the player saw is exactly what runs.
 /// <list type="number">
-/// <item>A chosen Map fills empty Needle/Thread/Coating slots. A different component in a slot is a mismatch.</item>
-/// <item>With a Needle, Thread and Coating and no Map, an owned Map made with exactly those three fills the Map slot.</item>
+/// <item>A chosen Map fills empty Needle/Thread/Coating slots. A different component in a slot is a mismatch; a needle
+/// matches by base type, so any Beginner's Needle fits a map woven with one.</item>
+/// <item>With a Needle, Thread and Coating and no Map, an owned Map made with exactly those three (the needle by base type)
+/// fills the Map slot.</item>
 /// <item>Randomize fills empty non-map slots from the player's items (consumables need quantity 1+), then rule 2.</item>
 /// </list>
 /// </summary>
@@ -52,9 +54,9 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
             var recorded = await catalog.GetComponentsAsync([mapDetails.NeedleId, mapDetails.ThreadId, mapDetails.CoatingId], cancellationToken);
             mapThread = recorded.GetValueOrDefault(mapDetails.ThreadId);
             mapCoating = recorded.GetValueOrDefault(mapDetails.CoatingId);
-            needle = FillFromMap(RitualSlot.Needle, needle, recorded.GetValueOrDefault(mapDetails.NeedleId));
-            thread = FillFromMap(RitualSlot.Thread, thread, mapThread);
-            coating = FillFromMap(RitualSlot.Coating, coating, mapCoating);
+            needle = FillFromMap(RitualSlot.Needle, needle, recorded.GetValueOrDefault(mapDetails.NeedleId), mapDetails.Recipe);
+            thread = FillFromMap(RitualSlot.Thread, thread, mapThread, mapDetails.Recipe);
+            coating = FillFromMap(RitualSlot.Coating, coating, mapCoating, mapDetails.Recipe);
         }
 
         // Rule 3: random fills from the player's own items.
@@ -70,7 +72,8 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         {
             var matching = owned
                 .Where(i => i.Component.Map is { } m
-                            && m.NeedleId == needle.Component.Id && m.ThreadId == thread.Component.Id && m.CoatingId == coating.Component.Id)
+                            && m.ThreadId == thread.Component.Id && m.CoatingId == coating.Component.Id
+                            && (m.Recipe?.NeedleBaseType is { } baseType ? needle.Component.Needle?.BaseType == baseType : m.NeedleId == needle.Component.Id))
                 .OrderByDescending(i => i.AcquiredAt)
                 .FirstOrDefault();
             if (matching is not null)
@@ -140,7 +143,7 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
             return new SlotPreview(component, SlotSource.Selected, QuantityOf(componentId));
         }
 
-        SlotPreview? FillFromMap(RitualSlot slot, SlotPreview? current, ComponentDto? recorded)
+        SlotPreview? FillFromMap(RitualSlot slot, SlotPreview? current, ComponentDto? recorded, MapRecipe? recipe)
         {
             if (recorded is null)
             {
@@ -152,7 +155,7 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
                 return new SlotPreview(recorded, SlotSource.FromMap, QuantityOf(recorded.Id));
             }
 
-            if (current.Component.Id != recorded.Id)
+            if (!SameIngredient(slot, current.Component, recorded, recipe))
             {
                 mismatched.Add(slot);
             }
@@ -206,6 +209,23 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Whether a component in a slot is the map's recorded ingredient. Threads and Coatings must be the same component.
+    /// A Needle matches by base type: the map's recorded one, or for maps from before base types, its needle's current one.
+    /// </summary>
+    public static bool SameIngredient(RitualSlot slot, ComponentDto chosen, ComponentDto recorded, MapRecipe? recipe)
+    {
+        ArgumentNullException.ThrowIfNull(chosen);
+        ArgumentNullException.ThrowIfNull(recorded);
+        if (chosen.Id == recorded.Id)
+        {
+            return true;
+        }
+
+        var expected = slot == RitualSlot.Needle ? recipe?.NeedleBaseType ?? recorded.Needle?.BaseType : null;
+        return expected is not null && string.Equals(chosen.Needle?.BaseType, expected, StringComparison.Ordinal);
     }
 
     /// <summary>A mismatched map raises danger by 1 for one different slot, and by 2 for two or more.</summary>

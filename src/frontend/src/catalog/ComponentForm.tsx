@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError, errorMessage } from '../api/client'
 import { useNameSuffixes, useSaveComponent } from '../api/queries'
-import type { Component, ComponentInput, ComponentType } from '../api/types'
-import { biomes, elements, label, rarities, realmKinds } from '../api/types'
+import type { Component, ComponentInput, ComponentType, NeedleBoon } from '../api/types'
+import { biomes, boonLabel, elements, label, needleBoons, rarities, realmKinds } from '../api/types'
 import { creatableTypes, fallbackSuffixes, randomComponent, type RandomizableType, type Rng } from './randomComponent'
 
 interface ComponentFormProps {
@@ -116,6 +116,31 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
           </Field>
           <Field label="Abilities (comma separated)" error={fieldError('needle.abilities')}>
             <input value={abilities} onChange={(e) => setAbilities(e.target.value)} />
+          </Field>
+          <Field
+            label="Base type"
+            error={fieldError('needle.baseType')}
+            hint="Map recipes match this, so any needle of the same base type fits. Blank means the name."
+          >
+            <input
+              value={input.needle.baseType ?? ''}
+              disabled={locked}
+              placeholder={input.name}
+              onChange={(e) => setInput({ ...input, needle: { ...input.needle!, baseType: e.target.value || null } })}
+            />
+          </Field>
+          <Field label="Boon" error={fieldError('needle.boon')} hint="A passive benefit while attuned. At most one.">
+            <select
+              value={input.needle.boon ?? ''}
+              onChange={(e) => setInput({ ...input, needle: { ...input.needle!, boon: (e.target.value || null) as NeedleBoon | null } })}
+            >
+              <option value="">None</option>
+              {needleBoons.map((b) => (
+                <option key={b} value={b}>
+                  {boonLabel(b)}
+                </option>
+              ))}
+            </select>
           </Field>
         </fieldset>
       )}

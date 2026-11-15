@@ -34,7 +34,11 @@ internal sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> option
             component.HasIndex(c => c.Type);
             component.HasIndex(c => c.Name);
 
-            component.OwnsOne(c => c.Needle, needle => needle.ToJson());
+            component.OwnsOne(c => c.Needle, needle =>
+            {
+                needle.ToJson();
+                needle.Property(n => n.Boon).HasConversion<string>();
+            });
             component.OwnsOne(c => c.Thread, thread =>
             {
                 thread.ToJson();

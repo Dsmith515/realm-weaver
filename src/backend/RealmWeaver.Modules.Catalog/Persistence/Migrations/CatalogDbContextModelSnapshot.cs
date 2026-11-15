@@ -250,6 +250,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
                                     b2.PrimitiveCollection<string>("MobTags")
                                         .IsRequired();
 
+                                    b2.Property<string>("NeedleBaseType");
+
                                     b2.Property<string>("SettlementPopulation");
 
                                     b2.HasKey("MapDataComponentDefinitionId")
@@ -273,6 +275,10 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                             b1.PrimitiveCollection<string>("Abilities")
                                 .IsRequired();
+
+                            b1.Property<string>("BaseType");
+
+                            b1.Property<string>("Boon");
 
                             b1.Property<string>("Category")
                                 .IsRequired();

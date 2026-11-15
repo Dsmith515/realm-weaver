@@ -21,6 +21,8 @@ export type RealmSummary = Schemas['RealmSummaryDto']
 export type Realm = Schemas['RealmDto']
 export type RealmArea = Schemas['RealmArea']
 export type RealmObjective = Schemas['RealmObjective']
+export type NeedleBoon = NonNullable<Schemas['NeedleBoon']>
+export type PlayerSkill = Schemas['PlayerSkill']
 
 // Runtime lists of the API's enums. `satisfies` plus the exhaustiveness checks below make the compiler
 // fail if the backend adds a value the frontend doesn't list.
@@ -30,6 +32,7 @@ export const biomes = ['plains', 'forest', 'desert', 'tundra', 'swamp', 'volcani
 export const elements = ['none', 'fire', 'water', 'earth', 'air', 'frost', 'lightning', 'light', 'shadow'] as const satisfies readonly Element[]
 export const realmKinds = ['field', 'dungeon', 'fieldWithDungeon'] as const satisfies readonly RealmKind[]
 export const ritualSlots = ['needle', 'thread', 'coating', 'map'] as const satisfies readonly RitualSlot[]
+export const needleBoons = ['cartographer', 'friendlyNpcs', 'partyDirection', 'trapSense', 'safeRest'] as const satisfies readonly NeedleBoon[]
 
 type Exhaustive<All, Listed> = [All] extends [Listed] ? true : never
 export const enumListsAreComplete: [
@@ -39,7 +42,21 @@ export const enumListsAreComplete: [
   Exhaustive<Element, (typeof elements)[number]>,
   Exhaustive<RealmKind, (typeof realmKinds)[number]>,
   Exhaustive<RitualSlot, (typeof ritualSlots)[number]>,
-] = [true, true, true, true, true, true]
+  Exhaustive<NeedleBoon, (typeof needleBoons)[number]>,
+] = [true, true, true, true, true, true, true]
+
+const boonLabels: Record<NeedleBoon, string> = {
+  cartographer: 'Cartographer status',
+  friendlyNpcs: 'Neutral NPCs start friendly',
+  partyDirection: 'Party direction',
+  trapSense: 'Trap sense',
+  safeRest: 'Safe rest in the field',
+}
+
+/** "trapSense" → "Trap sense". Accepts the string the realm sheet stores too. */
+export function boonLabel(boon: string): string {
+  return boonLabels[boon as NeedleBoon] ?? label(boon)
+}
 
 export type NameSuffixes = Schemas['NameSuffixesDto']
 export type MapDetails = Schemas['MapDetailsDto']

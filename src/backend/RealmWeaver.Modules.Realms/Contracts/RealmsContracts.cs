@@ -21,8 +21,19 @@ public sealed record NewRealm(
 /// <summary>A component a realm was woven from, as it was named then.</summary>
 public sealed record ComponentRefDto(Guid Id, string Name);
 
-/// <summary>The map and the components in the slots when the realm was woven. Null for realms from before this was recorded.</summary>
-public sealed record RealmComponentsDto(string MapName, ComponentRefDto Needle, ComponentRefDto Thread, ComponentRefDto Coating);
+/// <summary>
+/// The map and the components in the slots when the realm was woven. Null for realms from before this was recorded.
+/// <see cref="AttunedNeedle"/> is the weaver's attuned needle at that moment: the abilities and boon the party brings.
+/// </summary>
+public sealed record RealmComponentsDto(
+    string MapName,
+    ComponentRefDto Needle,
+    ComponentRefDto Thread,
+    ComponentRefDto Coating,
+    AttunedNeedleDto? AttunedNeedle = null);
+
+/// <summary>A copy of the attuned needle's name, abilities and boon (a Catalog <c>NeedleBoon</c> name) at weaving time.</summary>
+public sealed record AttunedNeedleDto(Guid Id, string Name, IReadOnlyList<string> Abilities, string? Boon);
 
 public sealed record RealmSummaryDto(
     Guid Id,

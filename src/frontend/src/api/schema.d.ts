@@ -153,6 +153,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/players/{id}/attunement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Attunes one of the player's needles. The attuned needle supplies abilities and its boon during an adventure; any owned needle can still be used to weave. */
+        put: operations["AttuneNeedle"];
+        post?: never;
+        delete: operations["ClearAttunement"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description GM: replaces the player's trained skills. A trained Cartographer can record maps whatever needle is attuned. */
+        put: operations["SetPlayerSkills"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/players/{id}/inventory": {
         parameters: {
             query?: never;
@@ -383,8 +417,21 @@ export interface components {
              */
             quantity: number;
         };
+        AttunedNeedleDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            abilities: string[];
+            boon: null | string;
+        };
+        AttuneNeedleInput: {
+            /** Format: uuid */
+            needleId: string;
+        };
         /** @enum {unknown} */
         Biome: "plains" | "forest" | "desert" | "tundra" | "swamp" | "volcanic" | "mountains" | "coast";
+        /** @enum {unknown} */
+        CartographerSource: "trainedSkill" | "attunedNeedle" | null;
         CatalogSettingsDto: {
             playersCanSelfAssign: boolean;
         };
@@ -590,6 +637,7 @@ export interface components {
             settlementPopulation?: null | components["schemas"]["SettlementPopulation"];
             /** @default true */
             includeStructures: boolean;
+            needleBaseType?: null | string;
         };
         MobGroup: {
             archetypeId: string;
@@ -611,11 +659,15 @@ export interface components {
             thread: string[];
             coating: string[];
         };
+        /** @enum {unknown} */
+        NeedleBoon: "cartographer" | "friendlyNpcs" | "partyDirection" | "trapSense" | "safeRest" | null;
         NeedleDetails: {
             /** Format: int32 */
             difficultyTier: number;
             category: string;
             abilities: string[];
+            baseType?: null | string;
+            boon?: null | components["schemas"]["NeedleBoon"];
         };
         /** @enum {unknown} */
         ObjectiveScope: "event" | "realm";
@@ -668,6 +720,16 @@ export interface components {
             name: string;
             /** Format: date-time */
             createdAt: string;
+            /** Format: uuid */
+            attunedNeedleId?: null | string;
+            skills?: null | components["schemas"]["PlayerSkill"][];
+            cartographer?: null | components["schemas"]["CartographerSource"];
+            isCartographer?: boolean;
+        };
+        /** @enum {unknown} */
+        PlayerSkill: "cartographer";
+        PlayerSkillsInput: {
+            skills: components["schemas"]["PlayerSkill"][];
         };
         ProblemDetails: {
             type?: null | string;
@@ -767,6 +829,7 @@ export interface components {
             needle: components["schemas"]["ComponentRefDto"];
             thread: components["schemas"]["ComponentRefDto"];
             coating: components["schemas"]["ComponentRefDto"];
+            attunedNeedle?: null | components["schemas"]["AttunedNeedleDto"];
         };
         RealmDigest: {
             mobs: components["schemas"]["MobTally"][];
@@ -1311,6 +1374,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerDto"];
+                };
+            };
+        };
+    };
+    AttuneNeedle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttuneNeedleInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ClearAttunement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDto"];
+                };
+            };
+        };
+    };
+    SetPlayerSkills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerSkillsInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };
