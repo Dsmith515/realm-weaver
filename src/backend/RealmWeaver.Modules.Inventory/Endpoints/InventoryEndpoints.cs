@@ -131,7 +131,14 @@ internal static class InventoryEndpoints
             return Problems.Forbidden("This component can't be self-assigned.", $"'{component.Name}' can only be given to players by an admin.");
         }
 
-        return TypedResults.Ok(await inventory.GrantAsync(id, component, input.Quantity, cancellationToken));
+        try
+        {
+            return TypedResults.Ok(await inventory.GrantAsync(id, component, input.Quantity, cancellationToken));
+        }
+        catch (MapHeldElsewhereException ex)
+        {
+            return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This map is Unique.", detail: ex.Message);
+        }
     }
 
     private static async Task<Results<Ok<InventoryItemDto>, ProblemHttpResult, ValidationProblem>> SetNotesAsync(
@@ -167,6 +174,13 @@ internal static class InventoryEndpoints
             return Problems.Validation(errors.ToDictionary());
         }
 
-        return TypedResults.Ok(await inventory.GrantAsync(input.PlayerId, component, input.Quantity, cancellationToken));
+        try
+        {
+            return TypedResults.Ok(await inventory.GrantAsync(input.PlayerId, component, input.Quantity, cancellationToken));
+        }
+        catch (MapHeldElsewhereException ex)
+        {
+            return TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This map is Unique.", detail: ex.Message);
+        }
     }
 }

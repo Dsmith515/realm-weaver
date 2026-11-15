@@ -2184,6 +2184,16 @@
             "items": {
               "$ref": "#/components/schemas/RealmObjective"
             }
+          },
+          "flags": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MapFlags"
+              }
+            ]
           }
         }
       },
@@ -2239,6 +2249,23 @@
                 "$ref": "#/components/schemas/RealmDigestDto"
               }
             ]
+          }
+        }
+      },
+      "MapFlags": {
+        "type": "object",
+        "properties": {
+          "mapRequired": {
+            "type": "boolean",
+            "default": true
+          },
+          "componentsMustMatch": {
+            "type": "boolean",
+            "default": false
+          },
+          "unique": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

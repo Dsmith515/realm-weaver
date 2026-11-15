@@ -54,6 +54,8 @@ function MapDetailsView({ mapId }: { mapId: string }) {
         <dd>{map.map?.threat ?? originalRealm?.threat ?? '—'}</dd>
         <dt>Woven from</dt>
         <dd>{[needle?.name, thread?.name, coating?.name].filter(Boolean).join(' · ') || '—'}</dd>
+        <dt>Rules</dt>
+        <dd>{mapRules(map.map?.flags)}</dd>
       </dl>
 
       {map.map?.objectives && map.map.objectives.length > 0 && (
@@ -143,4 +145,13 @@ function NotesForm({ playerId, item }: { playerId: string; item: InventoryItem }
       </div>
     </form>
   )
+}
+
+function mapRules(flags: { mapRequired: boolean; componentsMustMatch: boolean; unique: boolean } | null | undefined) {
+  const rules = [
+    flags?.mapRequired === false ? 'open to anyone with the components' : 'map required',
+    flags?.componentsMustMatch && 'no mirrors',
+    flags?.unique && 'unique, can’t be shared',
+  ].filter(Boolean)
+  return rules.join(' · ')
 }

@@ -21,6 +21,7 @@ internal sealed class RunCompletionService(
     public const string NotCartographer = "not-cartographer";
     public const string AlreadyHeld = "already-held";
     public const string MapMissing = "map-missing";
+    public const string UniqueHeld = "unique-held";
 
     public async Task<CompletionOutcome> CompleteAsync(Guid realmId, string objectiveKey, CancellationToken cancellationToken)
     {
@@ -87,7 +88,14 @@ internal sealed class RunCompletionService(
         }
 
         var map = await catalog.GetComponentAsync(summary.MapComponentId, cancellationToken);
-        return map is null ? (null, MapMissing) : (map, null);
+        if (map is null)
+        {
+            return (null, MapMissing);
+        }
+
+        return map.Map?.Flags is { Unique: true } && await inventory.IsHeldByOthersAsync(map.Id, playerId, cancellationToken)
+            ? (null, UniqueHeld)
+            : (map, null);
     }
 }
 

@@ -135,6 +135,7 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - **Settlement population and structures.** Settlement events (villages, outposts, underground settlements) get a population level: Abandoned, Sparse, Modest, Bustling or Overcrowded. Mob counts scale with the settlement's footprint and population instead of fixed slot counts, so a large village is no longer guarded by 3 mobs. Field settlements can contain structures matched to their inhabitants (huts, training pits, farms, wells…), with a toggle to leave them out. Bumps `GeneratorLimits.Version`.
 7. **E2E and release**: Playwright flow, Dockerfiles, GHCR pipeline.
 8. **Objectives and map rules** (Notion: "Solo/GM tool" ideas). Domain changes are cheaper in the monolith, so this comes before the split.
+   - **Done in four PRs:** 8a objectives (ADR 0007), 8b needle base types, attunement and Cartographer status, 8c completion records the map (ADR 0008), and 8d per-map flags (ADR 0009). Mobs are still resolved while events are placed, on their own streams. ADR 0007 explains why that waits.
    - **Objectives.** Each seed has 1–3 objectives, and completing any one completes the run.
      - The pool is the objective hooks of the *placed events* (for example `prison` → Free the captive, `treasure-vault` → Recover the relic, `boss-chamber` → Defeat the guardian), plus realm-wide objectives (Clear the realm, Chart every floor).
      - They're picked on their own `Fork("objectives")` stream.

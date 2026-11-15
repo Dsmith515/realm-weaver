@@ -127,6 +127,12 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         ArgumentNullException.ThrowIfNull(component);
         ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
 
+        // A Unique map has one holder. Checked here so every way of granting (assign, completion) obeys it.
+        if (component.Map?.Flags is { Unique: true } && await IsHeldByOthersAsync(component.Id, playerId, cancellationToken))
+        {
+            throw new MapHeldElsewhereException($"{component.Name} is Unique and another player holds it.");
+        }
+
         var now = clock.GetDatabaseUtcNow();
         if (component.IsConsumable)
         {
@@ -171,6 +177,9 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         await db.SaveChangesAsync(cancellationToken);
         return new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes);
     }
+
+    public Task<bool> IsHeldByOthersAsync(Guid componentId, Guid playerId, CancellationToken cancellationToken = default) =>
+        db.Items.AnyAsync(i => i.ComponentDefinitionId == componentId && i.PlayerId != playerId && i.Quantity > 0, cancellationToken);
 
     public async Task SpendOneEachAsync(Guid playerId, IReadOnlyCollection<Guid> componentIds, CancellationToken cancellationToken = default)
     {

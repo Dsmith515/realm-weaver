@@ -206,7 +206,28 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
         </fieldset>
       )}
 
-      {input.map && <p className="muted">Maps are made by rituals; their seed and components can't be edited.</p>}
+      {input.map && (
+        <fieldset>
+          <legend>Map rules</legend>
+          <p className="muted">Maps are made by rituals; their seed and components can't be edited.</p>
+          {(
+            [
+              ['mapRequired', 'Map required', 'Players must hold this map to weave it. Off: anyone with the components can.'],
+              ['componentsMustMatch', 'Components must match', 'Only the recorded recipe opens it: no mirrors.'],
+              ['unique', 'Unique', 'Only one player can hold it, so it can’t be shared or assigned twice.'],
+            ] as const
+          ).map(([flag, text, hint]) => (
+            <label key={flag} className="checkbox" title={hint}>
+              <input
+                type="checkbox"
+                checked={flagsOf(input.map!)[flag]}
+                onChange={(e) => setInput({ ...input, map: { ...input.map!, flags: { ...flagsOf(input.map!), [flag]: e.target.checked } } })}
+              />
+              {text} <span className="muted">— {hint}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
 
       {save.isError && !error?.problem.errors && (
         <p className="error-text" role="alert">
@@ -273,4 +294,9 @@ function toInput(c: Component): ComponentInput {
     coating: c.coating ?? null,
     map: c.map ?? null,
   }
+}
+
+/** A map's rules, with the server's defaults for maps recorded before flags existed. */
+function flagsOf(map: NonNullable<ComponentInput['map']>) {
+  return { mapRequired: true, componentsMustMatch: false, unique: false, ...(map.flags ?? {}) }
 }

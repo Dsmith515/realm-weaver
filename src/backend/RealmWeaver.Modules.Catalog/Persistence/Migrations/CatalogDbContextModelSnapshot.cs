@@ -155,6 +155,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                             b1.Property<Guid>("CoatingId");
 
+                            b1.Property<bool>("ComponentsMustMatch");
+
                             b1.Property<Guid?>("CreatedByPlayerId");
 
                             b1.Property<int>("EventCount");
@@ -164,6 +166,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                             b1.Property<int>("Height");
 
+                            b1.Property<bool?>("MapRequired");
+
                             b1.Property<Guid>("NeedleId");
 
                             b1.Property<decimal>("Seed");
@@ -171,6 +175,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
                             b1.Property<Guid>("ThreadId");
 
                             b1.Property<int?>("Threat");
+
+                            b1.Property<bool>("Unique");
 
                             b1.Property<int>("Width");
 
