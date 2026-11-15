@@ -1,0 +1,56 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright (docker compose)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # Builds both images from their Dockerfiles, so this job also catches a broken image build.
+      - name: Start the full stack
+        run: docker compose --profile full up -d --build --wait --wait-timeout 180
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - run: npm ci
+        working-directory: src/frontend
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: src/frontend
+      - name: Run Playwright
+        run: npm run e2e
+        working-directory: src/frontend
+
+      - name: Container logs
+        if: failure()
+        run: docker compose --profile full logs --no-color
+      - name: Upload the Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            src/frontend/playwright-report
+            src/frontend/test-results
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Stop the stack
+        if: always()
+        run: docker compose --profile full down -v

@@ -56,6 +56,14 @@ dotnet test RealmWeaver.slnx      # API tests start their own Postgres container
 cd src/frontend && npm run lint && npm test
 ```
 
+End-to-end tests (Playwright) run against the containerized stack. They cover a new player's random ritual, the map in their inventory, the realm page and its exports, and a GM Quick Weave. Each test creates its own player, so they run against any database.
+
+```bash
+docker compose --profile full up -d --build --wait   # from the repo root
+cd src/frontend && npx playwright install chromium   # once
+npm run e2e                                          # E2E_BASE_URL=... to test another deployment
+```
+
 ### API
 
 **Reference.** With the API running in Development, open http://localhost:5080/scalar for an interactive reference where you can try requests. The raw OpenAPI document is at `/openapi/v1.json`. Without a running API, the committed copy at [`src/frontend/openapi/realm-weaver.json`](src/frontend/openapi/realm-weaver.json) is the same document, and CI keeps it in sync (see **API contract** below). Both the reference and the document are Development-only, since there's no authentication yet.
