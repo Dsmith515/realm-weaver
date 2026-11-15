@@ -1,6 +1,6 @@
-# Local development infrastructure.
-#   docker compose up -d          -> Postgres only (run the API and web app from your IDE / npm)
-# The "full" profile (API + web containers) arrives in Milestone 7.
+# Local infrastructure and the full app in containers.
+#   docker compose up -d                       -> Postgres only (run the API and web app from your IDE / npm)
+#   docker compose --profile full up -d --build -> Postgres, API and web app; open http://localhost:8080
 name: realm-weaver
 
 services:
@@ -19,6 +19,38 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    profiles: [full]
+    image: ${REALMWEAVER_API_IMAGE:-realm-weaver-api:local}
+    build:
+      context: .
+      dockerfile: src/backend/RealmWeaver.Api/Dockerfile
+    environment:
+      # Production settings, so no /scalar or /openapi. Migrates and seeds on startup like local runs.
+      # No Kerberos here, so skip GSS encryption (the slim image has no libgssapi, which Npgsql would try to load).
+      ConnectionStrings__RealmWeaver: Host=postgres;Port=5432;Database=realmweaver;Username=realmweaver;Password=realmweaver;GSS Encryption Mode=Disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    profiles: [full]
+    image: ${REALMWEAVER_WEB_IMAGE:-realm-weaver-web:local}
+    build:
+      context: src/frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+    healthcheck:
+      # Goes through nginx to the API, so it's healthy only once the whole stack answers.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
 
 volumes:
   pgdata:

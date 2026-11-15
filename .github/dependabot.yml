@@ -22,6 +22,25 @@ updates:
     schedule: { interval: weekly }
     groups:
       npm: { patterns: ["*"] }
+  - package-ecosystem: docker
+    directories: [/src/backend/RealmWeaver.Api, /src/frontend]
+    schedule: { interval: weekly }
+    groups:
+      docker: { patterns: ["*"] }
+    ignore:
+      # The .NET images must stay on the target framework's major version (net10.0).
+      - dependency-name: "dotnet/*"
+        update-types: ["version-update:semver-major"]
+      # Node matches the version CI builds with (ci.yml); bump both together.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly }
+    ignore:
+      # A Postgres major upgrade needs a dump and restore, so it's done by hand.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }

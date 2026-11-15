@@ -1,0 +1,17 @@
+# Build context is the repo root for the API image. Keep it small and free of local build output.
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/TestResults/
+.git/
+.github/
+.claude/
+.agents/
+.vs/
+.vscode/
+.idea/
+samples/
+docs/
+**/*.user
+**/.env
