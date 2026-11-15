@@ -6,6 +6,7 @@ The roadmap is in `docs/roadmap.md`, and the decisions behind it are in `docs/ad
 - Backend build/test: `dotnet build RealmWeaver.slnx` and `dotnet test RealmWeaver.slnx`
 - Run API: `dotnet run --project src/backend/RealmWeaver.Api` (http://localhost:5080; API reference at /scalar in Development)
 - Frontend (in `src/frontend`): `npm run dev`, `npm run lint`, `npm test`, `npm run build`
+- E2E (in `src/frontend`): start the full stack, then `npm run e2e` (Playwright, specs in `e2e/`). Tests create their own player instead of relying on seeded data. CI runs them in `e2e.yml`.
 - API contract: after changing an endpoint or DTO, run `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests`, then `npm run api:types` in `src/frontend`, and commit both generated files. CI checks both.
 - Full stack in containers: `docker compose --profile full up -d --build` (web at http://localhost:8080; the API runs in Production, so no /scalar). Images: `src/backend/RealmWeaver.Api/Dockerfile` (context: repo root) and `src/frontend/Dockerfile`.
 - Database: `docker compose up -d` (Postgres 17, user/pass/db `realmweaver`, local only). The API migrates and seeds on startup.
