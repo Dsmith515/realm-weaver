@@ -40,6 +40,15 @@ dotnet run --project src/backend/RealmWeaver.Api
 cd src/frontend && npm install && npm run dev
 ```
 
+**Everything in containers.** To try the app without the .NET SDK or Node, run the whole stack in Docker. Then open http://localhost:8080:
+
+```bash
+docker compose --profile full up -d --build   # Postgres, API and web (nginx serves the app and proxies /api)
+docker compose --profile full down            # stop it; add -v to also drop the database
+```
+
+The containers run the API in Production, so `/scalar` and `/openapi/v1.json` are only available from `dotnet run`.
+
 ### Tests
 
 ```bash
