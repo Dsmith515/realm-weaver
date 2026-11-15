@@ -546,8 +546,14 @@ textarea {
   gap: 0.3rem;
 }
 
-.limit-chips .muted {
+.limit-chips__header {
+  display: flex;
   width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.limit-chips .muted {
   font-size: 0.85rem;
 }
 
@@ -555,6 +561,12 @@ textarea {
   border-radius: 999px;
   font-size: 0.85rem;
   padding: 0.2rem 0.6rem;
+}
+
+.limit-chips .limit-chips__all {
+  border-color: transparent;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8rem;
 }
 
 .limit-chips button[aria-pressed="true"] {
