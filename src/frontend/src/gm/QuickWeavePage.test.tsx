@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { QuickWeavePreview, QuickWeaveRequest } from '../api/types'
+import { biomes, realmKinds } from '../api/types'
 import { fakeApi, json, type ApiCall } from '../test/fakeApi'
 import { moss, needle, player, slot, wax, wheat } from '../test/fixtures'
 import { renderApp } from '../test/render'
@@ -78,6 +79,27 @@ describe('Quick Weave page', () => {
     await user.click(screen.getByRole('button', { name: 'Weave' }))
 
     await waitFor(() => expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ population: 'bustling', includeStructures: false }))
+  })
+
+  it('selects and unselects every option in a limit at once', async () => {
+    const api = fakeApi(routes([rolled()]))
+    const user = userEvent.setup()
+    renderApp('/gm/weave')
+
+    const biomeGroup = within(screen.getByRole('group', { name: 'Biome' }))
+    await user.click(biomeGroup.getByRole('button', { name: 'Forest' }))
+    await user.click(biomeGroup.getByRole('button', { name: 'Select all' }))
+    expect(biomeGroup.getAllByRole('button', { pressed: true })).toHaveLength(biomes.length)
+    expect(within(screen.getByRole('group', { name: 'Realm kind' })).queryAllByRole('button', { pressed: true })).toHaveLength(0)
+
+    await user.click(within(screen.getByRole('group', { name: 'Realm kind' })).getByRole('button', { name: 'Select all' }))
+    await user.click(screen.getByRole('button', { name: 'Roll' }))
+    await screen.findByRole('region', { name: 'Rolled components' })
+    expect(api.callsTo('POST', '/api/gm/weave/preview')[0].body).toMatchObject({ limits: { biomes: [...biomes], kinds: [...realmKinds] } })
+
+    await user.click(biomeGroup.getByRole('button', { name: 'Unselect all' }))
+    expect(biomeGroup.queryAllByRole('button', { pressed: true })).toHaveLength(0)
+    expect(biomeGroup.getByRole('button', { name: 'Select all' })).toBeInTheDocument()
   })
 
   it('shows why nothing can be woven', async () => {

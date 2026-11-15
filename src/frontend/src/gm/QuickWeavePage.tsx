@@ -45,9 +45,6 @@ export function QuickWeavePage() {
   const weaveIt = () =>
     rolled && weave.mutate(request(pinned(rolled)), { onSuccess: (result) => void navigate(`/realms/${result.realmId}`) })
 
-  const toggle = <T extends string>(list: T[] | null | undefined, value: T) =>
-    list?.includes(value) ? list.filter((v) => v !== value) : [...(list ?? []), value]
-
   return (
     <section>
       <h1>Quick Weave</h1>
@@ -96,7 +93,7 @@ export function QuickWeavePage() {
 
         <fieldset className="card limits">
           <legend>Limits for random picks</legend>
-          <Chips legend="Rarity" options={rarities} selected={limits.rarities ?? []} onToggle={(r: Rarity) => setLimits({ ...limits, rarities: toggle(limits.rarities, r) })} />
+          <Chips legend="Rarity" options={rarities} selected={limits.rarities ?? []} onChange={(r: Rarity[]) => setLimits({ ...limits, rarities: r })} />
           <div className="advanced__fields">
             <label>
               Lowest tier
@@ -107,8 +104,8 @@ export function QuickWeavePage() {
               <input type="number" min={1} max={10} value={limits.maxTier ?? ''} onChange={(e) => setLimits({ ...limits, maxTier: toNumber(e.target.value) })} />
             </label>
           </div>
-          <Chips legend="Biome" options={biomes} selected={limits.biomes ?? []} onToggle={(b: Biome) => setLimits({ ...limits, biomes: toggle(limits.biomes, b) })} />
-          <Chips legend="Realm kind" options={realmKinds} selected={limits.kinds ?? []} onToggle={(k: RealmKind) => setLimits({ ...limits, kinds: toggle(limits.kinds, k) })} />
+          <Chips legend="Biome" options={biomes} selected={limits.biomes ?? []} onChange={(b: Biome[]) => setLimits({ ...limits, biomes: b })} />
+          <Chips legend="Realm kind" options={realmKinds} selected={limits.kinds ?? []} onChange={(k: RealmKind[]) => setLimits({ ...limits, kinds: k })} />
           <label className="checkbox">
             <input type="checkbox" checked={!!limits.includeArchived} onChange={(e) => setLimits({ ...limits, includeArchived: e.target.checked })} />
             Include archived components
@@ -153,12 +150,20 @@ function SlotPicker({ slot, value, onChange }: { slot: Slot; value: string; onCh
   )
 }
 
-function Chips<T extends string>({ legend, options, selected, onToggle }: { legend: string; options: readonly T[]; selected: T[]; onToggle: (value: T) => void }) {
+/** Toggle chips for one limit. Nothing selected means no limit; the header button selects or clears them all at once. */
+function Chips<T extends string>({ legend, options, selected, onChange }: { legend: string; options: readonly T[]; selected: T[]; onChange: (values: T[]) => void }) {
+  const allSelected = options.every((o) => selected.includes(o))
+  const toggle = (value: T) => onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value])
   return (
     <div role="group" aria-label={legend} className="limit-chips">
-      <span className="muted">{legend}</span>
+      <div className="limit-chips__header">
+        <span className="muted">{legend}</span>
+        <button type="button" className="button--quiet limit-chips__all" onClick={() => onChange(allSelected ? [] : [...options])}>
+          {allSelected ? 'Unselect all' : 'Select all'}
+        </button>
+      </div>
       {options.map((o) => (
-        <button key={o} type="button" aria-pressed={selected.includes(o)} onClick={() => onToggle(o)}>
+        <button key={o} type="button" aria-pressed={selected.includes(o)} onClick={() => toggle(o)}>
           {label(o)}
         </button>
       ))}
