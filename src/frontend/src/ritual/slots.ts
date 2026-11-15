@@ -99,6 +99,7 @@ const sourceLabels: Record<SlotSource, string | undefined> = {
   selected: undefined,
   fromMap: 'From map',
   matchingMap: 'Matching map',
+  knownRecipe: 'Known recipe',
   random: 'Random',
 }
 

@@ -40,6 +40,16 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
         return [.. entities.Select(c => c.ToDto())];
     }
 
+    public async Task<IReadOnlyList<ComponentDto>> FindMapsByRecipeAsync(Guid threadId, Guid coatingId, CancellationToken cancellationToken = default)
+    {
+        var entities = await db.Components.AsNoTracking()
+            .Where(c => c.Type == ComponentType.Map && !c.IsArchived && c.Map!.ThreadId == threadId && c.Map.CoatingId == coatingId)
+            .OrderBy(c => c.CreatedAt)
+            .ThenBy(c => c.Id)
+            .ToListAsync(cancellationToken);
+        return [.. entities.Select(c => c.ToDto())];
+    }
+
     public async Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
     {
         var settings = await db.Settings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);

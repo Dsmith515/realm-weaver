@@ -15,7 +15,9 @@ internal sealed class Player
     /// <summary>The needle supplying abilities during an adventure. A plain id: needles live in the Catalog module.</summary>
     public Guid? AttunedNeedleId { get; set; }
 
-    /// <summary><see cref="Contracts.PlayerSkill"/> names, stored as a Postgres text array.</summary>
+    /// <summary>
+    /// Parked (ADR 0010): skill names as a Postgres text array, unused until player sessions bring skills back.
+    /// </summary>
     public List<string> TrainedSkills { get; set; } = [];
 
     public List<InventoryItem> Items { get; set; } = [];

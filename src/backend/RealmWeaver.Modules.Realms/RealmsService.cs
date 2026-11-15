@@ -119,7 +119,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         return new PinOutcome.Pinned(ToSummary(entity));
     }
 
-    public async Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default)
+    public async Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default)
     {
         var entity = await db.Realms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == realmId, cancellationToken);
         if (entity is null)
@@ -132,21 +132,26 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             return new RealmCompletionResult(CompletionResult.AlreadyCompleted, ToSummary(entity));
         }
 
-        // Any rolled objective completes the run, and so does the GM's pin.
-        var pinned = entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options);
-        var objective = RealmJson.Deserialize(entity.Document).Objectives.Append(pinned).FirstOrDefault(o => o?.Key == objectiveKey);
-        if (objective is null)
+        // Any rolled objective completes the run, and so does the GM's pin. No objective is fine too.
+        RealmObjective? objective = null;
+        if (objectiveKey is not null)
         {
-            return new RealmCompletionResult(CompletionResult.UnknownObjective);
+            var pinned = entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options);
+            objective = RealmJson.Deserialize(entity.Document).Objectives.Append(pinned).FirstOrDefault(o => o?.Key == objectiveKey);
+            if (objective is null)
+            {
+                return new RealmCompletionResult(CompletionResult.UnknownObjective);
+            }
         }
 
         // A conditional update, so two completions racing can't both win.
         var now = clock.GetDatabaseUtcNow();
-        var json = JsonSerializer.Serialize(objective, RealmJson.Options);
+        var json = objective is null ? null : JsonSerializer.Serialize(objective, RealmJson.Options);
+        List<Guid> givenTo = [.. mapGivenTo];
         var updated = await db.Realms
             .Where(r => r.Id == realmId && r.CompletedAt == null)
             .ExecuteUpdateAsync(
-                set => set.SetProperty(r => r.CompletedAt, now).SetProperty(r => r.CompletedObjective, json).SetProperty(r => r.MapRecorded, mapRecorded),
+                set => set.SetProperty(r => r.CompletedAt, now).SetProperty(r => r.CompletedObjective, json).SetProperty(r => r.MapGivenTo, givenTo),
                 cancellationToken);
         if (updated == 0)
         {
@@ -155,7 +160,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
 
         entity.CompletedAt = now;
         entity.CompletedObjective = json;
-        entity.MapRecorded = mapRecorded;
+        entity.MapGivenTo = givenTo;
         return new RealmCompletionResult(CompletionResult.Completed, ToSummary(entity));
     }
 
@@ -221,7 +226,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 AttunedNeedle = r.AttunedNeedle,
                 CompletedAt = r.CompletedAt,
                 CompletedObjective = r.CompletedObjective,
-                MapRecorded = r.MapRecorded,
+                MapGivenTo = r.MapGivenTo,
             })
             .ToListAsync(cancellationToken);
 
@@ -249,8 +254,11 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? [],
         ComponentsOf(entity),
         entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options),
-        entity is { CompletedAt: { } completedAt, CompletedObjective: { } completed }
-            ? new RealmCompletionDto(JsonSerializer.Deserialize<RealmObjective>(completed, RealmJson.Options)!, completedAt, entity.MapRecorded)
+        entity.CompletedAt is { } completedAt
+            ? new RealmCompletionDto(
+                entity.CompletedObjective is { } completed ? JsonSerializer.Deserialize<RealmObjective>(completed, RealmJson.Options) : null,
+                completedAt,
+                entity.MapGivenTo)
             : null);
 
     private static RealmComponentsDto? ComponentsOf(Realm entity) =>

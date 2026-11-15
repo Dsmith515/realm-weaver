@@ -298,7 +298,7 @@ internal static partial class ComponentRules
         c.IsConsumable,
         c.IsArchived,
         c.CreatedAt,
-        c.Needle is { } n ? new NeedleDetails(n.DifficultyTier, n.Category, n.Abilities, n.BaseType ?? c.Name, n.Boon) : null,
+        c.Needle is { } n ? new NeedleDetails(n.DifficultyTier, n.Category, n.Abilities ?? [], n.BaseType ?? c.Name, n.Boon) : null,
         c.Thread is { } t ? new ThreadDetails(t.Biome, t.Element) : null,
         c.Coating is { } co ? new CoatingDetails(co.MobTypes, co.RealmKind, co.FloorCount) : null,
         c.Map is { } m
@@ -314,12 +314,12 @@ internal static partial class ComponentRules
                 m.CreatedByPlayerId,
                 m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true, r.NeedleBaseType) : null,
                 m.Threat,
-                m.Objectives.Count == 0 ? null : [.. m.Objectives.Select(ToObjective)],
+                m.Objectives is { Count: > 0 } objectives ? [.. objectives.Select(ToObjective)] : null,
                 FlagsOf(m))
             : null,
         usedByMapCount);
 
-    private static MapFlags FlagsOf(MapData m) => new(m.MapRequired ?? true, m.ComponentsMustMatch, m.Unique);
+    private static MapFlags FlagsOf(MapData m) => new(m.MapRequired, m.ComponentsMustMatch, m.Unique);
 
     private static MapObjectiveData ToData(RealmObjective o) => new()
     {

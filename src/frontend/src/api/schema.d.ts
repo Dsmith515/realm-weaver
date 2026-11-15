@@ -46,7 +46,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Marks the run complete with one of its objectives (any rolled one, or the GM's pin). When the weaver is a Cartographer the realm's map is recorded into their inventory in the same transaction. 400: not one of the realm's objectives. 409: already completed. */
+        /** @description GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm's map to the chosen players in the same transaction. Players who can't receive it are listed with a reason. 400: not one of the realm's objectives, or more than one recipient for a Unique map. 409: already completed. */
         post: operations["CompleteRun"];
         delete?: never;
         options?: never;
@@ -182,23 +182,6 @@ export interface paths {
         put: operations["AttuneNeedle"];
         post?: never;
         delete: operations["ClearAttunement"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/players/{id}/skills": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description GM: replaces the player's trained skills. A trained Cartographer can record maps whatever needle is attuned. */
-        put: operations["SetPlayerSkills"];
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -447,8 +430,6 @@ export interface components {
         };
         /** @enum {unknown} */
         Biome: "plains" | "forest" | "desert" | "tundra" | "swamp" | "volcanic" | "mountains" | "coast";
-        /** @enum {unknown} */
-        CartographerSource: "trainedSkill" | "attunedNeedle" | null;
         CatalogSettingsDto: {
             playersCanSelfAssign: boolean;
         };
@@ -459,7 +440,8 @@ export interface components {
             floorCount: number;
         };
         CompleteRunInput: {
-            objectiveKey: string;
+            objectiveKey?: null | string;
+            recipientPlayerIds?: null | string[];
         };
         ComponentDto: {
             /** Format: uuid */
@@ -647,12 +629,17 @@ export interface components {
             originalRealm: null | components["schemas"]["RealmDigestDto"];
         };
         MapFlags: {
-            /** @default true */
+            /** @default false */
             mapRequired: boolean;
             /** @default false */
             componentsMustMatch: boolean;
             /** @default false */
             unique: boolean;
+        };
+        MapHandOutSkip: {
+            /** Format: uuid */
+            playerId: string;
+            reason: string;
         };
         MapRecipe: {
             kind: components["schemas"]["RealmKind"];
@@ -751,14 +738,6 @@ export interface components {
             createdAt: string;
             /** Format: uuid */
             attunedNeedleId?: null | string;
-            skills?: null | components["schemas"]["PlayerSkill"][];
-            cartographer?: null | components["schemas"]["CartographerSource"];
-            isCartographer?: boolean;
-        };
-        /** @enum {unknown} */
-        PlayerSkill: "cartographer";
-        PlayerSkillsInput: {
-            skills: components["schemas"]["PlayerSkill"][];
         };
         ProblemDetails: {
             type?: null | string;
@@ -854,10 +833,10 @@ export interface components {
             floorNumber: number;
         };
         RealmCompletionDto: {
-            objective: components["schemas"]["RealmObjective"];
+            objective: null | components["schemas"]["RealmObjective"];
             /** Format: date-time */
             completedAt: string;
-            mapRecorded: boolean;
+            mapGivenTo: string[];
         };
         RealmComponentsDto: {
             mapName: string;
@@ -1030,13 +1009,13 @@ export interface components {
         RunCompletionDto: {
             /** Format: uuid */
             realmId: string;
-            objective: components["schemas"]["RealmObjective"];
+            objective: null | components["schemas"]["RealmObjective"];
             /** Format: date-time */
             completedAt: string;
-            mapRecorded: boolean;
             /** Format: uuid */
             mapId: string;
-            mapNotRecordedReason: null | string;
+            mapGivenTo: string[];
+            skipped: components["schemas"]["MapHandOutSkip"][];
         };
         /** @enum {unknown} */
         SettlementPopulation: "abandoned" | "sparse" | "modest" | "bustling" | "overcrowded" | null;
@@ -1047,7 +1026,7 @@ export interface components {
             ownedQuantity: number;
         };
         /** @enum {unknown} */
-        SlotSource: "selected" | "fromMap" | "matchingMap" | "random";
+        SlotSource: "selected" | "fromMap" | "matchingMap" | "knownRecipe" | "random";
         ThreadDetails: {
             biome: components["schemas"]["Biome"];
             element: components["schemas"]["Element"];
@@ -1513,41 +1492,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerDto"];
-                };
-            };
-        };
-    };
-    SetPlayerSkills: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PlayerSkillsInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlayerDto"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };

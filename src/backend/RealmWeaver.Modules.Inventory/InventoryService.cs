@@ -14,13 +14,13 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
     public async Task<PlayerDto?> GetPlayerAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         var player = await db.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
-        return player is null ? null : (await ToDtosAsync([player], cancellationToken))[0];
+        return player is null ? null : ToDto(player);
     }
 
     public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(CancellationToken cancellationToken)
     {
         var players = await db.Players.AsNoTracking().OrderBy(p => p.Name).ThenBy(p => p.Id).ToListAsync(cancellationToken);
-        return await ToDtosAsync(players, cancellationToken);
+        return [.. players.Select(ToDto)];
     }
 
     /// <summary>Attunes a needle the player owns, or clears the attunement when <paramref name="needleId"/> is null.</summary>
@@ -46,38 +46,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         return AttuneOutcome.Attuned;
     }
 
-    /// <summary>Replaces the player's trained skills. Returns false when the player doesn't exist.</summary>
-    public async Task<bool> SetSkillsAsync(Guid playerId, IReadOnlyCollection<PlayerSkill> skills, CancellationToken cancellationToken)
-    {
-        var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
-        if (player is null)
-        {
-            return false;
-        }
-
-        player.TrainedSkills = [.. skills.Distinct().Order().Select(s => s.ToString())];
-        await db.SaveChangesAsync(cancellationToken);
-        return true;
-    }
-
-    /// <summary>Adds each player's Cartographer status, looking up attuned needles' boons in one Catalog call.</summary>
-    private async Task<List<PlayerDto>> ToDtosAsync(IReadOnlyList<Player> players, CancellationToken cancellationToken)
-    {
-        var needleIds = players.Select(p => p.AttunedNeedleId).OfType<Guid>().Distinct().ToList();
-        var needles = needleIds.Count == 0
-            ? new Dictionary<Guid, ComponentDto>()
-            : await catalog.GetComponentsAsync(needleIds, cancellationToken);
-
-        return [.. players.Select(p =>
-        {
-            var skills = p.TrainedSkills.Select(s => Enum.TryParse<PlayerSkill>(s, out var skill) ? skill : (PlayerSkill?)null).OfType<PlayerSkill>().ToList();
-            var boon = p.AttunedNeedleId is { } id ? needles.GetValueOrDefault(id)?.Needle?.Boon : null;
-            CartographerSource? cartographer = skills.Contains(PlayerSkill.Cartographer)
-                ? CartographerSource.TrainedSkill
-                : boon == NeedleBoon.Cartographer ? CartographerSource.AttunedNeedle : null;
-            return new PlayerDto(p.Id, p.Name, p.CreatedAt, p.AttunedNeedleId, skills, cartographer);
-        })];
-    }
+    private static PlayerDto ToDto(Player p) => new(p.Id, p.Name, p.CreatedAt, p.AttunedNeedleId);
 
     public async Task<IReadOnlyList<InventoryItemDto>?> GetInventoryAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
@@ -114,7 +83,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
 
         db.Players.Add(player);
         await db.SaveChangesAsync(cancellationToken);
-        return (await ToDtosAsync([player], cancellationToken))[0];
+        return ToDto(player);
     }
 
     /// <summary>

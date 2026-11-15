@@ -98,8 +98,7 @@ internal sealed class MapData
 
     public int? Threat { get; set; }
 
-    /// <summary>Null on maps from before flags existed, which means required.</summary>
-    public bool? MapRequired { get; set; }
+    public bool MapRequired { get; set; }
 
     public bool ComponentsMustMatch { get; set; }
 

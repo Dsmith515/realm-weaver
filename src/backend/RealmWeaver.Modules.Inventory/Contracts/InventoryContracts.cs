@@ -2,40 +2,14 @@ using RealmWeaver.Modules.Catalog.Contracts;
 
 namespace RealmWeaver.Modules.Inventory.Contracts;
 
-/// <summary>A skill a player has trained, independent of any needle.</summary>
-public enum PlayerSkill
-{
-    /// <summary>Can record a Map when a run is completed, whatever needle is attuned.</summary>
-    Cartographer,
-}
-
-/// <summary>Where a player's Cartographer status comes from. A trained skill wins; a boon never stacks with it.</summary>
-public enum CartographerSource
-{
-    TrainedSkill,
-    AttunedNeedle,
-}
-
 /// <summary>
 /// A player. <see cref="AttunedNeedleId"/> is the one needle that supplies abilities and its boon during an adventure;
-/// it's separate from the needle used to weave. <see cref="Cartographer"/> is null when the player can't record maps.
+/// it's separate from the needle used to weave, and the realm sheet shows it to the GM.
 /// </summary>
-public sealed record PlayerDto(
-    Guid Id,
-    string Name,
-    DateTimeOffset CreatedAt,
-    Guid? AttunedNeedleId = null,
-    IReadOnlyList<PlayerSkill>? Skills = null,
-    CartographerSource? Cartographer = null)
-{
-    public bool IsCartographer => Cartographer is not null;
-}
+public sealed record PlayerDto(Guid Id, string Name, DateTimeOffset CreatedAt, Guid? AttunedNeedleId = null);
 
 /// <summary>Body for attuning one of the player's own needles.</summary>
 public sealed record AttuneNeedleInput(Guid NeedleId);
-
-/// <summary>Body for replacing a player's trained skills.</summary>
-public sealed record PlayerSkillsInput(IReadOnlyList<PlayerSkill> Skills);
 
 public sealed record CreatePlayerInput(string Name);
 

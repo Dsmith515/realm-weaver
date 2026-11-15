@@ -26,8 +26,6 @@ internal static class InventoryEndpoints
         players.MapPut("/{id:guid}/attunement", AttuneAsync).WithName("AttuneNeedle")
             .WithDescription("Attunes one of the player's needles. The attuned needle supplies abilities and its boon during an adventure; any owned needle can still be used to weave.");
         players.MapDelete("/{id:guid}/attunement", ClearAttunementAsync).WithName("ClearAttunement");
-        players.MapPut("/{id:guid}/skills", SetSkillsAsync).WithName("SetPlayerSkills")
-            .WithDescription("GM: replaces the player's trained skills. A trained Cartographer can record maps whatever needle is attuned.");
         players.MapGet("/{id:guid}/inventory", GetInventoryAsync).WithName("GetInventory");
         players.MapPost("/{id:guid}/inventory", SelfAddAsync).WithName("AddToOwnInventory")
             .WithDescription("A player adds a component to their own inventory. Allowed only when self-assign is on and the component is player-assignable.");
@@ -77,20 +75,6 @@ internal static class InventoryEndpoints
         await inventory.AttuneAsync(id, needleId: null, cancellationToken) == AttuneOutcome.Attuned
             ? TypedResults.Ok((await inventory.GetPlayerAsync(id, cancellationToken))!)
             : Problems.NotFound("Player", id);
-
-    private static async Task<Results<Ok<PlayerDto>, ProblemHttpResult, ValidationProblem>> SetSkillsAsync(
-        Guid id, [FromBody] PlayerSkillsInput input, InventoryService inventory, CancellationToken cancellationToken)
-    {
-        var skills = input.Skills ?? [];
-        if (!skills.All(Enum.IsDefined))
-        {
-            return Problems.Validation(new Dictionary<string, string[]> { ["skills"] = ["Unknown skill."] });
-        }
-
-        return await inventory.SetSkillsAsync(id, [.. skills], cancellationToken)
-            ? TypedResults.Ok((await inventory.GetPlayerAsync(id, cancellationToken))!)
-            : Problems.NotFound("Player", id);
-    }
 
     private static async Task<Results<Ok<IReadOnlyList<InventoryItemDto>>, ProblemHttpResult>> GetInventoryAsync(
         Guid id, InventoryService inventory, CancellationToken cancellationToken) =>

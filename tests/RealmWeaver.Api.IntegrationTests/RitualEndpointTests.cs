@@ -34,7 +34,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(before[MossgreenThread] - 1, after[MossgreenThread]);
         Assert.Equal(before[BeastwardWax] - 1, after[BeastwardWax]);
         Assert.Equal(1, after[BeginnerNeedle]);
-        Assert.False(after.ContainsKey(result.MapId), "The map is recorded when a Cartographer completes the run, not by the ritual.");
+        Assert.False(after.ContainsKey(result.MapId), "The GM hands the map out when completing the run, not the ritual.");
 
         var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{result.MapId}");
         Assert.Equal(ComponentType.Map, map.Type);
@@ -388,7 +388,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         public Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default) =>
             Task.FromResult<RealmDigestDto?>(null);
 
-        public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default) =>
+        public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default) =>
             Task.FromResult(new RealmCompletionResult(CompletionResult.NotFound));
     }
 }

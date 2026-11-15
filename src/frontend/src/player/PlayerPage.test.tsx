@@ -113,31 +113,25 @@ describe('Player page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent("This component can't be self-assigned.")
   })
 
-  it('attunes a needle, shows its boon and the Cartographer status, and trains the skill', async () => {
-    const surveyor = { ...needle, id: 'needle-surveyor', name: "Surveyor's Needle", needle: { difficultyTier: 2, category: 'Brass', abilities: ['Chart Sense'], boon: 'cartographer' } } as Component
-    let current: Player = { ...player, attunedNeedleId: needle.id, skills: [], cartographer: null }
+  it('attunes a needle and shows its abilities and boon', async () => {
+    const scout = { ...needle, id: 'needle-scout', name: "Scout's Needle", needle: { difficultyTier: 2, category: 'Brass', abilities: ['Keen Eye'], boon: 'trapSense' } } as Component
+    let current: Player = { ...player, attunedNeedleId: needle.id }
     const api = fakeApi(
       routes(true, {
         'GET /api/players': () => [current],
-        'GET /api/players/:id/inventory': [...inventory, owned(surveyor)],
-        'PUT /api/players/:id/attunement': () => (current = { ...current, attunedNeedleId: surveyor.id, cartographer: 'attunedNeedle' }),
-        'PUT /api/players/:id/skills': () => (current = { ...current, skills: ['cartographer'], cartographer: 'trainedSkill' }),
+        'GET /api/players/:id/inventory': [...inventory, owned(scout)],
+        'PUT /api/players/:id/attunement': () => (current = { ...current, attunedNeedleId: scout.id }),
       }),
     )
     const user = userEvent.setup()
     renderApp('/player')
 
     const card = await screen.findByRole('region', { name: 'Attunement' })
-    expect(within(card).getByRole('status')).toHaveTextContent('Not a Cartographer')
+    await user.selectOptions(await within(card).findByLabelText('Attuned needle'), scout.id)
 
-    await user.selectOptions(await within(card).findByLabelText('Attuned needle'), surveyor.id)
-    expect(api.callsTo('PUT', '/api/players/p1/attunement')[0].body).toEqual({ needleId: surveyor.id })
-    await waitFor(() => expect(within(card).getByRole('status')).toHaveTextContent('from the attuned needle’s boon'))
-    expect(within(card).getByText('Chart Sense')).toBeInTheDocument()
-    expect(within(card).getByText('Cartographer status')).toBeInTheDocument()
-
-    await user.click(within(card).getByRole('checkbox', { name: 'Trained Cartographer (GM)' }))
-    expect(api.callsTo('PUT', '/api/players/p1/skills')[0].body).toEqual({ skills: ['cartographer'] })
-    await waitFor(() => expect(within(card).getByRole('status')).toHaveTextContent('a trained skill'))
+    expect(api.callsTo('PUT', '/api/players/p1/attunement')[0].body).toEqual({ needleId: scout.id })
+    expect(await within(card).findByText('Keen Eye')).toBeInTheDocument()
+    expect(within(card).getByText('Trap sense')).toBeInTheDocument()
+    expect(within(card).queryByRole('checkbox')).not.toBeInTheDocument()
   })
 })

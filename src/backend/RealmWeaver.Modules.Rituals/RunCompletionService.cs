@@ -7,9 +7,9 @@ using RealmWeaver.Modules.Rituals.Contracts;
 namespace RealmWeaver.Modules.Rituals;
 
 /// <summary>
-/// Completes a run and, when the weaver is a Cartographer, records its map into their inventory. This replaces the
-/// automatic map grant a ritual used to make (Milestone 8). Both writes run in one transaction (ADR 0005), so a run is
-/// never marked complete with its map lost, or the other way round.
+/// The GM completes a run and hands its map to the chosen players (ADR 0010). Rituals never grant maps, so this is how
+/// a map reaches an inventory besides a plain assign. The completion and every grant run in one transaction (ADR 0005),
+/// so a run is never marked complete with a hand-out half done.
 /// </summary>
 internal sealed class RunCompletionService(
     UnitOfWork unitOfWork,
@@ -17,13 +17,12 @@ internal sealed class RunCompletionService(
     IInventoryModule inventory,
     IRealmsModule realms)
 {
-    public const string GmRealm = "gm-realm";
-    public const string NotCartographer = "not-cartographer";
     public const string AlreadyHeld = "already-held";
+    public const string UnknownPlayer = "unknown-player";
     public const string MapMissing = "map-missing";
     public const string UniqueHeld = "unique-held";
 
-    public async Task<CompletionOutcome> CompleteAsync(Guid realmId, string objectiveKey, CancellationToken cancellationToken)
+    public async Task<CompletionOutcome> CompleteAsync(Guid realmId, CompleteRunInput input, CancellationToken cancellationToken)
     {
         var summary = await realms.GetSummaryAsync(realmId, cancellationToken);
         if (summary is null)
@@ -36,21 +35,53 @@ internal sealed class RunCompletionService(
             return new CompletionOutcome.AlreadyCompleted();
         }
 
-        // Decide up front whether the map gets recorded; everything below is reads only.
-        var (map, reason) = await MapToRecordAsync(summary, cancellationToken);
+        var map = await catalog.GetComponentAsync(summary.MapComponentId, cancellationToken);
+        var recipients = (input.RecipientPlayerIds ?? []).Distinct().ToList();
+        if (map?.Map?.Flags is { Unique: true } && recipients.Count > 1)
+        {
+            return new CompletionOutcome.TooManyForUnique();
+        }
 
-        var result = await unitOfWork.ExecuteAsync(
-            async ct =>
+        // Decide every recipient up front; everything below is reads only.
+        var given = new List<Guid>();
+        var skipped = new List<MapHandOutSkip>();
+        foreach (var playerId in recipients)
+        {
+            var reason = await ReasonToSkipAsync(map, playerId, cancellationToken);
+            if (reason is null)
             {
-                var completion = await realms.CompleteAsync(realmId, objectiveKey, mapRecorded: map is not null, ct);
-                if (completion.Result == CompletionResult.Completed && map is not null)
-                {
-                    await inventory.GrantAsync(summary.PlayerId!.Value, map, 1, ct);
-                }
+                given.Add(playerId);
+            }
+            else
+            {
+                skipped.Add(new MapHandOutSkip(playerId, reason));
+            }
+        }
 
-                return completion;
-            },
-            cancellationToken);
+        RealmCompletionResult result;
+        try
+        {
+            result = await unitOfWork.ExecuteAsync(
+                async ct =>
+                {
+                    var completion = await realms.CompleteAsync(realmId, input.ObjectiveKey, given, ct);
+                    if (completion.Result == CompletionResult.Completed)
+                    {
+                        foreach (var playerId in given)
+                        {
+                            await inventory.GrantAsync(playerId, map!, 1, ct);
+                        }
+                    }
+
+                    return completion;
+                },
+                cancellationToken);
+        }
+        catch (MapHeldElsewhereException)
+        {
+            // Someone else was handed this Unique map between the checks and the grant. Nothing was saved.
+            return new CompletionOutcome.Conflict();
+        }
 
         return result.Result switch
         {
@@ -58,44 +89,37 @@ internal sealed class RunCompletionService(
                 realmId,
                 result.Summary!.Completion!.Objective,
                 result.Summary.Completion.CompletedAt,
-                MapRecorded: map is not null,
                 summary.MapComponentId,
-                reason)),
+                given,
+                skipped)),
             CompletionResult.UnknownObjective => new CompletionOutcome.UnknownObjective(),
             CompletionResult.AlreadyCompleted => new CompletionOutcome.AlreadyCompleted(),
             _ => new CompletionOutcome.NotFound(),
         };
     }
 
-    /// <summary>The map to grant, or null and why not.</summary>
-    private async Task<(ComponentDto? Map, string? Reason)> MapToRecordAsync(RealmSummaryDto summary, CancellationToken cancellationToken)
+    /// <summary>Null when the player can receive the map; otherwise why not.</summary>
+    private async Task<string?> ReasonToSkipAsync(ComponentDto? map, Guid playerId, CancellationToken cancellationToken)
     {
-        if (summary.PlayerId is not { } playerId)
-        {
-            return (null, GmRealm);
-        }
-
-        var player = await inventory.GetPlayerAsync(playerId, cancellationToken);
-        if (player is not { IsCartographer: true })
-        {
-            return (null, NotCartographer);
-        }
-
-        var owned = await inventory.GetInventoryAsync(playerId, cancellationToken) ?? [];
-        if (owned.Any(i => i.Component.Id == summary.MapComponentId))
-        {
-            return (null, AlreadyHeld);
-        }
-
-        var map = await catalog.GetComponentAsync(summary.MapComponentId, cancellationToken);
         if (map is null)
         {
-            return (null, MapMissing);
+            return MapMissing;
+        }
+
+        var owned = await inventory.GetInventoryAsync(playerId, cancellationToken);
+        if (owned is null)
+        {
+            return UnknownPlayer;
+        }
+
+        if (owned.Any(i => i.Component.Id == map.Id))
+        {
+            return AlreadyHeld;
         }
 
         return map.Map?.Flags is { Unique: true } && await inventory.IsHeldByOthersAsync(map.Id, playerId, cancellationToken)
-            ? (null, UniqueHeld)
-            : (map, null);
+            ? UniqueHeld
+            : null;
     }
 }
 
@@ -108,4 +132,10 @@ internal abstract record CompletionOutcome
     public sealed record UnknownObjective : CompletionOutcome;
 
     public sealed record AlreadyCompleted : CompletionOutcome;
+
+    /// <summary>A Unique map can go to one player only.</summary>
+    public sealed record TooManyForUnique : CompletionOutcome;
+
+    /// <summary>A Unique map was handed to someone else while this completion ran.</summary>
+    public sealed record Conflict : CompletionOutcome;
 }

@@ -82,7 +82,7 @@
         "tags": [
           "Realms"
         ],
-        "description": "Marks the run complete with one of its objectives (any rolled one, or the GM\u0027s pin). When the weaver is a Cartographer the realm\u0027s map is recorded into their inventory in the same transaction. 400: not one of the realm\u0027s objectives. 409: already completed.",
+        "description": "GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm\u0027s map to the chosen players in the same transaction. Players who can\u0027t receive it are listed with a reason. 400: not one of the realm\u0027s objectives, or more than one recipient for a Unique map. 409: already completed.",
         "operationId": "CompleteRun",
         "parameters": [
           {
@@ -631,58 +631,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlayerDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/players/{id}/skills": {
-      "put": {
-        "tags": [
-          "Players"
-        ],
-        "description": "GM: replaces the player\u0027s trained skills. A trained Cartographer can record maps whatever needle is attuned.",
-        "operationId": "SetPlayerSkills",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlayerSkillsInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlayerDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -1469,13 +1417,6 @@
           "coast"
         ]
       },
-      "CartographerSource": {
-        "enum": [
-          "trainedSkill",
-          "attunedNeedle",
-          null
-        ]
-      },
       "CatalogSettingsDto": {
         "required": [
           "playersCanSelfAssign"
@@ -1511,13 +1452,23 @@
         }
       },
       "CompleteRunInput": {
-        "required": [
-          "objectiveKey"
-        ],
         "type": "object",
         "properties": {
           "objectiveKey": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recipientPlayerIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -2257,7 +2208,7 @@
         "properties": {
           "mapRequired": {
             "type": "boolean",
-            "default": true
+            "default": false
           },
           "componentsMustMatch": {
             "type": "boolean",
@@ -2266,6 +2217,22 @@
           "unique": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "MapHandOutSkip": {
+        "required": [
+          "playerId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string"
           }
         }
       },
@@ -2673,47 +2640,6 @@
               "string"
             ],
             "format": "uuid"
-          },
-          "skills": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/PlayerSkill"
-            }
-          },
-          "cartographer": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/CartographerSource"
-              }
-            ]
-          },
-          "isCartographer": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PlayerSkill": {
-        "enum": [
-          "cartographer"
-        ]
-      },
-      "PlayerSkillsInput": {
-        "required": [
-          "skills"
-        ],
-        "type": "object",
-        "properties": {
-          "skills": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlayerSkill"
-            }
           }
         }
       },
@@ -3113,19 +3039,30 @@
         "required": [
           "objective",
           "completedAt",
-          "mapRecorded"
+          "mapGivenTo"
         ],
         "type": "object",
         "properties": {
           "objective": {
-            "$ref": "#/components/schemas/RealmObjective"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmObjective"
+              }
+            ]
           },
           "completedAt": {
             "type": "string",
             "format": "date-time"
           },
-          "mapRecorded": {
-            "type": "boolean"
+          "mapGivenTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -3786,9 +3723,9 @@
           "realmId",
           "objective",
           "completedAt",
-          "mapRecorded",
           "mapId",
-          "mapNotRecordedReason"
+          "mapGivenTo",
+          "skipped"
         ],
         "type": "object",
         "properties": {
@@ -3797,24 +3734,35 @@
             "format": "uuid"
           },
           "objective": {
-            "$ref": "#/components/schemas/RealmObjective"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmObjective"
+              }
+            ]
           },
           "completedAt": {
             "type": "string",
             "format": "date-time"
           },
-          "mapRecorded": {
-            "type": "boolean"
-          },
           "mapId": {
             "type": "string",
             "format": "uuid"
           },
-          "mapNotRecordedReason": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "mapGivenTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapHandOutSkip"
+            }
           }
         }
       },
@@ -3853,6 +3801,7 @@
           "selected",
           "fromMap",
           "matchingMap",
+          "knownRecipe",
           "random"
         ]
       },

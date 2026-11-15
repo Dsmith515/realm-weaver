@@ -105,12 +105,13 @@ public sealed record MapDetails(
 /// <summary>
 /// Per-map rules, set by an admin or GM. An update that leaves them out keeps the recorded ones.
 /// <list type="bullet">
-/// <item><see cref="MapRequired"/>: a player must hold the map to weave it. Off, anyone with the components may.</item>
+/// <item><see cref="MapRequired"/>: a sealed map. A player must hold it to weave it. Off (the default), anyone weaving
+/// the same components reopens it, so the map just carries the recipe.</item>
 /// <item><see cref="ComponentsMustMatch"/>: only the recorded recipe opens it; no mirrors.</item>
 /// <item><see cref="Unique"/>: at most one player holds it, so it can't be shared or assigned twice.</item>
 /// </list>
 /// </summary>
-public sealed record MapFlags(bool MapRequired = true, bool ComponentsMustMatch = false, bool Unique = false);
+public sealed record MapFlags(bool MapRequired = false, bool ComponentsMustMatch = false, bool Unique = false);
 
 public sealed record ComponentDto(
     Guid Id,
@@ -192,6 +193,12 @@ public interface ICatalogModule
     Task<CatalogSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
 
     Task<StarterKitCandidates> GetStarterKitCandidatesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Maps woven with this Thread and Coating, oldest first, archived ones left out. The caller matches the needle,
+    /// which goes by base type. Used to send the same ingredients back to the same realm.
+    /// </summary>
+    Task<IReadOnlyList<ComponentDto>> FindMapsByRecipeAsync(Guid threadId, Guid coatingId, CancellationToken cancellationToken = default);
 
     /// <summary>Creates a Map component. Joins the caller's unit of work when one is running.</summary>
     Task<ComponentDto> CreateMapAsync(NewMap map, CancellationToken cancellationToken = default);

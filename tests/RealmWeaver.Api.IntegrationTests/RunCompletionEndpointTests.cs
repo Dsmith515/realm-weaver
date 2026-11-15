@@ -5,7 +5,6 @@ using RealmWeaver.Api.IntegrationTests.Infrastructure;
 using RealmWeaver.Generation.Export;
 using RealmWeaver.Generation.Model;
 using RealmWeaver.Modules.Catalog.Contracts;
-using RealmWeaver.Modules.Inventory.Contracts;
 using RealmWeaver.Modules.Realms.Contracts;
 using RealmWeaver.Modules.Rituals.Contracts;
 
@@ -17,59 +16,78 @@ namespace RealmWeaver.Api.IntegrationTests;
 public class RunCompletionEndpointTests(RealmWeaverApiFactory factory)
 {
     [Fact]
-    public async Task A_ritual_no_longer_grants_the_map_but_completing_as_a_cartographer_records_it()
+    public async Task A_ritual_doesnt_grant_the_map_but_the_gm_completing_the_run_hands_it_out()
     {
         using var client = factory.CreateClient();
-        var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        var ritual = await PerformOkAsync(client, SmallField(player.Id));
-        Assert.False((await QuantitiesAsync(client, player.Id)).ContainsKey(ritual.MapId));
+        var weaver = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
+        var partyMember = await CreatePlayerWithAsync(client);
+        var ritual = await PerformOkAsync(client, SmallField(weaver.Id));
+        Assert.False((await QuantitiesAsync(client, weaver.Id)).ContainsKey(ritual.MapId));
 
-        await client.PutJsonAsync($"/api/players/{player.Id}/skills", new PlayerSkillsInput([PlayerSkill.Cartographer]));
         var objective = (await ObjectivesAsync(client, ritual.RealmId))[^1];
-        var done = await CompleteAsync(client, ritual.RealmId, objective.Key);
+        var done = await CompleteAsync(client, ritual.RealmId, new CompleteRunInput(objective.Key, [weaver.Id, partyMember.Id]));
 
-        Assert.True(done.MapRecorded);
-        Assert.Null(done.MapNotRecordedReason);
-        Assert.Equal(objective.Key, done.Objective.Key);
-        Assert.Equal(1, (await QuantitiesAsync(client, player.Id))[ritual.MapId]);
+        Assert.Equal(objective.Key, done.Objective?.Key);
+        Assert.Equal([weaver.Id, partyMember.Id], done.MapGivenTo);
+        Assert.Empty(done.Skipped);
+        Assert.Equal(1, (await QuantitiesAsync(client, weaver.Id))[ritual.MapId]);
+        Assert.Equal(1, (await QuantitiesAsync(client, partyMember.Id))[ritual.MapId]);
 
         var summary = (await GetRealmAsync(client, ritual.RealmId)).Summary;
-        Assert.Equal(objective.Key, summary.Completion?.Objective.Key);
-        Assert.True(summary.Completion!.MapRecorded);
+        Assert.Equal(objective.Key, summary.Completion?.Objective?.Key);
+        Assert.Equal([weaver.Id, partyMember.Id], summary.Completion!.MapGivenTo);
     }
 
     [Fact]
-    public async Task Completing_without_cartographer_status_completes_the_run_but_records_nothing()
+    public async Task The_gm_can_close_a_run_without_an_objective_or_a_hand_out()
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
         var ritual = await PerformOkAsync(client, SmallField(player.Id));
 
-        var done = await CompleteAsync(client, ritual.RealmId, (await ObjectivesAsync(client, ritual.RealmId))[0].Key);
+        var done = await CompleteAsync(client, ritual.RealmId, new CompleteRunInput());
 
-        Assert.False(done.MapRecorded);
-        Assert.Equal("not-cartographer", done.MapNotRecordedReason);
+        Assert.Null(done.Objective);
+        Assert.Empty(done.MapGivenTo);
         Assert.False((await QuantitiesAsync(client, player.Id)).ContainsKey(ritual.MapId));
-        Assert.False((await GetRealmAsync(client, ritual.RealmId)).Summary.Completion!.MapRecorded);
+        Assert.NotNull((await GetRealmAsync(client, ritual.RealmId)).Summary.Completion);
     }
 
     [Fact]
-    public async Task An_attuned_cartographer_needle_is_enough_to_record_the_map()
+    public async Task Players_who_cant_receive_the_map_are_skipped_with_a_reason()
     {
         using var client = factory.CreateClient();
-        var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        var surveyor = await (await client.PostJsonAsync("/api/components", new ComponentInput(
-            ComponentType.Needle, $"Surveyor {Guid.NewGuid().ToString("N")[..6]} Needle", Rarity.Rare, 1, null, false,
-            Needle: new NeedleDetails(2, "Brass", ["Chart Sense"], Boon: NeedleBoon.Cartographer)))).ReadJsonAsync<ComponentDto>();
-        await client.PostJsonAsync($"/api/components/{surveyor.Id}/assign", new AssignComponentInput(player.Id));
-        await client.PutJsonAsync($"/api/players/{player.Id}/attunement", new AttuneNeedleInput(surveyor.Id));
+        var holder = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
+        var first = await PerformAndRecordAsync(client, SmallField(holder.Id));
+        var replay = await PerformOkAsync(client, new RitualSelection(holder.Id, MapId: first.MapId));
+        var nobody = Guid.NewGuid();
 
-        // Weave with the beginner needle: the attuned needle is separate.
-        var ritual = await PerformOkAsync(client, SmallField(player.Id));
-        var done = await CompleteAsync(client, ritual.RealmId, (await ObjectivesAsync(client, ritual.RealmId))[0].Key);
+        var done = await CompleteAsync(client, replay.RealmId, new CompleteRunInput(RecipientPlayerIds: [holder.Id, nobody]));
 
-        Assert.True(done.MapRecorded);
-        Assert.Contains(ritual.MapId, (await QuantitiesAsync(client, player.Id)).Keys);
+        Assert.Empty(done.MapGivenTo);
+        Assert.Equal([new MapHandOutSkip(holder.Id, "already-held"), new MapHandOutSkip(nobody, "unknown-player")], done.Skipped);
+        Assert.Equal(1, (await QuantitiesAsync(client, holder.Id))[first.MapId]);
+    }
+
+    [Fact]
+    public async Task A_unique_map_goes_to_one_player_only()
+    {
+        using var client = factory.CreateClient();
+        var weaver = await CreatePlayerWithAsync(client, MossgreenThread, MossgreenThread, BeastwardWax, BeastwardWax);
+        var other = await CreatePlayerWithAsync(client);
+        var ritual = await PerformOkAsync(client, SmallField(weaver.Id));
+        await SetMapFlagsAsync(client, ritual.MapId, new MapFlags(Unique: true));
+
+        var two = await client.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", new CompleteRunInput(RecipientPlayerIds: [weaver.Id, other.Id]));
+        Assert.Contains("recipientPlayerIds", (await two.ReadJsonAsync<Problem>()).Errors!.Keys);
+
+        var one = await CompleteAsync(client, ritual.RealmId, new CompleteRunInput(RecipientPlayerIds: [weaver.Id]));
+        Assert.Equal([weaver.Id], one.MapGivenTo);
+
+        // A later run of the same map can't give a second copy to someone else.
+        var again = await PerformOkAsync(client, new RitualSelection(weaver.Id, MapId: ritual.MapId));
+        var refused = await CompleteAsync(client, again.RealmId, new CompleteRunInput(RecipientPlayerIds: [other.Id]));
+        Assert.Equal([new MapHandOutSkip(other.Id, "unique-held")], refused.Skipped);
     }
 
     [Fact]
@@ -87,8 +105,8 @@ public class RunCompletionEndpointTests(RealmWeaverApiFactory factory)
 
         // Once the GM pins it, it completes the run.
         await client.PutJsonAsync($"/api/realms/{ritual.RealmId}/pinned-objective", new PinObjectiveInput(notRolled.Key));
-        var done = await CompleteAsync(client, ritual.RealmId, notRolled.Key);
-        Assert.Equal(notRolled.Key, done.Objective.Key);
+        var done = await CompleteAsync(client, ritual.RealmId, new CompleteRunInput(notRolled.Key));
+        Assert.Equal(notRolled.Key, done.Objective?.Key);
 
         var again = await client.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", new CompleteRunInput(rolled[0].Key));
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
@@ -97,40 +115,40 @@ public class RunCompletionEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
-    public async Task Two_completions_racing_give_one_success_and_one_conflict()
+    public async Task Two_completions_racing_give_one_success_one_conflict_and_one_map()
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        await client.PutJsonAsync($"/api/players/{player.Id}/skills", new PlayerSkillsInput([PlayerSkill.Cartographer]));
         var ritual = await PerformOkAsync(client, SmallField(player.Id));
-        var key = (await ObjectivesAsync(client, ritual.RealmId))[0].Key;
+        var input = new CompleteRunInput(RecipientPlayerIds: [player.Id]);
 
         using var other = factory.CreateClient();
         var responses = await Task.WhenAll(
-            client.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", new CompleteRunInput(key)),
-            other.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", new CompleteRunInput(key)));
+            client.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", input),
+            other.PostJsonAsync($"/api/realms/{ritual.RealmId}/completion", input));
 
         Assert.Equal([HttpStatusCode.OK, HttpStatusCode.Conflict], responses.Select(r => r.StatusCode).Order());
         Assert.Equal(1, (await QuantitiesAsync(client, player.Id))[ritual.MapId]);
     }
 
     [Fact]
-    public async Task A_gm_quick_weave_completes_without_recording_a_map()
+    public async Task A_gm_quick_weave_can_be_completed_and_handed_to_players()
     {
         using var client = factory.CreateClient();
+        var player = await CreatePlayerWithAsync(client);
         var weave = await (await client.PostJsonAsync("/api/gm/weave", new QuickWeaveRequest(BeginnerNeedle, MossgreenThread, BeastwardWax, Width: 20, Height: 20)))
             .ReadJsonAsync<QuickWeaveResultDto>();
 
-        var done = await CompleteAsync(client, weave.RealmId, (await ObjectivesAsync(client, weave.RealmId))[0].Key);
+        var done = await CompleteAsync(client, weave.RealmId, new CompleteRunInput((await ObjectivesAsync(client, weave.RealmId))[0].Key, [player.Id]));
 
-        Assert.False(done.MapRecorded);
-        Assert.Equal("gm-realm", done.MapNotRecordedReason);
+        Assert.Equal([player.Id], done.MapGivenTo);
+        Assert.Contains(weave.MapId, (await QuantitiesAsync(client, player.Id)).Keys);
     }
 
-    private static async Task<RunCompletionDto> CompleteAsync(HttpClient client, Guid realmId, string key)
+    private static async Task<RunCompletionDto> CompleteAsync(HttpClient client, Guid realmId, CompleteRunInput input)
     {
-        var response = await client.PostJsonAsync($"/api/realms/{realmId}/completion", new CompleteRunInput(key));
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var response = await client.PostJsonAsync($"/api/realms/{realmId}/completion", input);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
         return await response.ReadJsonAsync<RunCompletionDto>();
     }
 

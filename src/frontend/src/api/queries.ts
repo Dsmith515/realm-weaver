@@ -1,6 +1,6 @@
 import { keepPreviousData, type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from './client'
-import type { ComponentInput, Player, PlayerSkill, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
+import type { CompleteRunInput, ComponentInput, Player, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
 export const keys = {
@@ -47,15 +47,6 @@ export function useAttune(playerId: string) {
       needleId === null
         ? unwrap(api.DELETE('/api/players/{id}/attunement', { params: { path: { id: playerId } } }))
         : unwrap(api.PUT('/api/players/{id}/attunement', { params: { path: { id: playerId } }, body: { needleId } })),
-    onSuccess: (player) => replacePlayer(queryClient, player),
-  })
-}
-
-/** GM: replaces the player's trained skills. */
-export function useSetSkills(playerId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (skills: PlayerSkill[]) => unwrap(api.PUT('/api/players/{id}/skills', { params: { path: { id: playerId } }, body: { skills } })),
     onSuccess: (player) => replacePlayer(queryClient, player),
   })
 }
@@ -208,12 +199,11 @@ export function useObjectiveCandidates(realmId: string, enabled: boolean) {
   })
 }
 
-/** Completes the run with one of its objectives; a Cartographer weaver gets the map recorded into their inventory. */
+/** GM: completes the run, optionally with an objective, and hands the map to the chosen players. */
 export function useCompleteRun(realmId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (objectiveKey: string) =>
-      unwrap(api.POST('/api/realms/{id}/completion', { params: { path: { id: realmId } }, body: { objectiveKey } })),
+    mutationFn: (body: CompleteRunInput) => unwrap(api.POST('/api/realms/{id}/completion', { params: { path: { id: realmId } }, body })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.realm(realmId) })
       void queryClient.invalidateQueries({ queryKey: keys.allRealms })

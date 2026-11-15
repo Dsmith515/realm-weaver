@@ -13,14 +13,12 @@ namespace RealmWeaver.Api.IntegrationTests;
 public class AttunementEndpointTests(RealmWeaverApiFactory factory)
 {
     [Fact]
-    public async Task A_new_player_is_attuned_to_the_beginner_needle_and_is_not_a_cartographer()
+    public async Task A_new_player_is_attuned_to_the_beginner_needle()
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client);
 
         Assert.Equal(BeginnerNeedle, player.AttunedNeedleId);
-        Assert.Null(player.Cartographer);
-        Assert.False(player.IsCartographer);
     }
 
     [Fact]
@@ -41,28 +39,6 @@ public class AttunementEndpointTests(RealmWeaverApiFactory factory)
 
         var cleared = await (await client.DeleteAsync(new Uri($"/api/players/{player.Id}/attunement", UriKind.Relative))).ReadJsonAsync<PlayerDto>();
         Assert.Null(cleared.AttunedNeedleId);
-    }
-
-    [Fact]
-    public async Task Cartographer_status_comes_from_a_trained_skill_or_the_attuned_needles_boon()
-    {
-        using var client = factory.CreateClient();
-        var player = await CreatePlayerWithAsync(client);
-        var mapper = await CreateNeedleAsync(client, "Surveyor's", tier: 2, boon: NeedleBoon.Cartographer);
-        await AssignAsync(client, mapper.Id, player.Id);
-
-        var byBoon = await (await client.PutJsonAsync($"/api/players/{player.Id}/attunement", new AttuneNeedleInput(mapper.Id))).ReadJsonAsync<PlayerDto>();
-        Assert.Equal(CartographerSource.AttunedNeedle, byBoon.Cartographer);
-
-        // A trained skill wins, and keeps the status whatever needle is attuned.
-        var trained = await (await client.PutJsonAsync($"/api/players/{player.Id}/skills", new PlayerSkillsInput([PlayerSkill.Cartographer]))).ReadJsonAsync<PlayerDto>();
-        Assert.Equal(CartographerSource.TrainedSkill, trained.Cartographer);
-        await client.PutJsonAsync($"/api/players/{player.Id}/attunement", new AttuneNeedleInput(BeginnerNeedle));
-        Assert.Equal(CartographerSource.TrainedSkill, (await client.GetJsonAsync<PlayerDto>($"/api/players/{player.Id}")).Cartographer);
-
-        var untrained = await (await client.PutJsonAsync($"/api/players/{player.Id}/skills", new PlayerSkillsInput([]))).ReadJsonAsync<PlayerDto>();
-        Assert.Null(untrained.Cartographer);
-        Assert.Empty(untrained.Skills!);
     }
 
     [Fact]
@@ -124,11 +100,11 @@ public class AttunementEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(["Steady Point"], attuned!.Abilities);
     }
 
-    private static async Task<ComponentDto> CreateNeedleAsync(HttpClient client, string prefix, int tier, string? baseType = null, NeedleBoon? boon = null)
+    private static async Task<ComponentDto> CreateNeedleAsync(HttpClient client, string prefix, int tier, string? baseType = null)
     {
         var name = $"{prefix} {Guid.NewGuid().ToString("N")[..6]} Needle";
         var input = new ComponentInput(ComponentType.Needle, name, Rarity.Uncommon, 1, null, false,
-            Needle: new NeedleDetails(tier, "Test", ["Test Ability"], baseType, boon));
+            Needle: new NeedleDetails(tier, "Test", ["Test Ability"], baseType));
         var response = await client.PostJsonAsync("/api/components", input);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return await response.ReadJsonAsync<ComponentDto>();
