@@ -31,7 +31,7 @@ Decisions made:
 /docker-compose.yml             postgres (+ api + web in a "full" profile)
 /.github/workflows/             ci.yml, e2e.yml, release.yml
 /docs/adr/                      short architecture decision records (good portfolio signal)
-CLAUDE.md                       project conventions for Claude Code / Codex
+AGENTS.md                       project conventions for any AI agent (CLAUDE.md just imports it)
 ```
 Each module exposes only a public `I…Module` interface plus DTOs. The project-reference rules keep them separate, which makes the Phase 2 split mechanical.
 
@@ -174,6 +174,7 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
    - **OpenTelemetry** sends traces to the free Aspire Dashboard container.
    - Tests for failure injection in the saga, with ADRs comparing it to the Phase 1 ACID version.
    - **Player sessions are a separate client.** Logins, parties, a shared ritual view, player-run completion and trading belong to a future session/VTT project that consumes these services. It is the split's first external consumer, and it shouldn't shape the generator's core (ADR 0010).
+   - **That client is the Campaign Manager**, its own repo, built after the split. It practises authentication and role-based access (GM and player roles), its own Postgres database and migrations, and calling an external API: campaign maps and realms come from Realm Weaver. Features: campaigns, characters and inventories, NPCs, quest tracking, session notes and encounter history. Optional AI (NPC personalities, session-note summaries, quest hooks) sits behind a feature flag with the user's own key, so the app stays free to run.
 10. **Content tables** (a later phase, which could become its own `content` service): this moves `IContentCatalog` to Postgres, with admin UI pages that work like the Components page.
    - `AbilityTemplate`: name, **category**, **reach** (self, ally, foe, area, realm), effect text (your own) and minimum tier.
      - Needle abilities become a multi-select of ability ids, grouped by category.
@@ -226,6 +227,13 @@ Design notes for these ideas live in the Notion pages "Thimbles, Needle Roles an
 - **Tower-defense prototype**: reuse the field generator for lanes and paths. A wave-simulation service teaches background workers and deterministic simulation tests.
 - **Deckbuilder rules service**: cards and runs stored with **event sourcing** (Marten on Postgres, free). Turns can be replayed from the event log.
 - **Grid-tactics encounter builder**: places your own creature statblocks onto a realm map. It keeps rules generic and doesn't copy DC20 or other licensed text.
+
+## Learning-plan coverage
+How the milestones line up with the maintainer's skills plan (a 5-project, 5-phase portfolio plan), so the gaps stay visible:
+- **Done:** procedural map and dungeon generator (plan project 1), deterministic generation, a modular monolith with module-owned data, ACID transactions, `xmin` optimistic concurrency, idempotency keys, xUnit, Testcontainers, Vitest, Playwright, Docker images and CI/CD to GHCR.
+- **Milestone 9:** service extraction, RabbitMQ, transactional outbox and inbox, saga with compensation, OpenTelemetry tracing.
+- **Campaign Manager (plan project 4):** auth and RBAC, API security, an external API integration, optional AI.
+- **Not scheduled yet:** health checks and structured logging (small; can come before Milestone 9), Redis caching, Terraform and a free cloud deploy (Phase 3). The plan's tactical combat and tower-defense projects (2 and 3) are covered by the related portfolio ideas above.
 
 ## Verification
 - `dotnet test` passes, including the generation invariants and the Testcontainers ritual tests.
