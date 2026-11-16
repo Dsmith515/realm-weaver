@@ -637,6 +637,7 @@ export interface components {
             /** Format: int32 */
             threat?: null | number;
             objectives?: null | components["schemas"]["RealmObjective"][];
+            flags?: null | components["schemas"]["MapFlags"];
         };
         MapDetailsDto: {
             map: components["schemas"]["ComponentDto"];
@@ -644,6 +645,14 @@ export interface components {
             thread: null | components["schemas"]["ComponentDto"];
             coating: null | components["schemas"]["ComponentDto"];
             originalRealm: null | components["schemas"]["RealmDigestDto"];
+        };
+        MapFlags: {
+            /** @default true */
+            mapRequired: boolean;
+            /** @default false */
+            componentsMustMatch: boolean;
+            /** @default false */
+            unique: boolean;
         };
         MapRecipe: {
             kind: components["schemas"]["RealmKind"];

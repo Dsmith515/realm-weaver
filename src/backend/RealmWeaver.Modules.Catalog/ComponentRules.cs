@@ -260,6 +260,7 @@ internal static partial class ComponentRules
             : null;
         // Fresh copies: EF tracks owned instances, so the old ones can't move onto the new MapData.
         List<RealmObjective> recordedObjectives = [.. (entity.Map?.Objectives ?? []).Select(ToObjective)];
+        var recordedFlags = entity.Map is { } old ? FlagsOf(old) : new MapFlags();
         entity.Map = input.Map is { } m
             ? new MapData
             {
@@ -279,6 +280,9 @@ internal static partial class ComponentRules
 
                 // Objectives are recorded when a ritual creates the map; an edit that leaves them out keeps them.
                 Objectives = [.. (m.Objectives ?? recordedObjectives).Select(ToData)],
+                MapRequired = (m.Flags ?? recordedFlags).MapRequired,
+                ComponentsMustMatch = (m.Flags ?? recordedFlags).ComponentsMustMatch,
+                Unique = (m.Flags ?? recordedFlags).Unique,
             }
             : null;
     }
@@ -310,9 +314,12 @@ internal static partial class ComponentRules
                 m.CreatedByPlayerId,
                 m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true, r.NeedleBaseType) : null,
                 m.Threat,
-                m.Objectives.Count == 0 ? null : [.. m.Objectives.Select(ToObjective)])
+                m.Objectives.Count == 0 ? null : [.. m.Objectives.Select(ToObjective)],
+                FlagsOf(m))
             : null,
         usedByMapCount);
+
+    private static MapFlags FlagsOf(MapData m) => new(m.MapRequired ?? true, m.ComponentsMustMatch, m.Unique);
 
     private static MapObjectiveData ToData(RealmObjective o) => new()
     {

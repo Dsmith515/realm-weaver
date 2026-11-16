@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentInput } from '../api/types'
 import { fakeApi, json, problem } from '../test/fakeApi'
-import { moss, needle, otherPlayer, owned, player, wax } from '../test/fixtures'
+import { forestMap, moss, needle, otherPlayer, owned, player, wax } from '../test/fixtures'
 import { renderApp } from '../test/render'
 
 function routes(overrides: Record<string, unknown> = {}) {
@@ -180,5 +180,37 @@ describe('Components page', () => {
     await waitFor(() => expect(api.callsTo('DELETE', `/api/components/${wax.id}`)).toHaveLength(1))
     await waitFor(() => expect(api.callsTo('PUT', '/api/settings')[0]?.body).toEqual({ playersCanSelfAssign: false }))
     expect(screen.getByRole('checkbox', { name: /Players can add assignable components/ })).not.toBeChecked()
+  })
+
+  it('edits a map’s rules and a needle’s base type and boon', async () => {
+    const api = fakeApi(
+      routes({
+        'GET /api/components': { items: [needle, forestMap], page: 1, pageSize: 25, totalCount: 2 },
+        'PUT /api/components/:id': (call: { body: unknown }) => ({ ...forestMap, ...(call.body as object) }),
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: `Edit ${forestMap.name}` }))
+    const mapForm = screen.getByRole('form', { name: `Edit ${forestMap.name}` })
+    expect(within(mapForm).getByRole('checkbox', { name: /Map required/ })).toBeChecked()
+    await user.click(within(mapForm).getByRole('checkbox', { name: /Components must match/ }))
+    await user.click(within(mapForm).getByRole('checkbox', { name: /Unique/ }))
+    await user.click(within(mapForm).getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(api.callsTo('PUT', `/api/components/${forestMap.id}`)).toHaveLength(1))
+    const body = api.callsTo('PUT', `/api/components/${forestMap.id}`)[0].body as ComponentInput
+    expect(body.map?.flags).toEqual({ mapRequired: true, componentsMustMatch: true, unique: true })
+
+    await user.click(await screen.findByRole('button', { name: `Edit ${needle.name}` }))
+    const needleForm = screen.getByRole('form', { name: `Edit ${needle.name}` })
+    await user.type(within(needleForm).getByRole('textbox', { name: /Base type/ }), "Beginner's Needle")
+    await user.selectOptions(within(needleForm).getByRole('combobox', { name: /Boon/ }), 'trapSense')
+    await user.click(within(needleForm).getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(api.callsTo('PUT', `/api/components/${needle.id}`)).toHaveLength(1))
+    const needleBody = api.callsTo('PUT', `/api/components/${needle.id}`)[0].body as ComponentInput
+    expect(needleBody.needle).toMatchObject({ baseType: "Beginner's Needle", boon: 'trapSense' })
   })
 })

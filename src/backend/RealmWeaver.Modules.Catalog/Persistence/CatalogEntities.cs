@@ -98,6 +98,13 @@ internal sealed class MapData
 
     public int? Threat { get; set; }
 
+    /// <summary>Null on maps from before flags existed, which means required.</summary>
+    public bool? MapRequired { get; set; }
+
+    public bool ComponentsMustMatch { get; set; }
+
+    public bool Unique { get; set; }
+
     /// <summary>The objectives recorded with the map. Empty for maps made by hand or before objectives existed.</summary>
     public List<MapObjectiveData> Objectives { get; set; } = [];
 }

@@ -99,7 +99,18 @@ public sealed record MapDetails(
     Guid? CreatedByPlayerId,
     MapRecipe? Recipe = null,
     int? Threat = null,
-    IReadOnlyList<RealmObjective>? Objectives = null);
+    IReadOnlyList<RealmObjective>? Objectives = null,
+    MapFlags? Flags = null);
+
+/// <summary>
+/// Per-map rules, set by an admin or GM. An update that leaves them out keeps the recorded ones.
+/// <list type="bullet">
+/// <item><see cref="MapRequired"/>: a player must hold the map to weave it. Off, anyone with the components may.</item>
+/// <item><see cref="ComponentsMustMatch"/>: only the recorded recipe opens it; no mirrors.</item>
+/// <item><see cref="Unique"/>: at most one player holds it, so it can't be shared or assigned twice.</item>
+/// </list>
+/// </summary>
+public sealed record MapFlags(bool MapRequired = true, bool ComponentsMustMatch = false, bool Unique = false);
 
 public sealed record ComponentDto(
     Guid Id,

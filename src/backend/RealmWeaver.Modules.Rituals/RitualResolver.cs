@@ -24,6 +24,7 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
     public const string WrongType = "wrong-type";
     public const string NotOwned = "not-owned";
     public const string InvalidOption = "invalid-option";
+    public const string MirrorNotAllowed = "mirror-not-allowed";
 
     /// <summary>Returns null when the player doesn't exist.</summary>
     public async Task<RitualResolution?> ResolveAsync(RitualSelection selection, bool randomize, CancellationToken cancellationToken)
@@ -89,7 +90,8 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         RequireFilled(RitualSlot.Coating, coating);
         foreach (var (slot, filled) in new[] { (RitualSlot.Needle, needle), (RitualSlot.Thread, thread), (RitualSlot.Coating, coating), (RitualSlot.Map, map) })
         {
-            if (filled is { OwnedQuantity: < 1 })
+            // A map with Map Required off opens for anyone holding the components.
+            if (filled is { OwnedQuantity: < 1 } && !(slot == RitualSlot.Map && filled.Component.Map?.Flags is { MapRequired: false }))
             {
                 var what = filled.Component.IsConsumable ? "any" : "this";
                 issues.Add(new RitualIssue(slot, FieldOf(slot), NotOwned, $"You don't have {what} {filled.Component.Name}."));
@@ -106,6 +108,15 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         }
 
         var isMismatch = mismatched.Count > 0;
+        if (isMismatch && map?.Component.Map?.Flags is { ComponentsMustMatch: true })
+        {
+            issues.Add(new RitualIssue(
+                RitualSlot.Map,
+                FieldOf(RitualSlot.Map),
+                MirrorNotAllowed,
+                $"{map.Component.Name} only opens with its recorded components, so it can't be mirrored. Change the {string.Join(" and ", mismatched).ToLowerInvariant()}."));
+        }
+
         var result = new RitualPreviewDto(
             selection.PlayerId,
             needle,

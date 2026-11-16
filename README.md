@@ -109,7 +109,7 @@ Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a co
 | **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. Any needle you own can weave; a needle of the map's base type (any Beginner's Needle) still matches it. |
 | **Player** | Your attuned needle (its abilities and boon go on the realm sheet) and Cartographer status, with the GM's *Trained Cartographer* switch. Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). Open an item to keep your own notes on it; a map also shows its details (seed, recipe, threat, mobs, potential loot and resource nodes). |
 | **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; Its **Objectives** (1–3, complete any one) jump to their event on the map; a GM can pin any candidate objective, and **Complete** ends the run, recording the map when the weaver is a Cartographer. Click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
-| **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. |
+| **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. Needles have a base type and a boon; maps have rules (Map required, Components must match, Unique). |
 | **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options, **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
 | **About** | What Realm Weaver is for and how a ritual works. |
 
@@ -169,7 +169,7 @@ docs/                            roadmap, ADRs and images
 - [x] Milestone 6a: M6 follow-ups (map recipe snapshot, naming, UI polish, player map details, GM Quick Weave)
 - [x] Milestone 6b: feedback round 2 (image prompt window, About page, settlement population and structures)
 - [x] Milestone 7: E2E tests and release images (Dockerfiles, compose `full` profile, Playwright, GHCR)
-- [ ] Milestone 8: objectives and map rules
+- [x] Milestone 8: objectives and map rules (objectives, needle base types and attunement, Cartographer map recording, per-map flags)
 - [ ] Milestone 9: microservices (saga and outbox)
 - [ ] Milestone 10: content tables (mobs, events, abilities, roles, level profiles)
 - [ ] Milestone 11: Phase 3 (thimbles, auth, economy, VTT exports)

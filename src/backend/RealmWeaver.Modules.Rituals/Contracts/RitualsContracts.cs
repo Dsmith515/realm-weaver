@@ -58,8 +58,9 @@ public enum SlotSource
 public sealed record SlotPreview(ComponentDto Component, SlotSource Source, int OwnedQuantity);
 
 /// <summary>
-/// Something that stops the ritual. Codes: <c>missing</c>, <c>unknown</c>, <c>wrong-type</c> and <c>invalid-option</c>
-/// are input errors (400 on perform); <c>not-owned</c> means the player lacks the component (409 on perform).
+/// Something that stops the ritual. Codes: <c>missing</c>, <c>unknown</c>, <c>wrong-type</c>, <c>invalid-option</c> and
+/// <c>mirror-not-allowed</c> (the map is flagged Components Must Match) are input errors (400 on perform);
+/// <c>not-owned</c> means the player lacks the component (409 on perform).
 /// </summary>
 public sealed record RitualIssue(RitualSlot? Slot, string Field, string Code, string Message);
 
@@ -152,8 +153,8 @@ public sealed record CompleteRunInput(string ObjectiveKey);
 
 /// <summary>
 /// A completed run. <see cref="MapRecorded"/> is true when the map was added to the weaver's inventory; otherwise
-/// <see cref="MapNotRecordedReason"/> says why: <c>gm-realm</c>, <c>not-cartographer</c>, <c>already-held</c> or
-/// <c>map-missing</c>.
+/// <see cref="MapNotRecordedReason"/> says why: <c>gm-realm</c>, <c>not-cartographer</c>, <c>already-held</c>,
+/// <c>unique-held</c> (a Unique map another player holds) or <c>map-missing</c>.
 /// </summary>
 public sealed record RunCompletionDto(
     Guid RealmId,

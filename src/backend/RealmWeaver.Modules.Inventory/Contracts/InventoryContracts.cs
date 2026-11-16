@@ -61,6 +61,7 @@ public interface IInventoryModule
 
     /// <summary>
     /// Adds a component to the player's inventory. Consumables stack; owning a Needle or Map again changes nothing.
+    /// Throws <see cref="MapHeldElsewhereException"/> for a Unique map another player holds.
     /// Joins the caller's unit of work when one is running.
     /// </summary>
     Task<InventoryItemDto> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default);
@@ -71,6 +72,27 @@ public interface IInventoryModule
     /// <c>DbUpdateConcurrencyException</c> when another request spent them first.
     /// </summary>
     Task SpendOneEachAsync(Guid playerId, IReadOnlyCollection<Guid> componentIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Whether any player other than <paramref name="playerId"/> holds the component.</summary>
+    Task<bool> IsHeldByOthersAsync(Guid componentId, Guid playerId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>A Unique map is already held by another player, so it can't be granted.</summary>
+public sealed class MapHeldElsewhereException : Exception
+{
+    public MapHeldElsewhereException()
+    {
+    }
+
+    public MapHeldElsewhereException(string message)
+        : base(message)
+    {
+    }
+
+    public MapHeldElsewhereException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }
 
 /// <summary>The player doesn't have (enough of) these components.</summary>
