@@ -841,3 +841,19 @@ textarea {
 .objectives__chooser select {
   width: 100%;
 }
+
+.attunement {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin-bottom: 1rem;
+}
+
+.attunement h2,
+.attunement p {
+  margin: 0;
+}
+
+.attunement__status {
+  font-weight: 600;
+}

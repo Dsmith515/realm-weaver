@@ -4,6 +4,7 @@ import { useComponents, useInventory, usePlayers, useSelfAdd, useSettings } from
 import { label } from '../api/types'
 import { describe } from '../catalog/describe'
 import { groupByType } from '../ritual/slots'
+import { AttunementCard } from './AttunementCard'
 import { ItemModal } from './ItemModal'
 import { usePlayerSelection } from './playerContext'
 
@@ -17,6 +18,7 @@ export function PlayerPage() {
       <h1>Player</h1>
       {!playerId && <p>Choose or create a player in the header.</p>}
       {player && <p className="muted">Inventory of {player.name}.</p>}
+      {player && <AttunementCard player={player} />}
       {playerId && <Inventory playerId={playerId} />}
       {playerId && <SelfAdd playerId={playerId} />}
     </section>

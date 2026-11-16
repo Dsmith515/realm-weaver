@@ -23,6 +23,11 @@ internal static class InventoryEndpoints
         players.MapPost("/", CreatePlayerAsync).WithName("CreatePlayer")
             .WithDescription("Creates a player with the starter kit: the beginner needle, 2 threads ×3 and 2 coatings ×3.");
         players.MapGet("/{id:guid}", GetPlayerAsync).WithName("GetPlayer");
+        players.MapPut("/{id:guid}/attunement", AttuneAsync).WithName("AttuneNeedle")
+            .WithDescription("Attunes one of the player's needles. The attuned needle supplies abilities and its boon during an adventure; any owned needle can still be used to weave.");
+        players.MapDelete("/{id:guid}/attunement", ClearAttunementAsync).WithName("ClearAttunement");
+        players.MapPut("/{id:guid}/skills", SetSkillsAsync).WithName("SetPlayerSkills")
+            .WithDescription("GM: replaces the player's trained skills. A trained Cartographer can record maps whatever needle is attuned.");
         players.MapGet("/{id:guid}/inventory", GetInventoryAsync).WithName("GetInventory");
         players.MapPost("/{id:guid}/inventory", SelfAddAsync).WithName("AddToOwnInventory")
             .WithDescription("A player adds a component to their own inventory. Allowed only when self-assign is on and the component is player-assignable.");
@@ -58,6 +63,34 @@ internal static class InventoryEndpoints
         await inventory.GetPlayerAsync(id, cancellationToken) is { } player
             ? TypedResults.Ok(player)
             : Problems.NotFound("Player", id);
+
+    private static async Task<Results<Ok<PlayerDto>, ProblemHttpResult, ValidationProblem>> AttuneAsync(
+        Guid id, [FromBody] AttuneNeedleInput input, InventoryService inventory, CancellationToken cancellationToken) =>
+        await inventory.AttuneAsync(id, input.NeedleId, cancellationToken) switch
+        {
+            AttuneOutcome.PlayerNotFound => Problems.NotFound("Player", id),
+            AttuneOutcome.NotAnOwnedNeedle => Problems.Validation(new Dictionary<string, string[]> { ["needleId"] = ["Attune a needle you own."] }),
+            _ => TypedResults.Ok((await inventory.GetPlayerAsync(id, cancellationToken))!),
+        };
+
+    private static async Task<Results<Ok<PlayerDto>, ProblemHttpResult>> ClearAttunementAsync(Guid id, InventoryService inventory, CancellationToken cancellationToken) =>
+        await inventory.AttuneAsync(id, needleId: null, cancellationToken) == AttuneOutcome.Attuned
+            ? TypedResults.Ok((await inventory.GetPlayerAsync(id, cancellationToken))!)
+            : Problems.NotFound("Player", id);
+
+    private static async Task<Results<Ok<PlayerDto>, ProblemHttpResult, ValidationProblem>> SetSkillsAsync(
+        Guid id, [FromBody] PlayerSkillsInput input, InventoryService inventory, CancellationToken cancellationToken)
+    {
+        var skills = input.Skills ?? [];
+        if (!skills.All(Enum.IsDefined))
+        {
+            return Problems.Validation(new Dictionary<string, string[]> { ["skills"] = ["Unknown skill."] });
+        }
+
+        return await inventory.SetSkillsAsync(id, [.. skills], cancellationToken)
+            ? TypedResults.Ok((await inventory.GetPlayerAsync(id, cancellationToken))!)
+            : Problems.NotFound("Player", id);
+    }
 
     private static async Task<Results<Ok<IReadOnlyList<InventoryItemDto>>, ProblemHttpResult>> GetInventoryAsync(
         Guid id, InventoryService inventory, CancellationToken cancellationToken) =>

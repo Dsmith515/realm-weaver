@@ -22,8 +22,39 @@ public enum Rarity
     Legendary,
 }
 
-/// <summary>Needle: difficulty, and the compass inside the realm. Never consumed.</summary>
-public sealed record NeedleDetails(int DifficultyTier, string Category, IReadOnlyList<string> Abilities);
+/// <summary>
+/// A passive benefit a needle grants while attuned: a status, a perception edge or a social starting attitude.
+/// Never a combat action, and at most one per needle.
+/// </summary>
+public enum NeedleBoon
+{
+    /// <summary>Cartographer status: the party can record a Map when it completes a run.</summary>
+    Cartographer,
+
+    /// <summary>Neutral NPCs start friendly.</summary>
+    FriendlyNpcs,
+
+    /// <summary>The needle points the party toward each other.</summary>
+    PartyDirection,
+
+    /// <summary>A warning before stepping on a trap.</summary>
+    TrapSense,
+
+    /// <summary>Resting in the field is safe.</summary>
+    SafeRest,
+}
+
+/// <summary>
+/// Needle: difficulty, and the compass inside the realm. Never consumed.
+/// <see cref="BaseType"/> is what map recipes match on, so two Beginner's Needles with different abilities count as
+/// the same ingredient. It defaults to the needle's name; leaving it blank on an update keeps the recorded one.
+/// </summary>
+public sealed record NeedleDetails(
+    int DifficultyTier,
+    string Category,
+    IReadOnlyList<string> Abilities,
+    string? BaseType = null,
+    NeedleBoon? Boon = null);
 
 /// <summary>Thread: the realm's biome and element. Consumed by a ritual.</summary>
 public sealed record ThreadDetails(Biome Biome, Element Element);
@@ -44,7 +75,8 @@ public sealed record MapRecipe(
     IReadOnlyList<string> MobTags,
     int Difficulty,
     SettlementPopulation? SettlementPopulation = null,
-    bool IncludeStructures = true);
+    bool IncludeStructures = true,
+    string? NeedleBaseType = null);
 
 /// <summary>
 /// Map: a realm already visited. Its seed and recipe rebuild the same realm.

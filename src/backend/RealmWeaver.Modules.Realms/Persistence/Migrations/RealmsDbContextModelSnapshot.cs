@@ -35,6 +35,10 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("areas");
 
+                    b.Property<string>("AttunedNeedle")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("attuned_needle");
+
                     b.Property<string>("Biome")
                         .IsRequired()
                         .HasMaxLength(24)

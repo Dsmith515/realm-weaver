@@ -12,6 +12,12 @@ internal sealed class Player
 
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>The needle supplying abilities during an adventure. A plain id: needles live in the Catalog module.</summary>
+    public Guid? AttunedNeedleId { get; set; }
+
+    /// <summary><see cref="Contracts.PlayerSkill"/> names, stored as a Postgres text array.</summary>
+    public List<string> TrainedSkills { get; set; } = [];
+
     public List<InventoryItem> Items { get; set; } = [];
 }
 
@@ -55,6 +61,7 @@ internal sealed class InventoryDbContext(DbContextOptions<InventoryDbContext> op
             player.ToTable("players");
             player.Property(p => p.Name).HasMaxLength(Player.MaxNameLength);
             player.HasIndex(p => p.Name);
+            player.Property(p => p.TrainedSkills).HasDefaultValueSql("'{}'::text[]");
             player.HasMany(p => p.Items).WithOne().HasForeignKey(i => i.PlayerId).OnDelete(DeleteBehavior.Cascade);
         });
 

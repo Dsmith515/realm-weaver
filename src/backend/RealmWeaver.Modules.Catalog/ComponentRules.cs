@@ -68,6 +68,13 @@ internal static partial class ComponentRules
             changed.Add("needle.difficultyTier");
         }
 
+        // Maps match a needle by base type, so changing it would move the needle in or out of every map's recipe.
+        if (existing.Needle is { BaseType: { } baseType } && input.Needle is { BaseType: { } newBaseType }
+            && !string.IsNullOrWhiteSpace(newBaseType) && !string.Equals(baseType, newBaseType.Trim(), StringComparison.Ordinal))
+        {
+            changed.Add("needle.baseType");
+        }
+
         if (existing.Thread is { } t && input.Thread is { } newThread)
         {
             if (t.Biome != newThread.Biome)
@@ -140,6 +147,8 @@ internal static partial class ComponentRules
                 abilities.All(a => !string.IsNullOrWhiteSpace(a) && a.Trim().Length <= MaxAbilityLength),
                 "needle.abilities",
                 $"Each ability needs 1 to {MaxAbilityLength} characters.");
+            errors.Require((needle.BaseType?.Trim().Length ?? 0) <= MaxNameLength, "needle.baseType", $"Use at most {MaxNameLength} characters.");
+            errors.Require(needle.Boon is null || Enum.IsDefined(needle.Boon.Value), "needle.boon", "Unknown boon.");
         }
 
         if (input.Type == ComponentType.Thread && input.Thread is { } thread)
@@ -226,6 +235,8 @@ internal static partial class ComponentRules
     /// <summary>Copies a validated input onto an entity. The type is set on creation only.</summary>
     public static void Apply(ComponentInput input, ComponentDefinition entity)
     {
+        // A blank base type keeps the recorded one; a needle from before base types existed keeps its old name as one.
+        var recordedBaseType = entity.Needle is null ? null : entity.Needle.BaseType ?? entity.Name;
         entity.Name = input.Name.Trim();
         entity.Rarity = input.Rarity;
         entity.Rank = input.Rank;
@@ -234,7 +245,14 @@ internal static partial class ComponentRules
         entity.IsConsumable = ComponentDefinition.IsConsumableType(entity.Type);
 
         entity.Needle = input.Needle is { } n
-            ? new NeedleData { DifficultyTier = n.DifficultyTier, Category = n.Category.Trim(), Abilities = [.. (n.Abilities ?? []).Select(a => a.Trim())] }
+            ? new NeedleData
+            {
+                DifficultyTier = n.DifficultyTier,
+                Category = n.Category.Trim(),
+                Abilities = [.. (n.Abilities ?? []).Select(a => a.Trim())],
+                BaseType = string.IsNullOrWhiteSpace(n.BaseType) ? recordedBaseType ?? entity.Name : n.BaseType.Trim(),
+                Boon = n.Boon,
+            }
             : null;
         entity.Thread = input.Thread is { } t ? new ThreadData { Biome = t.Biome, Element = t.Element } : null;
         entity.Coating = input.Coating is { } c
@@ -255,7 +273,7 @@ internal static partial class ComponentRules
                 GeneratorVersion = m.GeneratorVersion.Trim(),
                 CreatedByPlayerId = m.CreatedByPlayerId,
                 Recipe = m.Recipe is { } r
-                    ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty, SettlementPopulation = r.SettlementPopulation, IncludeStructures = r.IncludeStructures }
+                    ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty, SettlementPopulation = r.SettlementPopulation, IncludeStructures = r.IncludeStructures, NeedleBaseType = r.NeedleBaseType }
                     : null,
                 Threat = m.Threat,
 
@@ -276,7 +294,7 @@ internal static partial class ComponentRules
         c.IsConsumable,
         c.IsArchived,
         c.CreatedAt,
-        c.Needle is { } n ? new NeedleDetails(n.DifficultyTier, n.Category, n.Abilities) : null,
+        c.Needle is { } n ? new NeedleDetails(n.DifficultyTier, n.Category, n.Abilities, n.BaseType ?? c.Name, n.Boon) : null,
         c.Thread is { } t ? new ThreadDetails(t.Biome, t.Element) : null,
         c.Coating is { } co ? new CoatingDetails(co.MobTypes, co.RealmKind, co.FloorCount) : null,
         c.Map is { } m
@@ -290,7 +308,7 @@ internal static partial class ComponentRules
                 m.EventCount,
                 m.GeneratorVersion,
                 m.CreatedByPlayerId,
-                m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true) : null,
+                m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true, r.NeedleBaseType) : null,
                 m.Threat,
                 m.Objectives.Count == 0 ? null : [.. m.Objectives.Select(ToObjective)])
             : null,

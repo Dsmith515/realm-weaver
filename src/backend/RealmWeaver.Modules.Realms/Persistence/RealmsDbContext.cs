@@ -61,6 +61,9 @@ internal sealed class Realm
 
     public string? CoatingName { get; set; }
 
+    /// <summary>An <see cref="Contracts.AttunedNeedleDto"/> as jsonb. Null when the weaver had none, or for a GM weave.</summary>
+    public string? AttunedNeedle { get; set; }
+
     /// <summary>
     /// A GM's chosen objective for this run, as jsonb (a <see cref="RealmObjective"/>). Stored on the realm, not the
     /// map, so it never changes the map's recipe or recorded objectives.
@@ -87,6 +90,7 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.Document).HasColumnType("jsonb");
             realm.Property(r => r.Areas).HasColumnType("jsonb");
             realm.Property(r => r.PinnedObjective).HasColumnType("jsonb");
+            realm.Property(r => r.AttunedNeedle).HasColumnType("jsonb");
             realm.Property(r => r.MapName).HasMaxLength(100);
             realm.Property(r => r.NeedleName).HasMaxLength(100);
             realm.Property(r => r.ThreadName).HasMaxLength(100);

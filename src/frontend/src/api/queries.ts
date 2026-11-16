@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from './client'
-import type { ComponentInput, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
+import type { ComponentInput, PlayerSkill, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
 export const keys = {
@@ -35,6 +35,27 @@ export function useCreatePlayer() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (name: string) => unwrap(api.POST('/api/players', { body: { name } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.players }),
+  })
+}
+
+/** Attunes one of the player's needles, or clears the attunement with null. */
+export function useAttune(playerId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (needleId: string | null) =>
+      needleId === null
+        ? unwrap(api.DELETE('/api/players/{id}/attunement', { params: { path: { id: playerId } } }))
+        : unwrap(api.PUT('/api/players/{id}/attunement', { params: { path: { id: playerId } }, body: { needleId } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.players }),
+  })
+}
+
+/** GM: replaces the player's trained skills. */
+export function useSetSkills(playerId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (skills: PlayerSkill[]) => unwrap(api.PUT('/api/players/{id}/skills', { params: { path: { id: playerId } }, body: { skills } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.players }),
   })
 }

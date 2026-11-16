@@ -50,6 +50,11 @@ internal sealed class NeedleData
     public string Category { get; set; } = string.Empty;
 
     public List<string> Abilities { get; set; } = [];
+
+    /// <summary>Null for needles from before base types existed, which means their name.</summary>
+    public string? BaseType { get; set; }
+
+    public NeedleBoon? Boon { get; set; }
 }
 
 internal sealed class ThreadData
@@ -139,6 +144,9 @@ internal sealed class MapRecipeData
 
     /// <summary>Null on maps recorded before structures existed, which means true.</summary>
     public bool? IncludeStructures { get; set; }
+
+    /// <summary>The needle's base type at weaving time. Null on maps from before base types, which match by needle id.</summary>
+    public string? NeedleBaseType { get; set; }
 }
 
 /// <summary>A single-row table of global settings.</summary>

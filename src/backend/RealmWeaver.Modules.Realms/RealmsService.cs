@@ -45,6 +45,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             ThreadName = realm.Components?.Thread.Name,
             CoatingId = realm.Components?.Coating.Id,
             CoatingName = realm.Components?.Coating.Name,
+            AttunedNeedle = realm.Components?.AttunedNeedle is { } attuned ? JsonSerializer.Serialize(attuned, RealmJson.Options) : null,
         };
 
         db.Realms.Add(entity);
@@ -177,6 +178,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 CoatingId = r.CoatingId,
                 CoatingName = r.CoatingName,
                 PinnedObjective = r.PinnedObjective,
+                AttunedNeedle = r.AttunedNeedle,
             })
             .ToListAsync(cancellationToken);
 
@@ -211,7 +213,8 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 mapName,
                 new ComponentRefDto(needleId, entity.NeedleName ?? string.Empty),
                 new ComponentRefDto(threadId, entity.ThreadName ?? string.Empty),
-                new ComponentRefDto(coatingId, entity.CoatingName ?? string.Empty))
+                new ComponentRefDto(coatingId, entity.CoatingName ?? string.Empty),
+                entity.AttunedNeedle is null ? null : JsonSerializer.Deserialize<AttunedNeedleDto>(entity.AttunedNeedle, RealmJson.Options))
             : null;
 }
 

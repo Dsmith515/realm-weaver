@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/client'
 import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api/queries'
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
-import { label, tileLabel } from '../api/types'
+import { boonLabel, label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
 import { ObjectivesPanel } from './ObjectivesPanel'
 import { PromptDialog } from './PromptDialog'
@@ -95,6 +95,13 @@ function RealmView({ realm }: { realm: Realm }) {
         {summary.isMirror && <MirrorBadge />}
       </h1>
       {summary.components && <p>{componentsLine(summary)}</p>}
+      {summary.components?.attunedNeedle && (
+        <p className="realm__attuned">
+          <strong>Attuned needle:</strong> {summary.components.attunedNeedle.name}
+          {summary.components.attunedNeedle.abilities.length > 0 && ` · abilities: ${summary.components.attunedNeedle.abilities.join(', ')}`}
+          {summary.components.attunedNeedle.boon && ` · boon: ${boonLabel(summary.components.attunedNeedle.boon)}`}
+        </p>
+      )}
       <p className="muted">
         {label(summary.kind)} · Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}

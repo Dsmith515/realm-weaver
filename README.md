@@ -85,7 +85,9 @@ npm run e2e                                          # E2E_BASE_URL=... to test 
 | `GET /api/components/name-suffixes` | The words a Needle, Thread or Coating name may end with |
 | `POST /api/components/{id}/assign` | Admin: give a component to a player |
 | `GET/PUT /api/settings` | The global `playersCanSelfAssign` toggle |
-| `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit. |
+| `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit and is attuned to the beginner needle. `cartographer` says whether they can record maps. |
+| `PUT` / `DELETE /api/players/{id}/attunement` | Attune one of the player's needles (body `{ needleId }`), or clear it. The attuned needle's abilities and boon go on the realm sheet. |
+| `PUT /api/players/{id}/skills` | GM: replace trained skills (body `{ skills: ["cartographer"] }`) |
 | `GET/POST /api/players/{id}/inventory` | A player's inventory, and adding to it yourself (when allowed) |
 | `PUT /api/players/{id}/inventory/{componentId}/notes` | Replace a player's notes on an item they own |
 | `GET /api/maps/{id}/details` | Map details: seed, kind, threat, mobs, potential loot and resource nodes |

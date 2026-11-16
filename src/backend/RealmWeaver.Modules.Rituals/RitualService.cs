@@ -63,6 +63,9 @@ internal sealed class RitualService(
             return new PerformOutcome.NotOwned(preview.Issues);
         }
 
+        // The attuned needle's abilities and boon go on the realm sheet, copied as they are now (ADR 0006).
+        var attuned = await AttunedNeedleAsync(selection.PlayerId, cancellationToken);
+
         // Everything up to here only read. Generation is pure, so it also runs before the transaction opens,
         // which keeps the row locks short.
         var needle = preview.Needle!.Component;
@@ -131,7 +134,7 @@ internal sealed class RitualService(
                             ritual.DangerModifier,
                             ritual.EncounterVariant,
                             document,
-                            new RealmComponentsDto(map.Name, new(needle.Id, needle.Name), new(thread.Id, thread.Name), new(coating.Id, coating.Name))),
+                            new RealmComponentsDto(map.Name, new(needle.Id, needle.Name), new(thread.Id, thread.Name), new(coating.Id, coating.Name), attuned)),
                         ct);
 
                     return ToResult(ritual);
@@ -153,6 +156,17 @@ internal sealed class RitualService(
         {
             return new PerformOutcome.Conflict("Your inventory changed while the ritual ran. Reload it and try again.");
         }
+    }
+
+    private async Task<AttunedNeedleDto?> AttunedNeedleAsync(Guid playerId, CancellationToken cancellationToken)
+    {
+        if (await inventory.GetPlayerAsync(playerId, cancellationToken) is not { AttunedNeedleId: { } needleId }
+            || await catalog.GetComponentAsync(needleId, cancellationToken) is not { Needle: { } details } needle)
+        {
+            return null;
+        }
+
+        return new AttunedNeedleDto(needle.Id, needle.Name, details.Abilities, details.Boon is { } boon ? JsonNamingPolicy.CamelCase.ConvertName(boon.ToString()) : null);
     }
 
     private async Task<PerformOutcome?> ReplayAsync(string idempotencyKey, string requestHash, CancellationToken cancellationToken)
@@ -224,11 +238,12 @@ internal sealed class RitualService(
         var thread = resolution.LayoutThread?.Thread ?? throw new InvalidOperationException("The map has no layout thread.");
         var coating = resolution.LayoutCoating?.Coating ?? throw new InvalidOperationException("The map has no layout coating.");
         var needle = resolution.Preview.Needle?.Component.Needle ?? throw new InvalidOperationException("The ritual has no needle.");
-        return new MapRecipe(coating.RealmKind, coating.FloorCount, thread.Biome, thread.Element, coating.MobTypes, needle.DifficultyTier);
+        return new MapRecipe(coating.RealmKind, coating.FloorCount, thread.Biome, thread.Element, coating.MobTypes, needle.DifficultyTier,
+            NeedleBaseType: resolution.Preview.Needle?.Component.Needle?.BaseType);
     }
 
     /// <summary>The recipe a new map records: exactly the inputs its realm was generated from.</summary>
-    private static MapRecipe RecipeOf(GenerationRequest request) => new(
+    private static MapRecipe RecipeOf(GenerationRequest request, ComponentDto needle) => new(
         request.Kind,
         request.Kind == RealmKind.Field ? 0 : request.FloorCount,
         request.Biome,
@@ -236,7 +251,8 @@ internal sealed class RitualService(
         [.. request.MobTags],
         request.Difficulty,
         request.SettlementPopulation,
-        request.IncludeStructures);
+        request.IncludeStructures,
+        needle.Needle?.BaseType);
 
     /// <summary>"Beginner's Reedwoven Beastward Wax Swamp Field and Dungeon Map": the components without their type word.</summary>
     internal static string MapNameFor(ComponentDto needle, ComponentDto thread, ComponentDto coating, Biome biome, RealmKind kind)
@@ -280,7 +296,7 @@ internal sealed class RitualService(
                 Math.Clamp(first.Events.Count, GeneratorLimits.MinEvents, GeneratorLimits.AbsoluteMaxEvents),
                 document.GeneratorVersion,
                 playerId,
-                RecipeOf(document.Request),
+                RecipeOf(document.Request, needle),
                 document.Threat,
                 document.Objectives.Count == 0 ? null : document.Objectives));
     }

@@ -11,18 +11,73 @@ namespace RealmWeaver.Modules.Inventory;
 internal sealed class InventoryService(InventoryDbContext db, ICatalogModule catalog, TimeProvider clock, StarterKitPicker starterKit)
     : IInventoryModule
 {
-    public async Task<PlayerDto?> GetPlayerAsync(Guid playerId, CancellationToken cancellationToken = default) =>
-        await db.Players.AsNoTracking()
-            .Where(p => p.Id == playerId)
-            .Select(p => new PlayerDto(p.Id, p.Name, p.CreatedAt))
-            .FirstOrDefaultAsync(cancellationToken);
+    public async Task<PlayerDto?> GetPlayerAsync(Guid playerId, CancellationToken cancellationToken = default)
+    {
+        var player = await db.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
+        return player is null ? null : (await ToDtosAsync([player], cancellationToken))[0];
+    }
 
-    public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(CancellationToken cancellationToken) =>
-        await db.Players.AsNoTracking()
-            .OrderBy(p => p.Name)
-            .ThenBy(p => p.Id)
-            .Select(p => new PlayerDto(p.Id, p.Name, p.CreatedAt))
-            .ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(CancellationToken cancellationToken)
+    {
+        var players = await db.Players.AsNoTracking().OrderBy(p => p.Name).ThenBy(p => p.Id).ToListAsync(cancellationToken);
+        return await ToDtosAsync(players, cancellationToken);
+    }
+
+    /// <summary>Attunes a needle the player owns, or clears the attunement when <paramref name="needleId"/> is null.</summary>
+    public async Task<AttuneOutcome> AttuneAsync(Guid playerId, Guid? needleId, CancellationToken cancellationToken)
+    {
+        var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
+        if (player is null)
+        {
+            return AttuneOutcome.PlayerNotFound;
+        }
+
+        if (needleId is { } id)
+        {
+            var owns = await db.Items.AnyAsync(i => i.PlayerId == playerId && i.ComponentDefinitionId == id && i.Quantity > 0, cancellationToken);
+            if (!owns || await catalog.GetComponentAsync(id, cancellationToken) is not { Type: ComponentType.Needle })
+            {
+                return AttuneOutcome.NotAnOwnedNeedle;
+            }
+        }
+
+        player.AttunedNeedleId = needleId;
+        await db.SaveChangesAsync(cancellationToken);
+        return AttuneOutcome.Attuned;
+    }
+
+    /// <summary>Replaces the player's trained skills. Returns false when the player doesn't exist.</summary>
+    public async Task<bool> SetSkillsAsync(Guid playerId, IReadOnlyCollection<PlayerSkill> skills, CancellationToken cancellationToken)
+    {
+        var player = await db.Players.FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
+        if (player is null)
+        {
+            return false;
+        }
+
+        player.TrainedSkills = [.. skills.Distinct().Order().Select(s => s.ToString())];
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    /// <summary>Adds each player's Cartographer status, looking up attuned needles' boons in one Catalog call.</summary>
+    private async Task<List<PlayerDto>> ToDtosAsync(IReadOnlyList<Player> players, CancellationToken cancellationToken)
+    {
+        var needleIds = players.Select(p => p.AttunedNeedleId).OfType<Guid>().Distinct().ToList();
+        var needles = needleIds.Count == 0
+            ? new Dictionary<Guid, ComponentDto>()
+            : await catalog.GetComponentsAsync(needleIds, cancellationToken);
+
+        return [.. players.Select(p =>
+        {
+            var skills = p.TrainedSkills.Select(s => Enum.TryParse<PlayerSkill>(s, out var skill) ? skill : (PlayerSkill?)null).OfType<PlayerSkill>().ToList();
+            var boon = p.AttunedNeedleId is { } id ? needles.GetValueOrDefault(id)?.Needle?.Boon : null;
+            CartographerSource? cartographer = skills.Contains(PlayerSkill.Cartographer)
+                ? CartographerSource.TrainedSkill
+                : boon == NeedleBoon.Cartographer ? CartographerSource.AttunedNeedle : null;
+            return new PlayerDto(p.Id, p.Name, p.CreatedAt, p.AttunedNeedleId, skills, cartographer);
+        })];
+    }
 
     public async Task<IReadOnlyList<InventoryItemDto>?> GetInventoryAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
@@ -51,6 +106,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         var player = new Player { Id = Guid.CreateVersion7(), Name = name.Trim(), CreatedAt = now };
 
         var candidates = await catalog.GetStarterKitCandidatesAsync(cancellationToken);
+        player.AttunedNeedleId = candidates.BeginnerNeedleId; // the starter needle is attuned until the player picks another
         foreach (var (componentId, quantity) in starterKit.Pick(candidates))
         {
             player.Items.Add(new InventoryItem { ComponentDefinitionId = componentId, Quantity = quantity, AcquiredAt = now });
@@ -58,7 +114,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
 
         db.Players.Add(player);
         await db.SaveChangesAsync(cancellationToken);
-        return new PlayerDto(player.Id, player.Name, player.CreatedAt);
+        return (await ToDtosAsync([player], cancellationToken))[0];
     }
 
     /// <summary>
@@ -138,4 +194,11 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         // UPDATE ... WHERE xmin = <loaded>: a concurrent spend of the same stack makes this throw.
         await db.SaveChangesAsync(cancellationToken);
     }
+}
+
+internal enum AttuneOutcome
+{
+    Attuned,
+    PlayerNotFound,
+    NotAnOwnedNeedle,
 }

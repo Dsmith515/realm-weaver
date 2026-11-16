@@ -36,9 +36,9 @@ internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule re
         if (map?.Component.Map is { } details)
         {
             var recorded = await catalog.GetComponentsAsync([details.NeedleId, details.ThreadId, details.CoatingId], cancellationToken);
-            needle = FromMap(RitualSlot.Needle, needle, recorded.GetValueOrDefault(details.NeedleId));
-            thread = FromMap(RitualSlot.Thread, thread, recorded.GetValueOrDefault(details.ThreadId));
-            coating = FromMap(RitualSlot.Coating, coating, recorded.GetValueOrDefault(details.CoatingId));
+            needle = FromMap(RitualSlot.Needle, needle, recorded.GetValueOrDefault(details.NeedleId), details.Recipe);
+            thread = FromMap(RitualSlot.Thread, thread, recorded.GetValueOrDefault(details.ThreadId), details.Recipe);
+            coating = FromMap(RitualSlot.Coating, coating, recorded.GetValueOrDefault(details.CoatingId), details.Recipe);
             recipe = details.Recipe;
             if (recipe is null)
             {
@@ -94,7 +94,7 @@ internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule re
             return new SlotPreview(component, SlotSource.Selected, 0);
         }
 
-        SlotPreview? FromMap(RitualSlot slot, SlotPreview? current, ComponentDto? recorded)
+        SlotPreview? FromMap(RitualSlot slot, SlotPreview? current, ComponentDto? recorded, MapRecipe? mapRecipe)
         {
             if (recorded is null)
             {
@@ -106,7 +106,7 @@ internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule re
                 return new SlotPreview(recorded, SlotSource.FromMap, 0);
             }
 
-            if (current.Component.Id != recorded.Id)
+            if (!RitualResolver.SameIngredient(slot, current.Component, recorded, mapRecipe))
             {
                 mismatched.Add(slot);
             }
