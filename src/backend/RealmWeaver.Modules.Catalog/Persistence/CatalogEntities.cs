@@ -153,6 +153,9 @@ internal sealed class MapRecipeData
 
     /// <summary>The needle's base type at weaving time. Null on maps from before base types, which match by needle id.</summary>
     public string? NeedleBaseType { get; set; }
+
+    /// <summary>Settlements list structure ideas instead of placed structures. Null on older maps, which means false.</summary>
+    public bool? SuggestStructures { get; set; }
 }
 
 /// <summary>A single-row table of global settings.</summary>

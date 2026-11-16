@@ -103,7 +103,9 @@ public sealed record QuickWeaveLimits(
 /// A GM weaving from the whole catalog: no inventory, nothing consumed. A chosen slot is used as is; an empty one is
 /// picked at random within <see cref="Limits"/>. With a Map the realm reuses its seed (a mirror if the slots differ);
 /// without one a new, unowned Map is recorded. <see cref="Population"/> (null means rolled per settlement) and
-/// <see cref="IncludeStructures"/> apply to new maps; a recorded map keeps the settings in its recipe.
+/// <see cref="IncludeStructures"/> (off by default, so image generators aren't handed buildings to draw) and
+/// <see cref="SuggestStructures"/> (structure ideas for the GM, not placed) apply to new maps; a recorded map keeps the
+/// settings in its recipe.
 /// </summary>
 public sealed record QuickWeaveRequest(
     Guid? NeedleId = null,
@@ -115,7 +117,8 @@ public sealed record QuickWeaveRequest(
     int? Height = null,
     int? EventCount = null,
     Generation.Model.SettlementPopulation? Population = null,
-    bool IncludeStructures = true);
+    bool IncludeStructures = false,
+    bool SuggestStructures = false);
 
 public sealed record QuickWeavePreviewDto(
     SlotPreview? Needle,
@@ -155,23 +158,26 @@ public sealed record RitualResultDto(
     int EncounterVariant,
     DateTimeOffset CreatedAt);
 
-/// <summary>Body for completing a run: the key of one of the realm's objectives (rolled, or the GM's pin).</summary>
 /// <summary>
-/// The GM completing a run: optionally the objective that completed it, and the players who receive the realm's map.
-/// An empty list just closes the run.
+/// The GM marking an objective complete for the players who ran it (ADR 0011). Repeatable: a realm can be completed any
+/// number of times, by the same party or a new one. <see cref="MapRecipientIds"/> are the players among
+/// <see cref="PlayerIds"/> who receive the realm's map; when it's null, every player who doesn't hold it yet does.
 /// </summary>
-public sealed record CompleteRunInput(string? ObjectiveKey = null, IReadOnlyList<Guid>? RecipientPlayerIds = null);
+public sealed record CompleteRunInput(string ObjectiveKey, IReadOnlyList<Guid> PlayerIds, IReadOnlyList<Guid>? MapRecipientIds = null);
 
 /// <summary>
-/// A completed run. <see cref="MapGivenTo"/> lists the players who received the map; <see cref="Skipped"/> says why the
-/// others didn't: <c>already-held</c>, <c>unknown-player</c>, <c>unique-held</c> (a Unique map another player holds) or
-/// <c>map-missing</c>.
+/// A completion. <see cref="IsFirst"/> marks the first completion of the realm's map. <see cref="MapGivenTo"/> lists
+/// the players who received the map; <see cref="Skipped"/> says why the other recipients didn't: <c>already-held</c>,
+/// <c>unique-held</c> (a Unique map another player holds) or <c>map-missing</c>.
 /// </summary>
 public sealed record RunCompletionDto(
+    Guid CompletionId,
     Guid RealmId,
-    Generation.Model.RealmObjective? Objective,
+    Generation.Model.RealmObjective Objective,
     DateTimeOffset CompletedAt,
+    bool IsFirst,
     Guid MapId,
+    IReadOnlyList<Guid> PlayerIds,
     IReadOnlyList<Guid> MapGivenTo,
     IReadOnlyList<MapHandOutSkip> Skipped);
 

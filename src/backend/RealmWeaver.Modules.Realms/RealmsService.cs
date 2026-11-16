@@ -50,7 +50,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
 
         db.Realms.Add(entity);
         await db.SaveChangesAsync(cancellationToken);
-        return ToSummary(entity);
+        return ToSummary(entity, await CompletionCountAsync(entity.MapComponentId, cancellationToken));
     }
 
     public async Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default) =>
@@ -64,7 +64,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             return null;
         }
 
-        return new RealmDto(ToSummary(entity), RealmJson.Deserialize(entity.Document));
+        return new RealmDto(ToSummary(entity, await CompletionCountAsync(entity.MapComponentId, cancellationToken)), RealmJson.Deserialize(entity.Document));
     }
 
     public async Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default)
@@ -116,52 +116,75 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        return new PinOutcome.Pinned(ToSummary(entity));
+        return new PinOutcome.Pinned(ToSummary(entity, await CompletionCountAsync(entity.MapComponentId, cancellationToken)));
     }
 
-    public async Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default)
+    public async Task<RealmCompletionResult> CompleteAsync(
+        Guid realmId, string objectiveKey, IReadOnlyList<CompletionPlayerDto> players, CancellationToken cancellationToken = default)
     {
-        var entity = await db.Realms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == realmId, cancellationToken);
+        var entity = await db.Realms.AsNoTracking()
+            .Where(r => r.Id == realmId)
+            .Select(r => new { r.MapComponentId, r.PinnedObjective, r.Document })
+            .FirstOrDefaultAsync(cancellationToken);
         if (entity is null)
         {
             return new RealmCompletionResult(CompletionResult.NotFound);
         }
 
-        if (entity.CompletedAt is not null)
+        // Any rolled objective counts, and so does the GM's pin.
+        var pinned = entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options);
+        var objective = RealmJson.Deserialize(entity.Document).Objectives.Append(pinned).FirstOrDefault(o => o?.Key == objectiveKey);
+        if (objective is null)
         {
-            return new RealmCompletionResult(CompletionResult.AlreadyCompleted, ToSummary(entity));
+            return new RealmCompletionResult(CompletionResult.UnknownObjective);
         }
 
-        // Any rolled objective completes the run, and so does the GM's pin. No objective is fine too.
-        RealmObjective? objective = null;
-        if (objectiveKey is not null)
+        var completion = new Completion
         {
-            var pinned = entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options);
-            objective = RealmJson.Deserialize(entity.Document).Objectives.Append(pinned).FirstOrDefault(o => o?.Key == objectiveKey);
-            if (objective is null)
-            {
-                return new RealmCompletionResult(CompletionResult.UnknownObjective);
-            }
+            Id = Guid.CreateVersion7(),
+            RealmId = realmId,
+            MapComponentId = entity.MapComponentId,
+            Objective = JsonSerializer.Serialize(objective, RealmJson.Options),
+            Players = JsonSerializer.Serialize(players, RealmJson.Options),
+            CompletedAt = clock.GetDatabaseUtcNow(),
+        };
+        db.Completions.Add(completion);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new RealmCompletionResult(CompletionResult.Completed, ToDto(completion, await IsFirstAsync(completion, cancellationToken)));
+    }
+
+    /// <summary>The completion history of the realm's map, newest first, with everyone who completed something. Null when the realm doesn't exist.</summary>
+    public async Task<RealmCompletionsDto?> GetCompletionsAsync(Guid realmId, CancellationToken cancellationToken)
+    {
+        var mapId = await db.Realms.Where(r => r.Id == realmId).Select(r => (Guid?)r.MapComponentId).FirstOrDefaultAsync(cancellationToken);
+        if (mapId is null)
+        {
+            return null;
         }
 
-        // A conditional update, so two completions racing can't both win.
-        var now = clock.GetDatabaseUtcNow();
-        var json = objective is null ? null : JsonSerializer.Serialize(objective, RealmJson.Options);
-        List<Guid> givenTo = [.. mapGivenTo];
-        var updated = await db.Realms
-            .Where(r => r.Id == realmId && r.CompletedAt == null)
-            .ExecuteUpdateAsync(
-                set => set.SetProperty(r => r.CompletedAt, now).SetProperty(r => r.CompletedObjective, json).SetProperty(r => r.MapGivenTo, givenTo),
-                cancellationToken);
-        if (updated == 0)
-        {
-            return new RealmCompletionResult(CompletionResult.AlreadyCompleted, await GetSummaryAsync(realmId, cancellationToken));
-        }
+        var entities = await db.Completions.AsNoTracking()
+            .Where(c => c.MapComponentId == mapId)
+            .OrderBy(c => c.CompletedAt)
+            .ThenBy(c => c.Id)
+            .ToListAsync(cancellationToken);
+        var completions = entities.Select((c, i) => ToDto(c, isFirst: i == 0)).ToList();
 
-        entity.CompletedAt = now;
-        entity.CompletedObjective = json;
-        entity.MapGivenTo = givenTo;
-        return new RealmCompletionResult(CompletionResult.Completed, ToSummary(entity));
+        var players = completions
+            .SelectMany(c => c.Players.Select(p => (Player: p, Completion: c)))
+            .GroupBy(x => x.Player.Id)
+            .Select(g => new CompleterDto(
+                g.Key,
+                g.Last().Player.Name, // the newest name
+                g.Count(),
+                g.First().Completion.CompletedAt,
+                g.Any(x => x.Completion.IsFirst)))
+            .OrderBy(p => p.FirstCompletedAt)
+            .ThenBy(p => p.Name, StringComparer.Ordinal)
+            .ToList();
+
+        completions.Reverse();
+        return new RealmCompletionsDto(completions, players);
     }
 
     /// <summary>Rolled objectives keep their ids (O1..O3); the rest are marked "P" because they only appear when pinned.</summary>
@@ -175,8 +198,11 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
     }
 
     /// <summary>Newest first. Summaries only; the documents can be large.</summary>
-    public async Task<IReadOnlyList<RealmSummaryDto>> ListAsync(Guid? playerId, Guid? mapComponentId, int limit, CancellationToken cancellationToken, bool gmOnly = false)
+    public async Task<RealmSummaryPage> ListAsync(
+        Guid? playerId, Guid? mapComponentId, int page, int pageSize, CancellationToken cancellationToken, bool gmOnly = false)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, MaxListSize);
         var realms = db.Realms.AsNoTracking();
         if (playerId is { } player)
         {
@@ -193,50 +219,76 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             realms = realms.Where(r => r.MapComponentId == map);
         }
 
-        var entities = await realms
+        var total = await realms.CountAsync(cancellationToken);
+        var rows = await realms
             .OrderByDescending(r => r.CreatedAt)
             .ThenByDescending(r => r.Id)
-            .Take(Math.Clamp(limit, 1, MaxListSize))
-            .Select(r => new Realm
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new
             {
-                Id = r.Id,
-                PlayerId = r.PlayerId,
-                MapComponentId = r.MapComponentId,
-                Kind = r.Kind,
-                Biome = r.Biome,
-                Width = r.Width,
-                Height = r.Height,
-                FloorCount = r.FloorCount,
-                Threat = r.Threat,
-                DangerModifier = r.DangerModifier,
-                EncounterVariant = r.EncounterVariant,
-                Seed = r.Seed,
-                GeneratorVersion = r.GeneratorVersion,
-                Document = string.Empty, // not loaded
-                Areas = r.Areas,
-                CreatedAt = r.CreatedAt,
-                MapName = r.MapName,
-                NeedleId = r.NeedleId,
-                NeedleName = r.NeedleName,
-                ThreadId = r.ThreadId,
-                ThreadName = r.ThreadName,
-                CoatingId = r.CoatingId,
-                CoatingName = r.CoatingName,
-                PinnedObjective = r.PinnedObjective,
-                AttunedNeedle = r.AttunedNeedle,
-                CompletedAt = r.CompletedAt,
-                CompletedObjective = r.CompletedObjective,
-                MapGivenTo = r.MapGivenTo,
+                Realm = new Realm
+                {
+                    Id = r.Id,
+                    PlayerId = r.PlayerId,
+                    MapComponentId = r.MapComponentId,
+                    Kind = r.Kind,
+                    Biome = r.Biome,
+                    Width = r.Width,
+                    Height = r.Height,
+                    FloorCount = r.FloorCount,
+                    Threat = r.Threat,
+                    DangerModifier = r.DangerModifier,
+                    EncounterVariant = r.EncounterVariant,
+                    Seed = r.Seed,
+                    GeneratorVersion = r.GeneratorVersion,
+                    Document = string.Empty, // not loaded
+                    Areas = r.Areas,
+                    CreatedAt = r.CreatedAt,
+                    MapName = r.MapName,
+                    NeedleId = r.NeedleId,
+                    NeedleName = r.NeedleName,
+                    ThreadId = r.ThreadId,
+                    ThreadName = r.ThreadName,
+                    CoatingId = r.CoatingId,
+                    CoatingName = r.CoatingName,
+                    PinnedObjective = r.PinnedObjective,
+                    AttunedNeedle = r.AttunedNeedle,
+                },
+                Completions = db.Completions.Count(c => c.MapComponentId == r.MapComponentId),
             })
             .ToListAsync(cancellationToken);
 
-        return [.. entities.Select(ToSummary)];
+        return new RealmSummaryPage([.. rows.Select(r => ToSummary(r.Realm, r.Completions))], page, pageSize, total);
     }
+
+    private Task<int> CompletionCountAsync(Guid mapComponentId, CancellationToken cancellationToken) =>
+        db.Completions.CountAsync(c => c.MapComponentId == mapComponentId, cancellationToken);
+
+    /// <summary>The earliest completion of the map is the first. Two in the same instant: the lower (time-ordered v7) id wins.</summary>
+    private async Task<bool> IsFirstAsync(Completion completion, CancellationToken cancellationToken)
+    {
+        var first = await db.Completions.AsNoTracking()
+            .Where(c => c.MapComponentId == completion.MapComponentId)
+            .OrderBy(c => c.CompletedAt)
+            .ThenBy(c => c.Id)
+            .Select(c => c.Id)
+            .FirstAsync(cancellationToken);
+        return first == completion.Id;
+    }
+
+    private static RealmCompletionDto ToDto(Completion c, bool isFirst) => new(
+        c.Id,
+        c.RealmId,
+        JsonSerializer.Deserialize<RealmObjective>(c.Objective, RealmJson.Options)!,
+        c.CompletedAt,
+        JsonSerializer.Deserialize<List<CompletionPlayerDto>>(c.Players, RealmJson.Options) ?? [],
+        isFirst);
 
     private static List<RealmAreaSummaryDto> AreasOf(RealmDocument document) =>
         [.. document.Areas.Select(a => new RealmAreaSummaryDto(a.Id, a.Kind, a.Name, a.FloorNumber))];
 
-    private static RealmSummaryDto ToSummary(Realm entity) => new(
+    private static RealmSummaryDto ToSummary(Realm entity, int completionCount) => new(
         entity.Id,
         entity.PlayerId,
         entity.MapComponentId,
@@ -254,12 +306,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? [],
         ComponentsOf(entity),
         entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options),
-        entity.CompletedAt is { } completedAt
-            ? new RealmCompletionDto(
-                entity.CompletedObjective is { } completed ? JsonSerializer.Deserialize<RealmObjective>(completed, RealmJson.Options) : null,
-                completedAt,
-                entity.MapGivenTo)
-            : null);
+        completionCount);
 
     private static RealmComponentsDto? ComponentsOf(Realm entity) =>
         entity is { MapName: { } mapName, NeedleId: { } needleId, ThreadId: { } threadId, CoatingId: { } coatingId }

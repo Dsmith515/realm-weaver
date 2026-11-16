@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { fakeApi, type ApiCall } from '../test/fakeApi'
-import { player } from '../test/fixtures'
+import { component, player } from '../test/fixtures'
 import { renderApp } from '../test/render'
 
 const summary: RealmSummary = {
@@ -21,6 +21,7 @@ const summary: RealmSummary = {
   seed: '18446744073709551000',
   generatorVersion: '0.3.0',
   createdAt: '2026-11-12T12:00:00Z',
+  completionCount: 0,
   areas: [
     { id: 'field', kind: 'field', name: 'Forest field', floorNumber: 0 },
     { id: 'floor-1', kind: 'dungeonFloor', name: 'Floor 1', floorNumber: 1 },
@@ -92,12 +93,26 @@ const mirror: RealmSummary = {
   isMirror: true,
 }
 
+const mapDetails = {
+  map: component('map', 'Forest field + dungeon', { id: 'map-1', map: { seed: '42', needleId: 'n', threadId: 't', coatingId: 'c', width: 24, height: 20, eventCount: 6, generatorVersion: '0.5.0', createdByPlayerId: null, objectives: [], flags: { mapRequired: true, componentsMustMatch: false, unique: false } } }),
+  needle: null,
+  thread: null,
+  coating: null,
+  originalRealm: {
+    realmId: 'realm-1',
+    threat: 2,
+    digest: { mobs: [{ archetypeId: 'wolf', name: 'Wolf', count: 4 }], loot: [{ areaName: 'Field', id: 'F1', name: 'Chest', location: 'C4' }], resourceNodes: [] },
+  },
+}
+
 function routes() {
   return {
     'GET /api/info': { name: 'Realm Weaver', version: '1.0.0' },
     'GET /api/players': [player],
-    'GET /api/realms': [summary, mirror],
+    'GET /api/realms': { items: [summary, mirror], page: 1, pageSize: 25, totalCount: 2 },
     'GET /api/realms/:id': realm,
+    'GET /api/realms/:id/completions': { completions: [], players: [] },
+    'GET /api/maps/:id/details': mapDetails,
     'GET /api/realms/:id/export': svgFor,
   }
 }
@@ -270,7 +285,7 @@ describe('Realm pages', () => {
     renderApp('/realms/realm-1')
 
     const objectives = await screen.findByRole('region', { name: 'Objectives' })
-    expect(within(objectives).getByText('Complete any one to complete the run.')).toBeInTheDocument()
+    expect(within(objectives).getByText('Any of these can be completed, by any party, as often as the realm is run.')).toBeInTheDocument()
     expect(within(objectives).getByRole('button', { name: /Clear the realm Whole realm/ })).toBeInTheDocument()
 
     await user.click(within(objectives).getByRole('button', { name: /Take the post E2 Guard post · B2:C3/ }))
@@ -317,38 +332,115 @@ describe('Realm pages', () => {
     expect(within(objectives).getByText(/woven before objectives existed/)).toBeInTheDocument()
   })
 
-  it('lets the GM complete the run and hand the map to chosen players', async () => {
-    let current: Realm = realm
+  it('lets the GM complete an objective for a party, again and again, and shows who completed it', async () => {
     const objective = realm.document.objectives![1]
     const friend = { ...player, id: 'p2', name: 'Friend' }
+    const history = {
+      completions: [
+        {
+          id: 'c1',
+          realmId: summary.id,
+          objective,
+          completedAt: '2026-11-15T12:00:00Z',
+          players: [
+            { id: player.id, name: player.name, mapGiven: false },
+            { id: friend.id, name: 'Friend', mapGiven: true },
+          ],
+          isFirst: true,
+        },
+      ],
+      players: [
+        { id: player.id, name: player.name, completions: 1, firstCompletedAt: '2026-11-15T12:00:00Z', inFirstCompletion: true },
+        { id: friend.id, name: 'Friend', completions: 1, firstCompletedAt: '2026-11-15T12:00:00Z', inFirstCompletion: true },
+      ],
+    }
+    let completed = false
     const api = fakeApi({
       ...routes(),
       'GET /api/players': [player, friend],
-      'GET /api/realms/:id': () => current,
+      'GET /api/realms/:id/completions': () => (completed ? history : { completions: [], players: [] }),
       'POST /api/realms/:id/completion': () => {
-        current = { ...realm, summary: { ...summary, completion: { objective, completedAt: '2026-11-15T12:00:00Z', mapGivenTo: [friend.id] } } }
-        return { realmId: summary.id, objective, completedAt: '2026-11-15T12:00:00Z', mapId: 'map-1', mapGivenTo: [friend.id], skipped: [{ playerId: player.id, reason: 'already-held' }] }
+        completed = true
+        return {
+          completionId: 'c1',
+          realmId: summary.id,
+          objective,
+          completedAt: '2026-11-15T12:00:00Z',
+          isFirst: true,
+          mapId: 'map-1',
+          playerIds: [player.id, friend.id],
+          mapGivenTo: [friend.id],
+          skipped: [],
+        }
       },
     })
     const user = userEvent.setup()
     renderApp('/realms/realm-1')
 
     const card = await screen.findByRole('region', { name: 'Completion' })
-    // The weaver is ticked by default; the GM adds a friend too.
+    expect(await within(card).findByText('No one has completed an objective here yet.')).toBeInTheDocument()
+    // The weaver is ticked by default; the GM finds a friend by searching and adds them.
     expect(await within(card).findByRole('checkbox', { name: /Wanderer/ })).toBeChecked()
+    await user.type(within(card).getByRole('searchbox', { name: 'Search players for players who completed it' }), 'Fri')
+    await waitFor(() => expect(api.callsTo('GET', '/api/players').some((c) => c.query.get('search') === 'Fri')).toBe(true))
     await user.click(within(card).getByRole('checkbox', { name: 'Friend' }))
     await user.selectOptions(within(card).getByLabelText('Objective completed'), 'realm/clear-the-realm')
-    await user.click(within(card).getByRole('button', { name: 'Complete and hand out the map' }))
+    await user.click(within(card).getByRole('button', { name: 'Complete objective' }))
 
     expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toEqual({
       objectiveKey: 'realm/clear-the-realm',
-      recipientPlayerIds: [player.id, friend.id],
+      playerIds: [player.id, friend.id],
+      mapRecipientIds: null,
     })
     const status = await within(card).findByRole('status')
-    expect(status).toHaveTextContent('Run complete: Clear the realm.')
+    expect(status).toHaveTextContent('Clear the realm completed, and they’re the first to complete this realm.')
     expect(status).toHaveTextContent('Map handed to Friend.')
-    expect(status).toHaveTextContent('Wanderer already holds it.')
-    const objectives = screen.getByRole('region', { name: 'Objectives' })
-    expect(within(objectives).queryByRole('button', { name: /Pin an objective/ })).not.toBeInTheDocument()
+
+    // The form stays: another party can complete the realm later. The player list is collapsed under a toggle.
+    expect(within(card).getByRole('button', { name: 'Complete objective' })).toBeInTheDocument()
+    await user.click(await within(card).findByText(/Player completion \(2 players, 1 completion\)/))
+    const completers = within(card).getByRole('list', { name: 'Players who completed an objective' })
+    expect(within(completers).getAllByText('First to complete')).toHaveLength(2)
+    expect(within(card).getByRole('list', { name: 'Completion history' })).toHaveTextContent('Friend (got the map)')
+  })
+
+  it('can complete without handing out the map', async () => {
+    const api = fakeApi({
+      ...routes(),
+      'POST /api/realms/:id/completion': {
+        completionId: 'c1',
+        realmId: summary.id,
+        objective: realm.document.objectives![0],
+        completedAt: '2026-11-15T12:00:00Z',
+        isFirst: false,
+        mapId: 'map-1',
+        playerIds: [player.id],
+        mapGivenTo: [],
+        skipped: [],
+      },
+    })
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const card = await screen.findByRole('region', { name: 'Completion' })
+    await within(card).findByRole('checkbox', { name: /Wanderer/ })
+    await user.click(within(card).getByRole('checkbox', { name: 'Hand the map to players who don’t have it yet' }))
+    await user.click(within(card).getByRole('button', { name: 'Complete objective' }))
+
+    expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toMatchObject({ playerIds: [player.id], mapRecipientIds: [] })
+    expect(await within(card).findByRole('status')).toHaveTextContent('No one new received the map.')
+  })
+
+  it('opens the map details for the GM', async () => {
+    fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    await user.click(await screen.findByRole('button', { name: 'Map details' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Forest field + dungeon details' })
+    expect(await within(dialog).findByText('4× Wolf')).toBeInTheDocument()
+    expect(within(dialog).getByText('Map required')).toHaveAttribute('data-tip', expect.stringMatching(/only players holding this map/))
+    expect(within(dialog).getByText('Chest')).toBeInTheDocument()
+    expect(within(dialog).getByText('Field, C4')).toBeInTheDocument()
   })
 })

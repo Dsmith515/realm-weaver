@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { errorMessage } from '../api/client'
-import { useMapDetails, useSaveNotes } from '../api/queries'
-import type { DigestEntry, InventoryItem } from '../api/types'
+import { useSaveNotes } from '../api/queries'
+import type { InventoryItem } from '../api/types'
 import { label } from '../api/types'
 import { describe } from '../catalog/describe'
 import { Modal } from '../components/Modal'
+import { MapDetailsView } from '../maps/MapDetailsView'
 
 interface ItemModalProps {
   playerId: string
@@ -13,7 +13,7 @@ interface ItemModalProps {
   onClose: () => void
 }
 
-/** An owned item up close: a map's seed, recipe and contents, and the player's notes for any item. */
+/** An owned item up close: a map's seed, recipe and contents (the player's view), and the player's notes for any item. */
 export function ItemModal({ playerId, item, onClose }: ItemModalProps) {
   const { component } = item
   return (
@@ -24,7 +24,7 @@ export function ItemModal({ playerId, item, onClose }: ItemModalProps) {
         {component.type !== 'map' && ` · ${describe(component)}`}
       </p>
       {component.description && <p>{component.description}</p>}
-      {component.type === 'map' && <MapDetailsView mapId={component.id} />}
+      {component.type === 'map' && <MapDetailsView mapId={component.id} audience="player" />}
       <NotesForm key={component.id} playerId={playerId} item={item} />
       <div className="actions">
         <button type="button" className="button--quiet" onClick={onClose}>
@@ -32,89 +32,6 @@ export function ItemModal({ playerId, item, onClose }: ItemModalProps) {
         </button>
       </div>
     </Modal>
-  )
-}
-
-function MapDetailsView({ mapId }: { mapId: string }) {
-  const details = useMapDetails(mapId)
-  if (details.isPending) return <p className="muted">Loading the map…</p>
-  if (details.isError) return <p className="error-text">{errorMessage(details.error)}</p>
-
-  const { map, needle, thread, coating, originalRealm } = details.data
-  const recipe = map.map?.recipe
-  const digest = originalRealm?.digest
-  return (
-    <>
-      <dl className="facts">
-        <dt>Seed</dt>
-        <dd>{map.map?.seed}</dd>
-        <dt>Realm kind</dt>
-        <dd>{recipe ? `${label(recipe.kind)}${recipe.floorCount > 0 ? ` (${recipe.floorCount} floor${recipe.floorCount > 1 ? 's' : ''})` : ''}` : '—'}</dd>
-        <dt>Threat</dt>
-        <dd>{map.map?.threat ?? originalRealm?.threat ?? '—'}</dd>
-        <dt>Woven from</dt>
-        <dd>{[needle?.name, thread?.name, coating?.name].filter(Boolean).join(' · ') || '—'}</dd>
-        <dt>Rules</dt>
-        <dd>{mapRules(map.map?.flags)}</dd>
-      </dl>
-
-      {map.map?.objectives && map.map.objectives.length > 0 && (
-        <>
-          <h3>Objectives (complete any one)</h3>
-          <ul className="digest" aria-label="Recorded objectives">
-            {map.map.objectives.map((o) => (
-              <li key={o.key}>
-                {o.title} <span className="muted">{o.eventId ? `${o.eventName}, ${o.location}` : 'whole realm'}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {!originalRealm && <p className="muted">No realm has been opened from this map yet.</p>}
-      {digest && (
-        <>
-          <h3>Mobs</h3>
-          {digest.mobs.length === 0 ? (
-            <p className="muted">None.</p>
-          ) : (
-            <ul className="digest">
-              {digest.mobs.map((m) => (
-                <li key={m.archetypeId}>
-                  {m.count}× {m.name}
-                </li>
-              ))}
-            </ul>
-          )}
-          <DigestList title="Potential loot" entries={digest.loot} />
-          <DigestList title="Resource nodes" entries={digest.resourceNodes} />
-          <p>
-            <Link to={`/realms/${originalRealm.realmId}`}>Open the original realm</Link>
-          </p>
-        </>
-      )}
-    </>
-  )
-}
-
-function DigestList({ title, entries }: { title: string; entries: DigestEntry[] }) {
-  return (
-    <>
-      <h3>{title}</h3>
-      {entries.length === 0 ? (
-        <p className="muted">None.</p>
-      ) : (
-        <ul className="digest">
-          {entries.map((e) => (
-            <li key={`${e.areaName}-${e.id}`}>
-              {e.name} <span className="muted">
-                {e.areaName}, {e.location}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
   )
 }
 
@@ -145,13 +62,4 @@ function NotesForm({ playerId, item }: { playerId: string; item: InventoryItem }
       </div>
     </form>
   )
-}
-
-function mapRules(flags: { mapRequired: boolean; componentsMustMatch: boolean; unique: boolean } | null | undefined) {
-  const rules = [
-    flags?.mapRequired === false ? 'open to anyone with the components' : 'map required',
-    flags?.componentsMustMatch && 'no mirrors',
-    flags?.unique && 'unique, can’t be shared',
-  ].filter(Boolean)
-  return rules.join(' · ')
 }

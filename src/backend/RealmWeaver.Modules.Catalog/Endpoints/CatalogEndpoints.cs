@@ -16,7 +16,8 @@ internal static class CatalogEndpoints
     {
         var components = app.MapGroup("/api/components").WithTags("Components");
 
-        components.MapGet("/", SearchAsync).WithName("ListComponents");
+        components.MapGet("/", SearchAsync).WithName("ListComponents")
+            .WithDescription("A page of the catalog. sort=name|type|rarity|rank|assignable|created (default name) with desc=true to reverse; ties sort by name.");
         components.MapGet("/{id:guid}", GetAsync).WithName("GetComponent");
         components.MapGet("/name-suffixes", () => TypedResults.Ok(ComponentRules.NameSuffixes)).WithName("GetNameSuffixes")
             .WithDescription("The words a Needle, Thread or Coating name may end with.");
@@ -41,13 +42,16 @@ internal static class CatalogEndpoints
         bool? assignable = null,
         bool includeArchived = false,
         int page = 1,
-        int pageSize = 50)
+        int pageSize = 50,
+        string? sort = null,
+        bool desc = false)
     {
         // Enums arrive as camelCase strings (as in JSON bodies); minimal-API binding would be case-sensitive.
         var errors = new ValidationErrors();
         var typeFilter = ParseEnum<ComponentType>(type, "type", errors);
         var rarityFilter = ParseEnum<Rarity>(rarity, "rarity", errors);
         var biomeFilter = ParseEnum<Biome>(biome, "biome", errors);
+        var sortBy = ParseEnum<ComponentSort>(sort, "sort", errors) ?? ComponentSort.Name;
         errors.Require(page >= 1, "page", "Pages start at 1.");
         errors.Require(pageSize is >= 1 and <= CatalogService.MaxPageSize, "pageSize", $"Page size must be between 1 and {CatalogService.MaxPageSize}.");
         if (!errors.IsValid)
@@ -55,7 +59,7 @@ internal static class CatalogEndpoints
             return Problems.Validation(errors.ToDictionary());
         }
 
-        var query = new ComponentQuery(typeFilter, rarityFilter, biomeFilter, search, assignable, includeArchived, page, pageSize);
+        var query = new ComponentQuery(typeFilter, rarityFilter, biomeFilter, search, assignable, includeArchived, page, pageSize, sortBy, desc);
         return TypedResults.Ok(await catalog.SearchAsync(query, cancellationToken));
     }
 

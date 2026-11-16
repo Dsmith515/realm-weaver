@@ -45,7 +45,7 @@ public class ObjectiveEndpointTests(RealmWeaverApiFactory factory)
             .ReadJsonAsync<RealmSummaryDto>();
         Assert.Equal(choice.Key, pinned.PinnedObjective?.Key);
         Assert.Equal(choice.Key, (await GetRealmAsync(client, ritual.RealmId)).Summary.PinnedObjective?.Key);
-        Assert.Contains(await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}"), r => r.PinnedObjective?.Key == choice.Key);
+        Assert.Contains((await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?playerId={player.Id}")).Items, r => r.PinnedObjective?.Key == choice.Key);
 
         var mapAfter = await client.GetJsonAsync<ComponentDto>($"/api/components/{ritual.MapId}");
         Assert.Equal(mapBefore.Map!.Objectives!.Select(o => o.Key), mapAfter.Map!.Objectives!.Select(o => o.Key));

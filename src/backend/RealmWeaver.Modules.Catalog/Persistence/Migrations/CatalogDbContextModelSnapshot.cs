@@ -260,6 +260,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                                     b2.Property<string>("SettlementPopulation");
 
+                                    b2.Property<bool?>("SuggestStructures");
+
                                     b2.HasKey("MapDataComponentDefinitionId")
                                         .HasName("pk_component_definitions");
 

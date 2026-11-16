@@ -59,10 +59,12 @@ describe('Player page', () => {
     const dialog = screen.getByRole('dialog', { name: forestMap.name })
     expect(await within(dialog).findByText('18446744073709551000')).toBeInTheDocument()
     expect(within(dialog).getByText('Field + Dungeon (2 floors)')).toBeInTheDocument()
-    expect(within(dialog).getByText('5× Grey wolf')).toBeInTheDocument()
+    // A player sees what kinds of creatures and loot to expect, not how many or where.
+    expect(within(dialog).getByText('Grey wolf')).toBeInTheDocument()
+    expect(within(dialog).queryByText(/5×/)).not.toBeInTheDocument()
     expect(within(dialog).getByText('Hidden chest (rare)')).toBeInTheDocument()
     expect(within(dialog).getByText('Resource node')).toBeInTheDocument()
-    expect(within(dialog).getByRole('link', { name: 'Open the original realm' })).toHaveAttribute('href', '/realms/realm-1')
+    expect(within(dialog).queryByRole('link', { name: 'Open the original realm' })).not.toBeInTheDocument()
 
     await user.type(within(dialog).getByRole('textbox', { name: 'Your notes' }), 'Wolves by the river.')
     await user.click(within(dialog).getByRole('button', { name: 'Save notes' }))

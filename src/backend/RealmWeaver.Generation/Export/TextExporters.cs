@@ -161,6 +161,13 @@ public static class MarkdownExporter
                 }
             }
 
+            // Ideas only: not on the map or in the art prompt, so the GM can place them.
+            foreach (var e in area.Events.Where(e => e.SuggestedStructures.Count > 0))
+            {
+                Line(sb, $"");
+                Line(sb, $"Structure ideas for {e.Id} {e.Name} (not placed): {string.Join(", ", e.SuggestedStructures.Select(s => s.Name))}.");
+            }
+
             if (area.Rooms.Count > 0)
             {
                 Line(sb, $"");

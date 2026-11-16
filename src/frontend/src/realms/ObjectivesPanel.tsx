@@ -12,15 +12,13 @@ interface Props {
 }
 
 /**
- * The run's goals: completing any one completes it. Each event objective links to its event on the map.
- * A GM can pin any candidate objective; the pin lives on the realm, never on the map. The GM completes the run and hands
- * out the map on the Completion card.
+ * The realm's goals. Each event objective links to its event on the map. A GM can pin any candidate objective; the pin
+ * lives on the realm, never on the map. The GM records completions, as often as parties visit, on the Completion card.
  */
 export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
   const { summary, document } = realm
   const objectives = document.objectives ?? []
   const pinned = summary.pinnedObjective ?? undefined
-  const completion = summary.completion ?? undefined
   const [choosing, setChoosing] = useState(false)
   const pin = usePinObjective(summary.id)
 
@@ -28,7 +26,7 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
     <section className="objectives" aria-label="Objectives">
       <h2>Objectives</h2>
       {objectives.length > 0 ? (
-        <p className="muted">Complete any one to complete the run.</p>
+        <p className="muted">Any of these can be completed, by any party, as often as the realm is run.</p>
       ) : (
         <p className="muted">This realm was woven before objectives existed (generator {summary.generatorVersion}). A GM can still pin one.</p>
       )}
@@ -40,28 +38,23 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
         <div className="objectives__pinned">
           <span className="badge">GM pin</span>
           <ObjectiveButton objective={pinned} onShow={onShow} highlighted={highlighted} />
-          {!completion && (
-            <button type="button" className="button--quiet" onClick={() => pin.mutate(null)} disabled={pin.isPending}>
-              Unpin
-            </button>
-          )}
+          <button type="button" className="button--quiet" onClick={() => pin.mutate(null)} disabled={pin.isPending}>
+            Unpin
+          </button>
         </div>
       )}
 
       {objectives.length > 0 && (
         <ul className="objectives__list">
           {objectives.map((o) => (
-            <li
-              key={o.key}
-              className={[pinned?.key === o.key && 'objectives__item--pinned', completion?.objective?.key === o.key && 'objectives__item--done'].filter(Boolean).join(' ') || undefined}
-            >
+            <li key={o.key} className={pinned?.key === o.key ? 'objectives__item--pinned' : undefined}>
               <ObjectiveButton objective={o} onShow={onShow} highlighted={highlighted} />
             </li>
           ))}
         </ul>
       )}
 
-      {completion ? null : choosing ? (
+      {choosing ? (
         <PinChooser
           realmId={summary.id}
           current={pinned?.key}

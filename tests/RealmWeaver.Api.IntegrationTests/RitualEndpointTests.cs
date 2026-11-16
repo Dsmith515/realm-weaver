@@ -132,7 +132,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
             Assert.Equal([HttpStatusCode.Created, HttpStatusCode.Conflict], statuses);
             Assert.Equal("application/problem+json", responses.Single(r => r.StatusCode == HttpStatusCode.Conflict).Content.Headers.ContentType?.MediaType);
             Assert.False((await QuantitiesAsync(client, player.Id)).ContainsKey(lastThread.Id));
-            Assert.Single(await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}"));
+            Assert.Single((await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?playerId={player.Id}")).Items);
         }
     }
 
@@ -295,7 +295,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         Assert.NotEqual(original.AreasJson("events"), rerolled.AreasJson("events"));
         Assert.Equal(original.Summary.Threat + 1, rerolled.Summary.Threat);
         Assert.Equal(original.Summary.Biome, rerolled.Summary.Biome);
-        var mirror = (await client.GetJsonAsync<List<System.Text.Json.JsonElement>>($"/api/realms?playerId={player.Id}"))
+        var mirror = (await client.GetJsonAsync<System.Text.Json.JsonElement>($"/api/realms?playerId={player.Id}")).GetProperty("items").EnumerateArray()
             .ToDictionary(r => r.GetProperty("id").GetGuid(), r => r.GetProperty("isMirror").GetBoolean());
         Assert.False(mirror[first.RealmId]);
         Assert.True(mirror[mismatched.RealmId]);
@@ -370,7 +370,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
 
         Assert.Equal(before, await QuantitiesAsync(client, player.Id));
         Assert.Equal(mapsBefore, (await client.GetJsonAsync<PagedResult<ComponentDto>>("/api/components?type=map&pageSize=1")).TotalCount);
-        Assert.Empty(await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}"));
+        Assert.Empty((await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?playerId={player.Id}")).Items);
 
         // The key wasn't kept either: retrying it performs the ritual for real.
         var retry = await PerformAsync(client, SmallField(player.Id), key);
@@ -388,7 +388,7 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         public Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default) =>
             Task.FromResult<RealmDigestDto?>(null);
 
-        public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default) =>
+        public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, IReadOnlyList<CompletionPlayerDto> players, CancellationToken cancellationToken = default) =>
             Task.FromResult(new RealmCompletionResult(CompletionResult.NotFound));
     }
 }

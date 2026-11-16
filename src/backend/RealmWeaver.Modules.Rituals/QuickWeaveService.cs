@@ -199,7 +199,8 @@ internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule re
             request.Height,
             request.EventCount,
             request.Population,
-            request.IncludeStructures);
+            request.IncludeStructures,
+            request.SuggestStructures);
 
         RealmDocument document;
         try

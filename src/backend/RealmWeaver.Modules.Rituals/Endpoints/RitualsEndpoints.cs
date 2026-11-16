@@ -40,9 +40,10 @@ internal static class RitualsEndpoints
         // Completing a run spans Realms (the completion) and Inventory (the map), so Rituals orchestrates it.
         app.MapPost("/api/realms/{id:guid}/completion", CompleteAsync).WithTags("Realms").WithName("CompleteRun")
             .WithDescription(
-                "GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm's "
-                + "map to the chosen players in the same transaction. Players who can't receive it are listed with a reason. "
-                + "400: not one of the realm's objectives, or more than one recipient for a Unique map. 409: already completed.");
+                "GM: records that the given players completed one of the realm's objectives (any rolled one, or the pin), and hands the "
+                + "realm's map to the recipients who don't hold it, in the same transaction. Repeatable: any party can complete a realm again. "
+                + "400: no players, an unknown player or objective, recipients who aren't in the party, or more than one recipient for a Unique map. "
+                + "409: a Unique map was just given to someone else.");
 
         // GM tools. Like the admin catalog there's no access control yet: a TODO for when authentication arrives.
         var gm = app.MapGroup("/api/gm/weave").WithTags("GM");
@@ -60,13 +61,28 @@ internal static class RitualsEndpoints
     private static async Task<Results<Ok<RunCompletionDto>, ProblemHttpResult, ValidationProblem>> CompleteAsync(
         Guid id, [FromBody] CompleteRunInput input, RunCompletionService completion, CancellationToken cancellationToken)
     {
-        var normalized = input with { ObjectiveKey = string.IsNullOrWhiteSpace(input.ObjectiveKey) ? null : input.ObjectiveKey.Trim() };
+        // The body is non-nullable in C#, but JSON can still leave fields out.
+        var players = (input.PlayerIds ?? []).Distinct().ToList();
+        var recipients = input.MapRecipientIds?.Distinct().ToList();
+        var errors = new ValidationErrors();
+        errors.Require(!string.IsNullOrWhiteSpace(input.ObjectiveKey), "objectiveKey", "Choose the objective the players completed.");
+        errors.Require(players.Count > 0, "playerIds", "Choose the players who completed it.");
+        errors.Require(recipients is null || recipients.All(players.Contains), "mapRecipientIds", "Only players in the party can receive the map.");
+        if (!errors.IsValid)
+        {
+            return Problems.Validation(errors.ToDictionary());
+        }
+
+        var normalized = new CompleteRunInput(input.ObjectiveKey.Trim(), players, recipients);
         return await completion.CompleteAsync(id, normalized, cancellationToken) switch
         {
             CompletionOutcome.Completed done => TypedResults.Ok(done.Result),
             CompletionOutcome.UnknownObjective => Problems.Validation(new Dictionary<string, string[]> { ["objectiveKey"] = ["That isn't one of this realm's objectives."] }),
-            CompletionOutcome.TooManyForUnique => Problems.Validation(new Dictionary<string, string[]> { ["recipientPlayerIds"] = ["This map is Unique: hand it to one player only."] }),
-            CompletionOutcome.AlreadyCompleted => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This run is already complete."),
+            CompletionOutcome.UnknownPlayers unknown => Problems.Validation(new Dictionary<string, string[]>
+            {
+                ["playerIds"] = [$"No such player: {string.Join(", ", unknown.Ids)}."],
+            }),
+            CompletionOutcome.TooManyForUnique => Problems.Validation(new Dictionary<string, string[]> { ["mapRecipientIds"] = ["This map is Unique: hand it to one player only."] }),
             CompletionOutcome.Conflict => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This Unique map was just given to another player."),
             _ => Problems.NotFound("Realm", id),
         };

@@ -46,7 +46,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm's map to the chosen players in the same transaction. Players who can't receive it are listed with a reason. 400: not one of the realm's objectives, or more than one recipient for a Unique map. 409: already completed. */
+        /** @description GM: records that the given players completed one of the realm's objectives (any rolled one, or the pin), and hands the realm's map to the recipients who don't hold it, in the same transaction. Repeatable: any party can complete a realm again. 400: no players, an unknown player or objective, recipients who aren't in the party, or more than one recipient for a Unique map. 409: a Unique map was just given to someone else. */
         post: operations["CompleteRun"];
         delete?: never;
         options?: never;
@@ -77,6 +77,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description A page of the catalog. sort=name|type|rarity|rank|assignable|created (default name) with desc=true to reverse; ties sort by name. */
         get: operations["ListComponents"];
         put?: never;
         post: operations["CreateComponent"];
@@ -144,6 +145,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Players by name. search matches any part of the name (case-insensitive); limit caps the list (default and most 200). */
         get: operations["ListPlayers"];
         put?: never;
         /** @description Creates a player with the starter kit: the beginner needle, 2 threads ×3 and 2 coatings ×3. */
@@ -228,7 +230,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves. */
+        /** @description A page of realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves. */
         get: operations["ListRealms"];
         put?: never;
         post?: never;
@@ -246,6 +248,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GetRealm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/realms/{id}/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The completion history of the realm's map (every run woven from it), newest first, and every player who completed at least one objective there. */
+        get: operations["ListCompletions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -439,9 +458,26 @@ export interface components {
             /** Format: int32 */
             floorCount: number;
         };
+        CompleterDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int32 */
+            completions: number;
+            /** Format: date-time */
+            firstCompletedAt: string;
+            inFirstCompletion: boolean;
+        };
         CompleteRunInput: {
-            objectiveKey?: null | string;
-            recipientPlayerIds?: null | string[];
+            objectiveKey: string;
+            playerIds: string[];
+            mapRecipientIds?: null | string[];
+        };
+        CompletionPlayerDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            mapGiven: boolean;
         };
         ComponentDto: {
             /** Format: uuid */
@@ -550,6 +586,7 @@ export interface components {
             floorEventCount?: null | number;
             settlementPopulation?: null | components["schemas"]["SettlementPopulation"];
             includeStructures?: boolean;
+            suggestStructures?: boolean;
         };
         GridPoint: {
             /** Format: int32 */
@@ -654,6 +691,8 @@ export interface components {
             /** @default true */
             includeStructures: boolean;
             needleBaseType?: null | string;
+            /** @default false */
+            suggestStructures: boolean;
         };
         MobGroup: {
             archetypeId: string;
@@ -712,6 +751,7 @@ export interface components {
             notes?: null | string;
             population?: null | components["schemas"]["SettlementPopulation"];
             structures?: components["schemas"]["PlacedStructure"][];
+            suggestedStructures?: components["schemas"]["StructureSuggestion"][];
         };
         PlacedFeature: {
             id: string;
@@ -788,8 +828,10 @@ export interface components {
             /** Format: int32 */
             eventCount?: null | number;
             population?: null | components["schemas"]["SettlementPopulation"];
-            /** @default true */
+            /** @default false */
             includeStructures: boolean;
+            /** @default false */
+            suggestStructures: boolean;
         };
         QuickWeaveResultDto: {
             /** Format: uuid */
@@ -833,10 +875,19 @@ export interface components {
             floorNumber: number;
         };
         RealmCompletionDto: {
-            objective: null | components["schemas"]["RealmObjective"];
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            realmId: string;
+            objective: components["schemas"]["RealmObjective"];
             /** Format: date-time */
             completedAt: string;
-            mapGivenTo: string[];
+            players: components["schemas"]["CompletionPlayerDto"][];
+            isFirst: boolean;
+        };
+        RealmCompletionsDto: {
+            completions: components["schemas"]["RealmCompletionDto"][];
+            players: components["schemas"]["CompleterDto"][];
         };
         RealmComponentsDto: {
             mapName: string;
@@ -915,8 +966,21 @@ export interface components {
             areas: components["schemas"]["RealmAreaSummaryDto"][];
             components?: null | components["schemas"]["RealmComponentsDto"];
             pinnedObjective?: null | components["schemas"]["RealmObjective"];
-            completion?: null | components["schemas"]["RealmCompletionDto"];
+            /**
+             * Format: int32
+             * @default 0
+             */
+            completionCount: number;
             isMirror?: boolean;
+        };
+        RealmSummaryPage: {
+            items: components["schemas"]["RealmSummaryDto"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            totalCount: number;
         };
         RitualIssue: {
             slot: null | components["schemas"]["RitualSlot"];
@@ -1008,12 +1072,16 @@ export interface components {
         RoomStyle: "masonry" | "mine" | "cave";
         RunCompletionDto: {
             /** Format: uuid */
+            completionId: string;
+            /** Format: uuid */
             realmId: string;
-            objective: null | components["schemas"]["RealmObjective"];
+            objective: components["schemas"]["RealmObjective"];
             /** Format: date-time */
             completedAt: string;
+            isFirst: boolean;
             /** Format: uuid */
             mapId: string;
+            playerIds: string[];
             mapGivenTo: string[];
             skipped: components["schemas"]["MapHandOutSkip"][];
         };
@@ -1027,6 +1095,10 @@ export interface components {
         };
         /** @enum {unknown} */
         SlotSource: "selected" | "fromMap" | "matchingMap" | "knownRecipe" | "random";
+        StructureSuggestion: {
+            templateId: string;
+            name: string;
+        };
         ThreadDetails: {
             biome: components["schemas"]["Biome"];
             element: components["schemas"]["Element"];
@@ -1163,6 +1235,8 @@ export interface operations {
                 includeArchived?: boolean;
                 page?: number;
                 pageSize?: number;
+                sort?: string;
+                desc?: boolean;
             };
             header?: never;
             path?: never;
@@ -1366,7 +1440,10 @@ export interface operations {
     };
     ListPlayers: {
         parameters: {
-            query?: never;
+            query?: {
+                search?: string;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1380,6 +1457,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };
@@ -1594,7 +1680,8 @@ export interface operations {
             query?: {
                 playerId?: string;
                 mapId?: string;
-                limit?: number;
+                page?: number;
+                pageSize?: number;
                 gm?: boolean;
             };
             header?: never;
@@ -1609,7 +1696,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RealmSummaryDto"][];
+                    "application/json": components["schemas"]["RealmSummaryPage"];
                 };
             };
             /** @description Bad Request */
@@ -1641,6 +1728,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RealmDto"];
+                };
+            };
+        };
+    };
+    ListCompletions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmCompletionsDto"];
                 };
             };
         };

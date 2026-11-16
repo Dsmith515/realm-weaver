@@ -175,6 +175,25 @@ public class CatalogEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
+    public async Task The_catalog_sorts_by_a_column_with_enums_in_their_natural_order()
+    {
+        using var client = factory.CreateClient();
+        async Task<List<ComponentDto>> Sorted(string query) =>
+            [.. (await client.GetJsonAsync<PagedResult<ComponentDto>>($"/api/components?pageSize=200&{query}")).Items];
+
+        var byRarity = await Sorted("sort=rarity");
+        Assert.Equal(byRarity.OrderBy(c => c.Rarity).ThenBy(c => c.Name, StringComparer.Ordinal).Select(c => c.Rarity), byRarity.Select(c => c.Rarity));
+        var byTypeDesc = await Sorted("sort=type&desc=true");
+        Assert.Equal(ComponentType.Map, byTypeDesc[0].Type);
+        Assert.Equal(byTypeDesc.OrderByDescending(c => c.Type).Select(c => c.Type), byTypeDesc.Select(c => c.Type));
+        var byRank = await Sorted("sort=rank&desc=true");
+        Assert.Equal(byRank.Max(c => c.Rank), byRank[0].Rank);
+
+        var bad = await client.GetAsync(new Uri("/api/components?sort=colour", UriKind.Relative));
+        Assert.Contains("sort", (await bad.ReadJsonAsync<Problem>()).Errors!.Keys);
+    }
+
+    [Fact]
     public async Task Paging_returns_the_requested_slice_and_the_total()
     {
         using var client = factory.CreateClient();

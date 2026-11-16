@@ -54,7 +54,7 @@ public sealed record RealmSummaryDto(
     IReadOnlyList<RealmAreaSummaryDto> Areas,
     RealmComponentsDto? Components = null,
     RealmObjective? PinnedObjective = null,
-    RealmCompletionDto? Completion = null)
+    int CompletionCount = 0)
 {
     /// <summary>A mirror: a recorded map woven with different components. Same layout, rerolled encounters.</summary>
     public bool IsMirror => EncounterVariant != 0;
@@ -66,10 +66,29 @@ public sealed record RealmAreaSummaryDto(string Id, AreaKind Kind, string Name, 
 public sealed record RealmDto(RealmSummaryDto Summary, RealmDocument Document);
 
 /// <summary>
-/// A run the GM marked complete: the objective that completed it (optional, the GM may just close the run) and the
-/// players the GM handed the realm's map to at that moment (player ids from the Inventory module).
+/// The GM marking an objective complete for a group of players. A realm can be completed any number of times, by the
+/// same party or a new one, since every map can be visited again (ADR 0011). Completions belong to the realm's map, so
+/// every run woven from it shares one history; <see cref="IsFirst"/> marks the earliest.
 /// </summary>
-public sealed record RealmCompletionDto(RealmObjective? Objective, DateTimeOffset CompletedAt, IReadOnlyList<Guid> MapGivenTo);
+public sealed record RealmCompletionDto(
+    Guid Id,
+    Guid RealmId,
+    RealmObjective Objective,
+    DateTimeOffset CompletedAt,
+    IReadOnlyList<CompletionPlayerDto> Players,
+    bool IsFirst);
+
+/// <summary>
+/// A player in a completion, with their name as it was then (ADR 0006: Realms never calls Inventory) and whether the GM
+/// handed them the map at that moment.
+/// </summary>
+public sealed record CompletionPlayerDto(Guid Id, string Name, bool MapGiven);
+
+/// <summary>A player who completed at least one objective on this map, across every run woven from it.</summary>
+public sealed record CompleterDto(Guid Id, string Name, int Completions, DateTimeOffset FirstCompletedAt, bool InFirstCompletion);
+
+/// <summary>A map's completion history, newest first, and everyone who has completed something on it.</summary>
+public sealed record RealmCompletionsDto(IReadOnlyList<RealmCompletionDto> Completions, IReadOnlyList<CompleterDto> Players);
 
 public enum CompletionResult
 {
@@ -78,10 +97,12 @@ public enum CompletionResult
 
     /// <summary>The key isn't one of the realm's rolled objectives or its GM pin.</summary>
     UnknownObjective,
-    AlreadyCompleted,
 }
 
-public sealed record RealmCompletionResult(CompletionResult Result, RealmSummaryDto? Summary = null);
+public sealed record RealmCompletionResult(CompletionResult Result, RealmCompletionDto? Completion = null);
+
+/// <summary>A page of realm summaries.</summary>
+public sealed record RealmSummaryPage(IReadOnlyList<RealmSummaryDto> Items, int Page, int PageSize, int TotalCount);
 
 /// <summary>Body for a GM pinning an objective: the <see cref="RealmObjective.Key"/> of a rolled or candidate objective.</summary>
 public sealed record PinObjectiveInput(string Key);
@@ -95,10 +116,10 @@ public interface IRealmsModule
     Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Marks the run complete, optionally with one of its rolled objectives or its pin, and records who received the map.
-    /// Only the first completion counts, even when two race. Joins the caller's unit of work when one is running.
+    /// Records that <paramref name="players"/> completed one of the realm's rolled objectives (or its pin). Repeatable:
+    /// each call adds a completion. Joins the caller's unit of work when one is running.
     /// </summary>
-    Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default);
+    Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, IReadOnlyList<CompletionPlayerDto> players, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.

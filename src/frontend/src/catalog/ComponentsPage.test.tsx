@@ -154,6 +154,65 @@ describe('Components page', () => {
     )
   })
 
+  it('won’t create a clone identical to its template, and warns when it keeps the name', async () => {
+    fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: 'Clone Beastward Wax' }))
+    const form = screen.getByRole('form', { name: 'Clone Beastward Wax' })
+    expect(within(form).getByRole('button', { name: 'Create copy' })).toBeDisabled()
+    expect(within(form).getByText(/An identical clone would just be a duplicate/)).toBeInTheDocument()
+
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'Realm kind' }), 'dungeon')
+    expect(within(form).getByRole('button', { name: 'Create copy' })).toBeEnabled()
+    expect(within(form).getByText(/keeps the name Beastward Wax/)).toBeInTheDocument()
+
+    // Changing it back counts as no change again.
+    await user.selectOptions(within(form).getByRole('combobox', { name: 'Realm kind' }), 'field')
+    expect(within(form).getByRole('button', { name: 'Create copy' })).toBeDisabled()
+  })
+
+  it('sorts by a column header, flipping the order on a second click', async () => {
+    const api = fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    const rarity = await screen.findByRole('button', { name: /^Rarity/ })
+    await user.click(rarity)
+    await waitFor(() => expect(api.callsTo('GET', '/api/components').at(-1)!.query.get('sort')).toBe('rarity'))
+    expect(screen.getByRole('columnheader', { name: /Rarity/ })).toHaveAttribute('aria-sort', 'ascending')
+
+    await user.click(rarity)
+    await waitFor(() => expect(api.callsTo('GET', '/api/components').at(-1)!.query.get('desc')).toBe('true'))
+    expect(screen.getByRole('columnheader', { name: /Rarity/ })).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  it('opens a map’s details from its name, with the edit form on the other tab', async () => {
+    fakeApi(
+      routes({
+        'GET /api/components': { items: [forestMap], page: 1, pageSize: 25, totalCount: 1 },
+        'GET /api/maps/:id/details': {
+          map: forestMap,
+          needle: null,
+          thread: null,
+          coating: null,
+          originalRealm: { realmId: 'realm-1', threat: 2, digest: { mobs: [{ archetypeId: 'wolf', name: 'Grey wolf', count: 5 }], loot: [], resourceNodes: [] } },
+        },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/components')
+
+    await user.click(await screen.findByRole('button', { name: forestMap.name }))
+    const dialog = screen.getByRole('dialog', { name: `Edit ${forestMap.name}` })
+    expect(within(dialog).getByRole('tab', { name: 'Map details' })).toHaveAttribute('aria-selected', 'true')
+    expect(await within(dialog).findByText('5× Grey wolf')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('tab', { name: 'Edit' }))
+    expect(within(dialog).getByRole('form', { name: `Edit ${forestMap.name}` })).toBeInTheDocument()
+  })
+
   it('randomizes the new component form', async () => {
     fakeApi(routes())
     const user = userEvent.setup()
@@ -194,7 +253,9 @@ describe('Components page', () => {
 
     await user.click(await screen.findByRole('button', { name: `Edit ${forestMap.name}` }))
     const mapForm = screen.getByRole('form', { name: `Edit ${forestMap.name}` })
-    expect(within(mapForm).getByRole('checkbox', { name: /Map required/ })).toBeChecked()
+    // Maps are open unless the GM seals them (ADR 0010).
+    expect(within(mapForm).getByRole('checkbox', { name: /Map required/ })).not.toBeChecked()
+    await user.click(within(mapForm).getByRole('checkbox', { name: /Map required/ }))
     await user.click(within(mapForm).getByRole('checkbox', { name: /Components must match/ }))
     await user.click(within(mapForm).getByRole('checkbox', { name: /Unique/ }))
     await user.click(within(mapForm).getByRole('button', { name: 'Save' }))

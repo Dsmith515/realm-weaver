@@ -1,6 +1,6 @@
 # ADR 0010: GM first: open recipes and GM-run completion
 
-- **Status:** Accepted
+- **Status:** Accepted; completion made repeatable by ADR 0011
 - **Date:** 2026-11-15
 - **Supersedes:** the Cartographer gate in ADR 0008 and the *Map Required* default in ADR 0009
 

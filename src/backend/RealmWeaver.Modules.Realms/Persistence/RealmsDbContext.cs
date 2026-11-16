@@ -7,7 +7,7 @@ namespace RealmWeaver.Modules.Realms.Persistence;
 /// <summary>
 /// A generated realm. <see cref="Document"/> is the full <see cref="RealmDocument"/> as jsonb; the other columns
 /// are copies of a few of its values for listing without parsing. The document never changes; only the GM's
-/// <see cref="PinnedObjective"/> and the run's completion are set later.
+/// <see cref="PinnedObjective"/> is set later. Completions live in their own table.
 /// </summary>
 internal sealed class Realm
 {
@@ -69,15 +69,28 @@ internal sealed class Realm
     /// map, so it never changes the map's recipe or recorded objectives.
     /// </summary>
     public string? PinnedObjective { get; set; }
+}
 
-    /// <summary>When the run was completed. Null while it's in progress. Set once.</summary>
-    public DateTimeOffset? CompletedAt { get; set; }
+/// <summary>
+/// One time a group of players completed an objective on a realm (ADR 0011). Keyed by the map as well as the realm, so
+/// every run woven from the same map shares one history.
+/// </summary>
+internal sealed class Completion
+{
+    public Guid Id { get; set; }
 
-    /// <summary>The <see cref="RealmObjective"/> that completed the run, as jsonb.</summary>
-    public string? CompletedObjective { get; set; }
+    public Guid RealmId { get; set; }
 
-    /// <summary>The players the GM handed the map to on completion. Ids from the Inventory module, so no foreign key.</summary>
-    public List<Guid> MapGivenTo { get; set; } = [];
+    /// <summary>The realm's map. A plain id: maps live in the Catalog module.</summary>
+    public Guid MapComponentId { get; set; }
+
+    /// <summary>The <see cref="RealmObjective"/> completed, as jsonb.</summary>
+    public required string Objective { get; set; }
+
+    /// <summary>The players, as a jsonb array of <see cref="Contracts.CompletionPlayerDto"/>: ids from Inventory, names copied.</summary>
+    public required string Players { get; set; }
+
+    public DateTimeOffset CompletedAt { get; set; }
 }
 
 internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options) : DbContext(options)
@@ -85,6 +98,8 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
     public const string Schema = "realms";
 
     public DbSet<Realm> Realms => Set<Realm>();
+
+    public DbSet<Completion> Completions => Set<Completion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,14 +115,21 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.Areas).HasColumnType("jsonb");
             realm.Property(r => r.PinnedObjective).HasColumnType("jsonb");
             realm.Property(r => r.AttunedNeedle).HasColumnType("jsonb");
-            realm.Property(r => r.CompletedObjective).HasColumnType("jsonb");
-            realm.Property(r => r.MapGivenTo).HasDefaultValueSql("'{}'::uuid[]");
             realm.Property(r => r.MapName).HasMaxLength(100);
             realm.Property(r => r.NeedleName).HasMaxLength(100);
             realm.Property(r => r.ThreadName).HasMaxLength(100);
             realm.Property(r => r.CoatingName).HasMaxLength(100);
             realm.HasIndex(r => new { r.PlayerId, r.CreatedAt });
             realm.HasIndex(r => r.MapComponentId);
+        });
+
+        modelBuilder.Entity<Completion>(completion =>
+        {
+            completion.ToTable("completions");
+            completion.Property(c => c.Objective).HasColumnType("jsonb");
+            completion.Property(c => c.Players).HasColumnType("jsonb");
+            completion.HasOne<Realm>().WithMany().HasForeignKey(c => c.RealmId).OnDelete(DeleteBehavior.Cascade);
+            completion.HasIndex(c => new { c.MapComponentId, c.CompletedAt });
         });
     }
 }

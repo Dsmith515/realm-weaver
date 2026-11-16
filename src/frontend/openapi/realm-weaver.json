@@ -82,7 +82,7 @@
         "tags": [
           "Realms"
         ],
-        "description": "GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm\u0027s map to the chosen players in the same transaction. Players who can\u0027t receive it are listed with a reason. 400: not one of the realm\u0027s objectives, or more than one recipient for a Unique map. 409: already completed.",
+        "description": "GM: records that the given players completed one of the realm\u0027s objectives (any rolled one, or the pin), and hands the realm\u0027s map to the recipients who don\u0027t hold it, in the same transaction. Repeatable: any party can complete a realm again. 400: no players, an unknown player or objective, recipients who aren\u0027t in the party, or more than one recipient for a Unique map. 409: a Unique map was just given to someone else.",
         "operationId": "CompleteRun",
         "parameters": [
           {
@@ -165,6 +165,7 @@
         "tags": [
           "Components"
         ],
+        "description": "A page of the catalog. sort=name|type|rarity|rank|assignable|created (default name) with desc=true to reverse; ties sort by name.",
         "operationId": "ListComponents",
         "parameters": [
           {
@@ -226,6 +227,21 @@
               "type": "integer",
               "format": "int32",
               "default": 50
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "desc",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -469,7 +485,26 @@
         "tags": [
           "Players"
         ],
+        "description": "Players by name. search matches any part of the name (case-insensitive); limit caps the list (default and most 200).",
         "operationId": "ListPlayers",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 200
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -480,6 +515,16 @@
                   "items": {
                     "$ref": "#/components/schemas/PlayerDto"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -788,7 +833,7 @@
         "tags": [
           "Realms"
         ],
-        "description": "Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.",
+        "description": "A page of realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.",
         "operationId": "ListRealms",
         "parameters": [
           {
@@ -808,12 +853,21 @@
             }
           },
           {
-            "name": "limit",
+            "name": "page",
             "in": "query",
             "schema": {
               "type": "integer",
               "format": "int32",
-              "default": 50
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
             }
           },
           {
@@ -831,10 +885,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RealmSummaryDto"
-                  }
+                  "$ref": "#/components/schemas/RealmSummaryPage"
                 }
               }
             }
@@ -876,6 +927,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RealmDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realms/{id}/completions": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "The completion history of the realm\u0027s map (every run woven from it), newest first, and every player who completed at least one objective there.",
+        "operationId": "ListCompletions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmCompletionsDto"
                 }
               }
             }
@@ -1451,16 +1534,54 @@
           }
         }
       },
+      "CompleterDto": {
+        "required": [
+          "id",
+          "name",
+          "completions",
+          "firstCompletedAt",
+          "inFirstCompletion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "completions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstCompletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inFirstCompletion": {
+            "type": "boolean"
+          }
+        }
+      },
       "CompleteRunInput": {
+        "required": [
+          "objectiveKey",
+          "playerIds"
+        ],
         "type": "object",
         "properties": {
           "objectiveKey": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
-          "recipientPlayerIds": {
+          "playerIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "mapRecipientIds": {
             "type": [
               "null",
               "array"
@@ -1469,6 +1590,26 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "CompletionPlayerDto": {
+        "required": [
+          "id",
+          "name",
+          "mapGiven"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mapGiven": {
+            "type": "boolean"
           }
         }
       },
@@ -1924,6 +2065,9 @@
           },
           "includeStructures": {
             "type": "boolean"
+          },
+          "suggestStructures": {
+            "type": "boolean"
           }
         }
       },
@@ -2289,6 +2433,10 @@
               "null",
               "string"
             ]
+          },
+          "suggestStructures": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2538,6 +2686,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PlacedStructure"
+            }
+          },
+          "suggestedStructures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StructureSuggestion"
             }
           }
         }
@@ -2884,7 +3038,11 @@
           },
           "includeStructures": {
             "type": "boolean",
-            "default": true
+            "default": false
+          },
+          "suggestStructures": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -3037,31 +3195,58 @@
       },
       "RealmCompletionDto": {
         "required": [
+          "id",
+          "realmId",
           "objective",
           "completedAt",
-          "mapGivenTo"
+          "players",
+          "isFirst"
         ],
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "objective": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RealmObjective"
-              }
-            ]
+            "$ref": "#/components/schemas/RealmObjective"
           },
           "completedAt": {
             "type": "string",
             "format": "date-time"
           },
-          "mapGivenTo": {
+          "players": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/CompletionPlayerDto"
+            }
+          },
+          "isFirst": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RealmCompletionsDto": {
+        "required": [
+          "completions",
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "completions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RealmCompletionDto"
+            }
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompleterDto"
             }
           }
         }
@@ -3377,18 +3562,42 @@
               }
             ]
           },
-          "completion": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RealmCompletionDto"
-              }
-            ]
+          "completionCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           },
           "isMirror": {
             "type": "boolean"
+          }
+        }
+      },
+      "RealmSummaryPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RealmSummaryDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -3720,36 +3929,46 @@
       },
       "RunCompletionDto": {
         "required": [
+          "completionId",
           "realmId",
           "objective",
           "completedAt",
+          "isFirst",
           "mapId",
+          "playerIds",
           "mapGivenTo",
           "skipped"
         ],
         "type": "object",
         "properties": {
+          "completionId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "realmId": {
             "type": "string",
             "format": "uuid"
           },
           "objective": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RealmObjective"
-              }
-            ]
+            "$ref": "#/components/schemas/RealmObjective"
           },
           "completedAt": {
             "type": "string",
             "format": "date-time"
           },
+          "isFirst": {
+            "type": "boolean"
+          },
           "mapId": {
             "type": "string",
             "format": "uuid"
+          },
+          "playerIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
           "mapGivenTo": {
             "type": "array",
@@ -3804,6 +4023,21 @@
           "knownRecipe",
           "random"
         ]
+      },
+      "StructureSuggestion": {
+        "required": [
+          "templateId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       },
       "ThreadDetails": {
         "required": [

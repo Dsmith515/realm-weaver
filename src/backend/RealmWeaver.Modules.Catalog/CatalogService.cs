@@ -121,13 +121,11 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var pattern = $"%{EscapeLike(query.Search.Trim())}%";
-            components = components.Where(c => EF.Functions.ILike(c.Name, pattern) || EF.Functions.ILike(c.Description, pattern));
+            components = components.Where(c => EF.Functions.ILike(c.Name, pattern, @"\") || EF.Functions.ILike(c.Description, pattern, @"\"));
         }
 
         var total = await components.CountAsync(cancellationToken);
-        var items = await components
-            .OrderBy(c => c.Name)
-            .ThenBy(c => c.Id)
+        var items = await Sorted(components, query.Sort, query.Descending)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -135,6 +133,28 @@ internal sealed class CatalogService(CatalogDbContext db, TimeProvider clock) : 
         var usage = await UsageCountsAsync([.. items.Select(c => c.Id)], cancellationToken);
         return new PagedResult<ComponentDto>([.. items.Select(c => c.ToDto(usage.GetValueOrDefault(c.Id)))], page, pageSize, total);
     }
+
+    private static IOrderedQueryable<ComponentDefinition> Sorted(IQueryable<ComponentDefinition> components, ComponentSort sort, bool descending)
+    {
+        // Enums are stored as strings, so order them by their declared position rather than alphabetically.
+        IOrderedQueryable<ComponentDefinition> ordered = sort switch
+        {
+            ComponentSort.Type => By(components, c => c.Type == ComponentType.Needle ? 0 : c.Type == ComponentType.Thread ? 1 : c.Type == ComponentType.Coating ? 2 : 3, descending),
+            ComponentSort.Rarity => By(
+                components,
+                c => c.Rarity == Rarity.Common ? 0 : c.Rarity == Rarity.Uncommon ? 1 : c.Rarity == Rarity.Rare ? 2 : c.Rarity == Rarity.Epic ? 3 : 4,
+                descending),
+            ComponentSort.Rank => By(components, c => c.Rank, descending),
+            ComponentSort.Assignable => By(components, c => c.IsPlayerAssignable, descending),
+            ComponentSort.Created => By(components, c => c.CreatedAt, descending),
+            _ => By(components, c => c.Name, descending),
+        };
+        return sort == ComponentSort.Name ? ordered.ThenBy(c => c.Id) : ordered.ThenBy(c => c.Name).ThenBy(c => c.Id);
+    }
+
+    private static IOrderedQueryable<ComponentDefinition> By<TKey>(
+        IQueryable<ComponentDefinition> components, System.Linq.Expressions.Expression<Func<ComponentDefinition, TKey>> key, bool descending) =>
+        descending ? components.OrderByDescending(key) : components.OrderBy(key);
 
     /// <summary>The component with how many maps were woven from it, which decides whether its recipe fields are locked.</summary>
     public async Task<ComponentDto?> GetWithUsageAsync(Guid id, CancellationToken cancellationToken)
