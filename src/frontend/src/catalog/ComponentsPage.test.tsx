@@ -197,7 +197,7 @@ describe('Components page', () => {
           needle: null,
           thread: null,
           coating: null,
-          originalRealm: { realmId: 'realm-1', threat: 2, digest: { mobs: [{ archetypeId: 'wolf', name: 'Grey wolf', count: 5 }], loot: [], resourceNodes: [] } },
+          originalRealm: { realmId: 'realm-1', threat: 2, digest: { mobs: [{ archetypeId: 'wolf', name: 'Grey wolf', count: 5 }], loot: [], resourceNodes: [], settlements: [] } },
         },
       }),
     )
@@ -208,9 +208,14 @@ describe('Components page', () => {
     const dialog = screen.getByRole('dialog', { name: `Edit ${forestMap.name}` })
     expect(within(dialog).getByRole('tab', { name: 'Map details' })).toHaveAttribute('aria-selected', 'true')
     expect(await within(dialog).findByText('5× Grey wolf')).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Open the original realm' })).toHaveAttribute('href', '/realms/realm-1')
 
     await user.click(within(dialog).getByRole('tab', { name: 'Edit' }))
     expect(within(dialog).getByRole('form', { name: `Edit ${forestMap.name}` })).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('tab', { name: 'Map details' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('randomizes the new component form', async () => {

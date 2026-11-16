@@ -65,7 +65,7 @@ public static class PromptExporter
 
         foreach (var e in area.Events)
         {
-            var crowd = e.Population is { } level ? $" ({Describe(level)})" : "";
+            var crowd = e.Population is { } level ? $" ({Describe(level)}{(e.Wealth is { } w ? $", {Describe(w)}" : "")})" : "";
             Line(sb, $"- {e.Name.ToLowerInvariant()}{crowd} covering {e.Location}");
             foreach (var b in e.Structures)
             {
@@ -92,6 +92,15 @@ public static class PromptExporter
         SettlementPopulation.Modest => "lived in",
         SettlementPopulation.Bustling => "bustling",
         _ => "overcrowded and cramped",
+    };
+
+    private static string Describe(SettlementWealth wealth) => wealth switch
+    {
+        SettlementWealth.Destitute => "destitute, patched and bare",
+        SettlementWealth.Poor => "poor and plain",
+        SettlementWealth.Comfortable => "comfortable",
+        SettlementWealth.Prosperous => "prosperous and well kept",
+        _ => "opulent, with fine stonework and banners",
     };
 
     private static void Line(StringBuilder sb, FormattableString text) => sb.AppendLine(text.ToString(CultureInfo.InvariantCulture));
@@ -138,14 +147,14 @@ public static class MarkdownExporter
             }
 
             Line(sb, $"");
-            Line(sb, $"| Id | Event | Category | Location | Rooms | Population | Mobs | Templates |");
+            Line(sb, $"| Id | Event | Category | Location | Rooms | Population · wealth | Mobs | Templates |");
             Line(sb, $"|---|---|---|---|---|---|---|---|");
             foreach (var e in area.Events)
             {
                 var mobs = e.Mobs.Count == 0 ? "-" : string.Join(", ", e.Mobs.Select(m => $"{m.Count}x {m.Name} ({m.Role})"));
                 var templates = e.DifficultyTemplateIds.Count == 0 ? "-" : string.Join(", ", e.DifficultyTemplateIds);
                 var rooms = e.RoomIds.Count == 0 ? "-" : string.Join(", ", e.RoomIds);
-                var population = e.Population?.ToString() ?? "-";
+                var population = e.Population is { } p ? (e.Wealth is { } w ? $"{p} · {w}" : p.ToString()) : "-";
                 Line(sb, $"| {e.Id} | {e.Name} | {e.Category} | {e.Location} | {rooms} | {population} | {mobs} | {templates} |");
             }
 

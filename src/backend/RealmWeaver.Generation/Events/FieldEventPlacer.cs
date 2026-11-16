@@ -115,6 +115,7 @@ public sealed class FieldEventPlacer
     private PlacedEvent BuildEvent(int number, EventTemplate template, GridRect footprint, MobResolver mobs, SeededRandom rng, int firstStructure)
     {
         SettlementPopulation? population = null;
+        SettlementWealth? wealth = null;
         IReadOnlyList<PlacedStructure> structures = [];
         IReadOnlyList<StructureSuggestion> suggestions = [];
         IReadOnlyList<MobGroup> groups;
@@ -122,6 +123,7 @@ public sealed class FieldEventPlacer
         {
             var level = Settlements.RollPopulation(_request, rng.Fork("population"));
             population = level;
+            wealth = Settlements.RollWealth(level, _request, rng.Fork("wealth"));
             groups = mobs.ResolveSettlement(template, footprint.Area, level, rng);
             if (_request.IncludeStructures)
             {
@@ -148,6 +150,7 @@ public sealed class FieldEventPlacer
             DifficultyTemplateIds = groups.Count > 0 ? mobs.DifficultyTemplates(rng) : [],
             Notes = template.Description,
             Population = population,
+            Wealth = wealth,
             Structures = structures,
             SuggestedStructures = suggestions,
         };

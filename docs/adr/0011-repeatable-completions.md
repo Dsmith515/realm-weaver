@@ -24,12 +24,15 @@ The same round of feedback separated what a player sees on a map from what the G
 - **Player and GM views of a map.**
   - The player's view (inventory) shows kinds of creatures and loot without counts or locations, and objective titles without locations. Its rules show as tags (*Map required*, *Unique*, *No mirrors*) with an explanation on hover or focus. An open map shows no rules.
   - The GM's view (realm page, Components catalog) adds counts, locations, settlement settings and a link to the original realm.
+  - The GM's view lists each settlement with its population and wealth. How settlements were set up (a chosen or random population, structure options) isn't shown: it doesn't help at the table.
+  - From a realm page, the details link to another realm only for a mirror, and then to the realm it mirrors.
   - A GM who wants to remember where something is can note it on the component for now.
   - The views are filtered in the client. When sessions and logins arrive, the session client should get a player projection from the API instead (ADR 0010).
 - **Structures are off by default in Quick Weave.** Image generators add buildings without being asked, and a GM may prefer to place them by hand.
   - A new `SuggestStructures` option names structure ideas for each field settlement without placing them. It's recorded in the map recipe so a reweave rebuilds the same ideas.
   - Suggestions appear on the realm page and the placement sheet, never on the SVG or in the image prompt.
   - Rituals keep placing structures.
+- **Settlements have a wealth** (Destitute, Poor, Comfortable, Prosperous, Opulent), rolled from its own `wealth` stream so it never changes the mobs or structures. It leans richer as threat rises, and an abandoned settlement is at most Poor. The generator moves to 0.6.0. Wealth is flavour for now; loot could lean on it later.
 - **Lists that grow are server-paged and searchable.**
   - The catalog sorts by column (`sort`, `desc`), with type and rarity in their natural order.
   - The realm list is paged.

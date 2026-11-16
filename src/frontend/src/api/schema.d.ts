@@ -750,6 +750,7 @@ export interface components {
             roomIds?: string[];
             notes?: null | string;
             population?: null | components["schemas"]["SettlementPopulation"];
+            wealth?: null | components["schemas"]["SettlementWealth"];
             structures?: components["schemas"]["PlacedStructure"][];
             suggestedStructures?: components["schemas"]["StructureSuggestion"][];
         };
@@ -900,6 +901,7 @@ export interface components {
             mobs: components["schemas"]["MobTally"][];
             loot: components["schemas"]["DigestEntry"][];
             resourceNodes: components["schemas"]["DigestEntry"][];
+            settlements: components["schemas"]["SettlementEntry"][];
         };
         RealmDigestDto: {
             /** Format: uuid */
@@ -1085,8 +1087,18 @@ export interface components {
             mapGivenTo: string[];
             skipped: components["schemas"]["MapHandOutSkip"][];
         };
+        SettlementEntry: {
+            areaName: string;
+            id: string;
+            name: string;
+            location: string;
+            population: null | components["schemas"]["SettlementPopulation"];
+            wealth: null | components["schemas"]["SettlementWealth"];
+        };
         /** @enum {unknown} */
         SettlementPopulation: "abandoned" | "sparse" | "modest" | "bustling" | "overcrowded" | null;
+        /** @enum {unknown} */
+        SettlementWealth: "destitute" | "poor" | "comfortable" | "prosperous" | "opulent" | null;
         SlotPreview: {
             component: components["schemas"]["ComponentDto"];
             source: components["schemas"]["SlotSource"];

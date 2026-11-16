@@ -78,7 +78,9 @@ public class SettlementTests
         var events = realms.SelectMany(r => r.Areas.SelectMany(a => a.Events)).ToList();
 
         Assert.All(events.Where(e => e.Category == EventCategory.Settlement), e => Assert.NotNull(e.Population));
+        Assert.All(events.Where(e => e.Category == EventCategory.Settlement), e => Assert.NotNull(e.Wealth));
         Assert.All(events.Where(e => e.Category != EventCategory.Settlement), e => Assert.Null(e.Population));
+        Assert.All(events.Where(e => e.Category != EventCategory.Settlement), e => Assert.Null(e.Wealth));
         Assert.Contains(events, e => e.TemplateId == "underground-settlement");
     }
 
@@ -89,6 +91,29 @@ public class SettlementTests
 
         Assert.NotEmpty(settlements);
         Assert.All(settlements, e => Assert.Equal(SettlementPopulation.Bustling, e.Population));
+    }
+
+    [Fact]
+    public void Settlements_vary_in_wealth_and_abandoned_ones_are_at_best_poor()
+    {
+        var settlements = Settlements();
+        var abandoned = Settlements(SettlementPopulation.Abandoned);
+
+        Assert.True(settlements.Select(e => e.Wealth).Distinct().Count() >= 4);
+        Assert.All(abandoned, e => Assert.True(e.Wealth <= SettlementWealth.Poor));
+    }
+
+    [Fact]
+    public void The_digest_lists_every_settlement_with_its_population_and_wealth()
+    {
+        var realm = Enumerable.Range(1, 120)
+            .Select(i => RealmGenerator.Generate(Goblins((ulong)i * 104729)))
+            .First(r => r.Areas.SelectMany(a => a.Events).Count(e => e.Category == EventCategory.Settlement) > 1);
+        var expected = realm.Areas.SelectMany(a => a.Events).Where(e => e.Category == EventCategory.Settlement).ToList();
+
+        var digest = RealmDigest.From(realm);
+
+        Assert.Equal(expected.Select(e => (e.Id, e.Population, e.Wealth)), digest.Settlements.Select(s => (s.Id, s.Population, s.Wealth)));
     }
 
     [Fact]
@@ -199,7 +224,7 @@ public class SettlementTests
         var svg = SvgExporter.Render(realm, realm.Areas.Single().Id);
         var prompt = PromptExporter.Build(realm);
 
-        Assert.Contains("| Modest |", markdown, StringComparison.Ordinal);
+        Assert.Contains("| Modest · ", markdown, StringComparison.Ordinal);
         Assert.Contains($"| {structure.Id} | {structure.Name} |", markdown, StringComparison.Ordinal);
         Assert.Contains($"data-structure-id=\"{structure.Id}\"", svg, StringComparison.Ordinal);
         Assert.Contains($"{structure.Name.ToLowerInvariant()} at {structure.Location}", prompt, StringComparison.Ordinal);

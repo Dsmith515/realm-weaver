@@ -125,7 +125,14 @@ function RealmView({ realm }: { realm: Realm }) {
           Map details
         </button>
       </p>
-      {detailsOpen && <MapDetailsModal mapId={summary.mapComponentId} name={summary.components?.mapName ?? title(summary)} onClose={() => setDetailsOpen(false)} />}
+      {detailsOpen && (
+        <MapDetailsModal
+          mapId={summary.mapComponentId}
+          name={summary.components?.mapName ?? title(summary)}
+          fromRealm={{ id: summary.id, isMirror: !!summary.isMirror }}
+          onClose={() => setDetailsOpen(false)}
+        />
+      )}
       <p className="muted">
         {label(summary.kind)} · Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}
@@ -244,7 +251,7 @@ function placementsOf(area: RealmArea): Placement[] {
     : []
   const events: Placement[] = area.events.map((e) => {
     const mobs = e.mobs && e.mobs.length > 0 ? e.mobs.map((m) => `${m.count}× ${m.name}`).join(', ') : undefined
-    const detail = [e.population ? label(e.population) : undefined, mobs].filter(Boolean).join(' · ')
+    const detail = [e.population ? label(e.population) : undefined, e.wealth ? label(e.wealth) : undefined, mobs].filter(Boolean).join(' · ')
     return {
       id: e.id,
       name: e.name,

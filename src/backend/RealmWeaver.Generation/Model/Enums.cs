@@ -45,6 +45,16 @@ public enum SettlementPopulation
     Overcrowded,
 }
 
+/// <summary>How well off a settlement is: a hint for what its people own, trade and guard.</summary>
+public enum SettlementWealth
+{
+    Destitute,
+    Poor,
+    Comfortable,
+    Prosperous,
+    Opulent,
+}
+
 public enum AreaKind
 {
     Field,
