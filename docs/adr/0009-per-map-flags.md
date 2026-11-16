@@ -1,6 +1,6 @@
 # ADR 0009: Per-map flags are rules on the Map, enforced where they bite
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0010](0010-gm-first.md)
 - **Date:** 2026-11-15
 
 ## Context

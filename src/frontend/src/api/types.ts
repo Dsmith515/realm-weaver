@@ -22,7 +22,8 @@ export type Realm = Schemas['RealmDto']
 export type RealmArea = Schemas['RealmArea']
 export type RealmObjective = Schemas['RealmObjective']
 export type NeedleBoon = NonNullable<Schemas['NeedleBoon']>
-export type PlayerSkill = Schemas['PlayerSkill']
+export type CompleteRunInput = Schemas['CompleteRunInput']
+export type RunCompletion = Schemas['RunCompletionDto']
 
 // Runtime lists of the API's enums. `satisfies` plus the exhaustiveness checks below make the compiler
 // fail if the backend adds a value the frontend doesn't list.
@@ -46,7 +47,7 @@ export const enumListsAreComplete: [
 ] = [true, true, true, true, true, true, true]
 
 const boonLabels: Record<NeedleBoon, string> = {
-  cartographer: 'Cartographer status',
+  cartographer: 'Cartographer (no effect until sessions)',
   friendlyNpcs: 'Neutral NPCs start friendly',
   partyDirection: 'Party direction',
   trapSense: 'Trap sense',

@@ -123,6 +123,12 @@ function Ritual({ playerId }: { playerId: string }) {
               You own a map made with these components, so this ritual reopens <strong>{p.map.component.name}</strong>.
             </div>
           )}
+          {p && !p.isMismatch && p.map?.source === 'knownRecipe' && p.canPerform && (
+            <div className="banner" role="status">
+              These ingredients were woven before, so this ritual reopens <strong>{p.map.component.name}</strong>. You don&apos;t
+              need its map.
+            </div>
+          )}
           {notice && (
             <div className="banner banner--warn" role="status">
               {notice}
@@ -167,7 +173,7 @@ function Ritual({ playerId }: { playerId: string }) {
             <button type="button" className="button--quiet" onClick={() => update({})}>
               Clear all
             </button>
-            {p && <span className="muted">{p.createsNewMap ? 'Creates a new map.' : 'Reuses a map you own.'}</span>}
+            {p && <span className="muted">{p.createsNewMap ? 'Creates a new map.' : p.map?.source === 'knownRecipe' ? 'Reopens a known realm.' : 'Reuses a map you own.'}</span>}
           </div>
 
           {perform.isError && (
@@ -179,8 +185,8 @@ function Ritual({ playerId }: { playerId: string }) {
           {result && (
             <div className="banner banner--ok" role="status">
               <strong>The portal opens.</strong> {result.mapCreated
-                ? 'A new realm was charted. Complete one of its objectives as a Cartographer to record the map.'
-                : 'You reopened a map you own.'}
+                ? 'A new realm was woven. The GM can complete it and hand out its map.'
+                : 'You reopened a realm woven before.'}
               {result.isMismatch && ` Danger +${result.dangerModifier}.`} <Link to={`/realms/${result.realmId}`}>View the realm</Link>
             </div>
           )}

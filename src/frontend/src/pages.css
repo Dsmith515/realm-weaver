@@ -877,3 +877,23 @@ textarea {
   background: var(--ok-bg);
   color: var(--ok);
 }
+
+.complete-realm {
+  margin-bottom: 1rem;
+}
+
+.complete-realm h2 {
+  margin-top: 0;
+}
+
+.complete-realm__players {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 32rem;
+}
+
+.complete-realm .banner {
+  margin: 0;
+}

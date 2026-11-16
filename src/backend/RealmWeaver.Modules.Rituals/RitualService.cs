@@ -54,7 +54,7 @@ internal sealed class RitualService(
         }
 
         var preview = resolution.Preview;
-        if (preview.Issues.Any(i => i.Code != RitualResolver.NotOwned))
+        if (preview.Issues.Any(i => i.Code is not (RitualResolver.NotOwned or RitualResolver.MapRequired)))
         {
             return new PerformOutcome.Invalid(preview.Issues);
         }

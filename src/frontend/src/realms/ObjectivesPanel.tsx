@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { errorMessage } from '../api/client'
-import { useCompleteRun, useObjectiveCandidates, usePinObjective } from '../api/queries'
+import { useObjectiveCandidates, usePinObjective } from '../api/queries'
 import type { Realm, RealmObjective } from '../api/types'
 
 interface Props {
@@ -13,8 +13,8 @@ interface Props {
 
 /**
  * The run's goals: completing any one completes it. Each event objective links to its event on the map.
- * A GM can pin any candidate objective; the pin lives on the realm, never on the map. Completing the run records the map
- * into the weaver's inventory when they're a Cartographer.
+ * A GM can pin any candidate objective; the pin lives on the realm, never on the map. The GM completes the run and hands
+ * out the map on the Completion card.
  */
 export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
   const { summary, document } = realm
@@ -23,14 +23,6 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
   const completion = summary.completion ?? undefined
   const [choosing, setChoosing] = useState(false)
   const pin = usePinObjective(summary.id)
-  const complete = useCompleteRun(summary.id)
-  const canComplete = !completion && !complete.isPending
-  const completeButton = (o: RealmObjective) =>
-    canComplete && (
-      <button type="button" className="button--quiet" onClick={() => complete.mutate(o.key)} aria-label={`Complete: ${o.title}`}>
-        Complete
-      </button>
-    )
 
   return (
     <section className="objectives" aria-label="Objectives">
@@ -44,20 +36,10 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
         <p className="objectives__mirror">This is a mirror, so its objectives were rolled for this weave and may differ from the recorded map's.</p>
       )}
 
-      {completion && (
-        <p className="banner banner--ok" role="status">
-          <strong>Run complete:</strong> {completion.objective.title}.{' '}
-          {completion.mapRecorded
-            ? 'A Cartographer recorded the map into the weaver’s inventory.'
-            : reasonText(complete.data?.mapNotRecordedReason ?? undefined)}
-        </p>
-      )}
-
       {pinned && (
         <div className="objectives__pinned">
           <span className="badge">GM pin</span>
           <ObjectiveButton objective={pinned} onShow={onShow} highlighted={highlighted} />
-          {completeButton(pinned)}
           {!completion && (
             <button type="button" className="button--quiet" onClick={() => pin.mutate(null)} disabled={pin.isPending}>
               Unpin
@@ -71,10 +53,9 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
           {objectives.map((o) => (
             <li
               key={o.key}
-              className={[pinned?.key === o.key && 'objectives__item--pinned', completion?.objective.key === o.key && 'objectives__item--done'].filter(Boolean).join(' ') || undefined}
+              className={[pinned?.key === o.key && 'objectives__item--pinned', completion?.objective?.key === o.key && 'objectives__item--done'].filter(Boolean).join(' ') || undefined}
             >
               <ObjectiveButton objective={o} onShow={onShow} highlighted={highlighted} />
-              {completeButton(o)}
             </li>
           ))}
         </ul>
@@ -94,7 +75,6 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
         </button>
       )}
       {pin.isError && <p className="error-text">{errorMessage(pin.error)}</p>}
-      {complete.isError && <p className="error-text">{errorMessage(complete.error)}</p>}
     </section>
   )
 }
@@ -153,20 +133,6 @@ function PinChooser({ realmId, current, busy, onPin, onCancel }: { realmId: stri
       </div>
     </form>
   )
-}
-
-/** Why completing the run didn't record a map. Without the reason (a reload), a neutral line. */
-function reasonText(reason: string | undefined) {
-  switch (reason) {
-    case 'not-cartographer':
-      return 'No map was recorded: the weaver isn’t a Cartographer. Train the skill or attune a needle with that boon next time.'
-    case 'already-held':
-      return 'The weaver already holds this map.'
-    case 'gm-realm':
-      return 'A GM Quick Weave has no weaver to record the map for; assign the map from the Components page.'
-    default:
-      return 'No new map was recorded.'
-  }
 }
 
 function whereOf(o: RealmObjective) {

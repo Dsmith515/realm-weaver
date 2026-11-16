@@ -166,7 +166,7 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
 
                             b1.Property<int>("Height");
 
-                            b1.Property<bool?>("MapRequired");
+                            b1.Property<bool>("MapRequired");
 
                             b1.Property<Guid>("NeedleId");
 

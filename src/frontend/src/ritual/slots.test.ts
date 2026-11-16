@@ -69,6 +69,7 @@ describe('random fill', () => {
   it('labels where a slot was filled from', () => {
     expect(sourceLabel('fromMap')).toBe('From map')
     expect(sourceLabel('matchingMap')).toBe('Matching map')
+    expect(sourceLabel('knownRecipe')).toBe('Known recipe')
     expect(sourceLabel('random')).toBe('Random')
     expect(sourceLabel('selected')).toBeUndefined()
   })

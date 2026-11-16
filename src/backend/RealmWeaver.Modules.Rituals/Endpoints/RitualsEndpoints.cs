@@ -40,9 +40,9 @@ internal static class RitualsEndpoints
         // Completing a run spans Realms (the completion) and Inventory (the map), so Rituals orchestrates it.
         app.MapPost("/api/realms/{id:guid}/completion", CompleteAsync).WithTags("Realms").WithName("CompleteRun")
             .WithDescription(
-                "Marks the run complete with one of its objectives (any rolled one, or the GM's pin). When the weaver is a Cartographer "
-                + "the realm's map is recorded into their inventory in the same transaction. 400: not one of the realm's objectives. "
-                + "409: already completed.");
+                "GM: marks the run complete, optionally with one of its objectives (any rolled one, or the pin), and hands the realm's "
+                + "map to the chosen players in the same transaction. Players who can't receive it are listed with a reason. "
+                + "400: not one of the realm's objectives, or more than one recipient for a Unique map. 409: already completed.");
 
         // GM tools. Like the admin catalog there's no access control yet: a TODO for when authentication arrives.
         var gm = app.MapGroup("/api/gm/weave").WithTags("GM");
@@ -60,16 +60,14 @@ internal static class RitualsEndpoints
     private static async Task<Results<Ok<RunCompletionDto>, ProblemHttpResult, ValidationProblem>> CompleteAsync(
         Guid id, [FromBody] CompleteRunInput input, RunCompletionService completion, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(input.ObjectiveKey))
-        {
-            return Problems.Validation(new Dictionary<string, string[]> { ["objectiveKey"] = ["Choose the objective that was completed."] });
-        }
-
-        return await completion.CompleteAsync(id, input.ObjectiveKey, cancellationToken) switch
+        var normalized = input with { ObjectiveKey = string.IsNullOrWhiteSpace(input.ObjectiveKey) ? null : input.ObjectiveKey.Trim() };
+        return await completion.CompleteAsync(id, normalized, cancellationToken) switch
         {
             CompletionOutcome.Completed done => TypedResults.Ok(done.Result),
             CompletionOutcome.UnknownObjective => Problems.Validation(new Dictionary<string, string[]> { ["objectiveKey"] = ["That isn't one of this realm's objectives."] }),
+            CompletionOutcome.TooManyForUnique => Problems.Validation(new Dictionary<string, string[]> { ["recipientPlayerIds"] = ["This map is Unique: hand it to one player only."] }),
             CompletionOutcome.AlreadyCompleted => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This run is already complete."),
+            CompletionOutcome.Conflict => TypedResults.Problem(statusCode: StatusCodes.Status409Conflict, title: "This Unique map was just given to another player."),
             _ => Problems.NotFound("Realm", id),
         };
     }

@@ -66,10 +66,10 @@ public sealed record RealmAreaSummaryDto(string Id, AreaKind Kind, string Name, 
 public sealed record RealmDto(RealmSummaryDto Summary, RealmDocument Document);
 
 /// <summary>
-/// A completed run: the objective that completed it, and whether a Cartographer recorded the map into the weaver's
-/// inventory as a result.
+/// A run the GM marked complete: the objective that completed it (optional, the GM may just close the run) and the
+/// players the GM handed the realm's map to at that moment (player ids from the Inventory module).
 /// </summary>
-public sealed record RealmCompletionDto(RealmObjective Objective, DateTimeOffset CompletedAt, bool MapRecorded);
+public sealed record RealmCompletionDto(RealmObjective? Objective, DateTimeOffset CompletedAt, IReadOnlyList<Guid> MapGivenTo);
 
 public enum CompletionResult
 {
@@ -95,10 +95,10 @@ public interface IRealmsModule
     Task<RealmSummaryDto?> GetSummaryAsync(Guid realmId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Marks the run complete with one of its rolled objectives or its pin. Only the first completion counts, even when
-    /// two race. Joins the caller's unit of work when one is running.
+    /// Marks the run complete, optionally with one of its rolled objectives or its pin, and records who received the map.
+    /// Only the first completion counts, even when two race. Joins the caller's unit of work when one is running.
     /// </summary>
-    Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default);
+    Task<RealmCompletionResult> CompleteAsync(Guid realmId, string? objectiveKey, IReadOnlyList<Guid> mapGivenTo, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.

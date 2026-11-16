@@ -317,28 +317,38 @@ describe('Realm pages', () => {
     expect(within(objectives).getByText(/woven before objectives existed/)).toBeInTheDocument()
   })
 
-  it('completes the run with an objective and says whether the map was recorded', async () => {
+  it('lets the GM complete the run and hand the map to chosen players', async () => {
     let current: Realm = realm
     const objective = realm.document.objectives![1]
+    const friend = { ...player, id: 'p2', name: 'Friend' }
     const api = fakeApi({
       ...routes(),
+      'GET /api/players': [player, friend],
       'GET /api/realms/:id': () => current,
       'POST /api/realms/:id/completion': () => {
-        current = { ...realm, summary: { ...summary, completion: { objective, completedAt: '2026-11-15T12:00:00Z', mapRecorded: false } } }
-        return { realmId: summary.id, objective, completedAt: '2026-11-15T12:00:00Z', mapRecorded: false, mapId: 'map-1', mapNotRecordedReason: 'not-cartographer' }
+        current = { ...realm, summary: { ...summary, completion: { objective, completedAt: '2026-11-15T12:00:00Z', mapGivenTo: [friend.id] } } }
+        return { realmId: summary.id, objective, completedAt: '2026-11-15T12:00:00Z', mapId: 'map-1', mapGivenTo: [friend.id], skipped: [{ playerId: player.id, reason: 'already-held' }] }
       },
     })
     const user = userEvent.setup()
     renderApp('/realms/realm-1')
 
-    const objectives = await screen.findByRole('region', { name: 'Objectives' })
-    await user.click(within(objectives).getByRole('button', { name: 'Complete: Clear the realm' }))
+    const card = await screen.findByRole('region', { name: 'Completion' })
+    // The weaver is ticked by default; the GM adds a friend too.
+    expect(await within(card).findByRole('checkbox', { name: /Wanderer/ })).toBeChecked()
+    await user.click(within(card).getByRole('checkbox', { name: 'Friend' }))
+    await user.selectOptions(within(card).getByLabelText('Objective completed'), 'realm/clear-the-realm')
+    await user.click(within(card).getByRole('button', { name: 'Complete and hand out the map' }))
 
-    expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toEqual({ objectiveKey: 'realm/clear-the-realm' })
-    const status = await within(objectives).findByRole('status')
+    expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toEqual({
+      objectiveKey: 'realm/clear-the-realm',
+      recipientPlayerIds: [player.id, friend.id],
+    })
+    const status = await within(card).findByRole('status')
     expect(status).toHaveTextContent('Run complete: Clear the realm.')
-    expect(status).toHaveTextContent('isn’t a Cartographer')
-    expect(within(objectives).queryByRole('button', { name: /^Complete:/ })).not.toBeInTheDocument()
+    expect(status).toHaveTextContent('Map handed to Friend.')
+    expect(status).toHaveTextContent('Wanderer already holds it.')
+    const objectives = screen.getByRole('region', { name: 'Objectives' })
     expect(within(objectives).queryByRole('button', { name: /Pin an objective/ })).not.toBeInTheDocument()
   })
 })

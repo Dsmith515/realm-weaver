@@ -82,6 +82,26 @@ describe('Ritual page', () => {
     expect(screen.getByText('Reuses a map you own.')).toBeInTheDocument()
   })
 
+  it('reopens a realm woven before with the same ingredients, without the map', async () => {
+    fakeApi(
+      routes({
+        'POST /api/rituals/preview': preview({
+          needle: slot(needle),
+          thread: slot(moss),
+          coating: slot(wax),
+          map: slot(forestMap, 'knownRecipe', 0),
+          createsNewMap: false,
+        }),
+      }),
+    )
+    renderApp('/ritual')
+
+    expect(await within(await slotRegion('Map')).findByText('Known recipe')).toBeInTheDocument()
+    expect(screen.getByText(/These ingredients were woven before/)).toHaveTextContent(`this ritual reopens ${forestMap.name}`)
+    expect(screen.getByText('Reopens a known realm.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Perform ritual' })).toBeEnabled()
+  })
+
   it('lists what stops the ritual and disables Perform', async () => {
     fakeApi(
       routes({

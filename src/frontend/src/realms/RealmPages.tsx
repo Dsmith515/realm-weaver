@@ -5,6 +5,7 @@ import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { boonLabel, label, tileLabel } from '../api/types'
 import { usePlayerSelection } from '../player/playerContext'
+import { CompleteRealmCard } from './CompleteRealmCard'
 import { ObjectivesPanel } from './ObjectivesPanel'
 import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
@@ -117,6 +118,7 @@ function RealmView({ realm }: { realm: Realm }) {
           setHighlight(objective.eventId)
         }}
       />
+      <CompleteRealmCard key={summary.id} realm={realm} />
 
       {summary.areas.length > 1 && (
         <div role="tablist" aria-label="Areas" className="tabs">

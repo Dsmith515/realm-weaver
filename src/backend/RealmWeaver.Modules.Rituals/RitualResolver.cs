@@ -12,8 +12,9 @@ namespace RealmWeaver.Modules.Rituals;
 /// <list type="number">
 /// <item>A chosen Map fills empty Needle/Thread/Coating slots. A different component in a slot is a mismatch; a needle
 /// matches by base type, so any Beginner's Needle fits a map woven with one.</item>
-/// <item>With a Needle, Thread and Coating and no Map, an owned Map made with exactly those three (the needle by base type)
-/// fills the Map slot.</item>
+/// <item>With a Needle, Thread and Coating and no Map, a Map made with exactly those three (the needle by base type)
+/// fills the Map slot: one the player owns, otherwise the oldest in the catalog, so the same ingredients reopen the same
+/// realm. A sealed map (Map Required) only opens for a holder. Advanced size options skip this and weave a custom realm.</item>
 /// <item>Randomize fills empty non-map slots from the player's items (consumables need quantity 1+), then rule 2.</item>
 /// </list>
 /// </summary>
@@ -25,6 +26,7 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
     public const string NotOwned = "not-owned";
     public const string InvalidOption = "invalid-option";
     public const string MirrorNotAllowed = "mirror-not-allowed";
+    public const string MapRequired = "map-required";
 
     /// <summary>Returns null when the player doesn't exist.</summary>
     public async Task<RitualResolution?> ResolveAsync(RitualSelection selection, bool randomize, CancellationToken cancellationToken)
@@ -68,18 +70,34 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
             coating ??= RandomOwned(ComponentType.Coating);
         }
 
-        // Rule 2: an owned map made with exactly these three fills the map slot.
-        if (map is null && selection.MapId is null && needle is not null && thread is not null && coating is not null)
+        // Rule 2: a map made with exactly these three fills the map slot. An owned one first, then the catalog's.
+        var advancedUsed = selection.Width is not null || selection.Height is not null || selection.EventCount is not null;
+        if (map is null && selection.MapId is null && !advancedUsed && needle is not null && thread is not null && coating is not null)
         {
-            var matching = owned
-                .Where(i => i.Component.Map is { } m
-                            && m.ThreadId == thread.Component.Id && m.CoatingId == coating.Component.Id
-                            && (m.Recipe?.NeedleBaseType is { } baseType ? needle.Component.Needle?.BaseType == baseType : m.NeedleId == needle.Component.Id))
+            var owns = owned
+                .Where(i => i.Component.Map is { } m && m.ThreadId == thread.Component.Id && m.CoatingId == coating.Component.Id && WovenWith(m, needle.Component))
                 .OrderByDescending(i => i.AcquiredAt)
                 .FirstOrDefault();
-            if (matching is not null)
+            if (owns is not null)
             {
-                map = new SlotPreview(matching.Component, SlotSource.MatchingMap, matching.Quantity);
+                map = new SlotPreview(owns.Component, SlotSource.MatchingMap, owns.Quantity);
+            }
+            else
+            {
+                var woven = (await catalog.FindMapsByRecipeAsync(thread.Component.Id, coating.Component.Id, cancellationToken))
+                    .FirstOrDefault(c => WovenWith(c.Map!, needle.Component));
+                if (woven is not null)
+                {
+                    map = new SlotPreview(woven, SlotSource.KnownRecipe, 0);
+                    if (woven.Map!.Flags is { MapRequired: true })
+                    {
+                        issues.Add(new RitualIssue(RitualSlot.Map, FieldOf(RitualSlot.Map), MapRequired, $"These ingredients open {woven.Name}, which is sealed: you need its map."));
+                    }
+                }
+            }
+
+            if (map is not null)
+            {
                 mapThread = thread.Component;
                 mapCoating = coating.Component;
             }
@@ -90,8 +108,8 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         RequireFilled(RitualSlot.Coating, coating);
         foreach (var (slot, filled) in new[] { (RitualSlot.Needle, needle), (RitualSlot.Thread, thread), (RitualSlot.Coating, coating), (RitualSlot.Map, map) })
         {
-            // A map with Map Required off opens for anyone holding the components.
-            if (filled is { OwnedQuantity: < 1 } && !(slot == RitualSlot.Map && filled.Component.Map?.Flags is { MapRequired: false }))
+            // A map with Map Required off opens for anyone holding the components; a sealed known recipe is flagged above.
+            if (filled is { OwnedQuantity: < 1 } && !(slot == RitualSlot.Map && (filled.Source == SlotSource.KnownRecipe || filled.Component.Map?.Flags is { MapRequired: false })))
             {
                 var what = filled.Component.IsConsumable ? "any" : "this";
                 issues.Add(new RitualIssue(slot, FieldOf(slot), NotOwned, $"You don't have {what} {filled.Component.Name}."));
@@ -101,7 +119,6 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         // The realm's layout (shape, size, biome) comes from the map when there is one.
         var layoutThread = map is null ? thread?.Component : mapThread;
         var layoutCoating = map is null ? coating?.Component : mapCoating;
-        var advancedUsed = selection.Width is not null || selection.Height is not null || selection.EventCount is not null;
         if (map is null)
         {
             CheckAdvanced(selection, layoutCoating);
@@ -238,6 +255,10 @@ internal sealed class RitualResolver(ICatalogModule catalog, IInventoryModule in
         var expected = slot == RitualSlot.Needle ? recipe?.NeedleBaseType ?? recorded.Needle?.BaseType : null;
         return expected is not null && string.Equals(chosen.Needle?.BaseType, expected, StringComparison.Ordinal);
     }
+
+    /// <summary>Whether a map was woven with this needle: its recorded base type, or the exact needle for maps without one.</summary>
+    private static bool WovenWith(MapDetails map, ComponentDto needle) =>
+        map.Recipe?.NeedleBaseType is { } baseType ? needle.Needle?.BaseType == baseType : map.NeedleId == needle.Id;
 
     /// <summary>A mismatched map raises danger by 1 for one different slot, and by 2 for two or more.</summary>
     public static int DangerFor(int mismatchedSlots) => Math.Min(mismatchedSlots, 2);

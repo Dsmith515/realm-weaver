@@ -51,6 +51,12 @@ public enum SlotSource
     /// <summary>The player owns a Map made with exactly the chosen Needle, Thread and Coating.</summary>
     MatchingMap,
 
+    /// <summary>
+    /// A Map in the catalog was woven with these ingredients, so the ritual reopens that realm even though the player
+    /// doesn't hold it. Only a map flagged Map Required (sealed) refuses.
+    /// </summary>
+    KnownRecipe,
+
     /// <summary>Picked at random from the player's own items.</summary>
     Random,
 }
@@ -60,7 +66,8 @@ public sealed record SlotPreview(ComponentDto Component, SlotSource Source, int 
 /// <summary>
 /// Something that stops the ritual. Codes: <c>missing</c>, <c>unknown</c>, <c>wrong-type</c>, <c>invalid-option</c> and
 /// <c>mirror-not-allowed</c> (the map is flagged Components Must Match) are input errors (400 on perform);
-/// <c>not-owned</c> means the player lacks the component (409 on perform).
+/// <c>not-owned</c> means the player lacks the component, and <c>map-required</c> that the ingredients open a sealed map
+/// the player doesn't hold (both 409 on perform).
 /// </summary>
 public sealed record RitualIssue(RitualSlot? Slot, string Field, string Code, string Message);
 
@@ -149,17 +156,23 @@ public sealed record RitualResultDto(
     DateTimeOffset CreatedAt);
 
 /// <summary>Body for completing a run: the key of one of the realm's objectives (rolled, or the GM's pin).</summary>
-public sealed record CompleteRunInput(string ObjectiveKey);
+/// <summary>
+/// The GM completing a run: optionally the objective that completed it, and the players who receive the realm's map.
+/// An empty list just closes the run.
+/// </summary>
+public sealed record CompleteRunInput(string? ObjectiveKey = null, IReadOnlyList<Guid>? RecipientPlayerIds = null);
 
 /// <summary>
-/// A completed run. <see cref="MapRecorded"/> is true when the map was added to the weaver's inventory; otherwise
-/// <see cref="MapNotRecordedReason"/> says why: <c>gm-realm</c>, <c>not-cartographer</c>, <c>already-held</c>,
-/// <c>unique-held</c> (a Unique map another player holds) or <c>map-missing</c>.
+/// A completed run. <see cref="MapGivenTo"/> lists the players who received the map; <see cref="Skipped"/> says why the
+/// others didn't: <c>already-held</c>, <c>unknown-player</c>, <c>unique-held</c> (a Unique map another player holds) or
+/// <c>map-missing</c>.
 /// </summary>
 public sealed record RunCompletionDto(
     Guid RealmId,
-    Generation.Model.RealmObjective Objective,
+    Generation.Model.RealmObjective? Objective,
     DateTimeOffset CompletedAt,
-    bool MapRecorded,
     Guid MapId,
-    string? MapNotRecordedReason);
+    IReadOnlyList<Guid> MapGivenTo,
+    IReadOnlyList<MapHandOutSkip> Skipped);
+
+public sealed record MapHandOutSkip(Guid PlayerId, string Reason);

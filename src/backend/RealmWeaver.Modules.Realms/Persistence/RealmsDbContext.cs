@@ -76,8 +76,8 @@ internal sealed class Realm
     /// <summary>The <see cref="RealmObjective"/> that completed the run, as jsonb.</summary>
     public string? CompletedObjective { get; set; }
 
-    /// <summary>True when completing the run recorded the map into the weaver's inventory.</summary>
-    public bool MapRecorded { get; set; }
+    /// <summary>The players the GM handed the map to on completion. Ids from the Inventory module, so no foreign key.</summary>
+    public List<Guid> MapGivenTo { get; set; } = [];
 }
 
 internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options) : DbContext(options)
@@ -101,6 +101,7 @@ internal sealed class RealmsDbContext(DbContextOptions<RealmsDbContext> options)
             realm.Property(r => r.PinnedObjective).HasColumnType("jsonb");
             realm.Property(r => r.AttunedNeedle).HasColumnType("jsonb");
             realm.Property(r => r.CompletedObjective).HasColumnType("jsonb");
+            realm.Property(r => r.MapGivenTo).HasDefaultValueSql("'{}'::uuid[]");
             realm.Property(r => r.MapName).HasMaxLength(100);
             realm.Property(r => r.NeedleName).HasMaxLength(100);
             realm.Property(r => r.ThreadName).HasMaxLength(100);
