@@ -13,7 +13,7 @@ interface Props {
 
 /**
  * The realm's goals. Each event objective links to its event on the map. A GM can pin any candidate objective; the pin
- * lives on the realm, never on the map. The GM records completions, as often as parties visit, on the Completion card.
+ * lives on the realm, never on the map. The GM records completions, as often as parties visit, in the fold below it.
  */
 export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
   const { summary, document } = realm
@@ -23,8 +23,7 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
   const pin = usePinObjective(summary.id)
 
   return (
-    <section className="objectives" aria-label="Objectives">
-      <h2>Objectives</h2>
+    <div className="objectives">
       {objectives.length > 0 ? (
         <p className="muted">Any of these can be completed, by any party, as often as the realm is run.</p>
       ) : (
@@ -68,7 +67,7 @@ export function ObjectivesPanel({ realm, onShow, highlighted }: Props) {
         </button>
       )}
       {pin.isError && <p className="error-text">{errorMessage(pin.error)}</p>}
-    </section>
+    </div>
   )
 }
 

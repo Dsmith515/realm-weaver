@@ -209,14 +209,4 @@ public class RunCompletionEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal([player.Id], done.MapGivenTo);
         Assert.Contains(weave.MapId, (await QuantitiesAsync(client, player.Id)).Keys);
     }
-
-    private static async Task<RunCompletionDto> CompleteAsync(HttpClient client, Guid realmId, CompleteRunInput input)
-    {
-        var response = await client.PostJsonAsync($"/api/realms/{realmId}/completion", input);
-        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
-        return await response.ReadJsonAsync<RunCompletionDto>();
-    }
-
-    private static async Task<List<RealmObjective>> ObjectivesAsync(HttpClient client, Guid realmId) =>
-        (await GetRealmAsync(client, realmId)).Document.GetProperty("objectives").Deserialize<List<RealmObjective>>(RealmJson.Options)!;
 }

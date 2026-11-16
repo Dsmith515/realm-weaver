@@ -113,8 +113,20 @@ const mapDetails = {
   },
 }
 
+const weaverRow = { id: player.id, name: player.name, completions: 0, holdsMap: false, isWeaver: true }
+
+/** A roster page from rows, filtered by the search like the server would. */
+function rosterOf(rows: typeof weaverRow[], weaver: typeof weaverRow | null = weaverRow) {
+  return (call: ApiCall) => {
+    const search = call.query.get('search')?.toLowerCase() ?? ''
+    const items = rows.filter((r) => r.name.toLowerCase().includes(search))
+    return { items, page: Number(call.query.get('page') ?? 1), pageSize: 10, totalCount: items.length, weaver }
+  }
+}
+
 function routes() {
   return {
+    'GET /api/realms/:id/roster': rosterOf([weaverRow]),
     'GET /api/info': { name: 'Realm Weaver', version: '1.0.0' },
     'GET /api/players': [player],
     'GET /api/realms': { items: [summary, mirror], page: 1, pageSize: 25, totalCount: 2 },
@@ -172,7 +184,7 @@ describe('Realm pages', () => {
     renderApp('/realms/realm-1')
 
     const placements = await screen.findByRole('complementary', { name: 'Placements' })
-    const buttons = await within(placements).findAllByRole('button')
+    const buttons = await within(within(placements).getAllByRole('list')[0]).findAllByRole('button')
     expect(buttons[0]).toHaveAccessibleName(/S Spawn point C12/)
 
     const svg = await screen.findByTestId('realm-svg')
@@ -342,7 +354,7 @@ describe('Realm pages', () => {
 
   it('lets the GM complete an objective for a party, again and again, and shows who completed it', async () => {
     const objective = realm.document.objectives![1]
-    const friend = { ...player, id: 'p2', name: 'Friend' }
+    const friend = { id: 'p2', name: 'Friend', completions: 0, holdsMap: false, isWeaver: false }
     const history = {
       completions: [
         {
@@ -365,7 +377,7 @@ describe('Realm pages', () => {
     let completed = false
     const api = fakeApi({
       ...routes(),
-      'GET /api/players': [player, friend],
+      'GET /api/realms/:id/roster': rosterOf([friend, weaverRow]),
       'GET /api/realms/:id/completions': () => (completed ? history : { completions: [], players: [] }),
       'POST /api/realms/:id/completion': () => {
         completed = true
@@ -386,13 +398,23 @@ describe('Realm pages', () => {
     renderApp('/realms/realm-1')
 
     const card = await screen.findByRole('region', { name: 'Completion' })
-    expect(await within(card).findByText('No one has completed an objective here yet.')).toBeInTheDocument()
-    // The weaver is ticked by default; the GM finds a friend by searching and adds them.
-    expect(await within(card).findByRole('checkbox', { name: /Wanderer/ })).toBeChecked()
-    await user.type(within(card).getByRole('searchbox', { name: 'Search players for players who completed it' }), 'Fri')
-    await waitFor(() => expect(api.callsTo('GET', '/api/players').some((c) => c.query.get('search') === 'Fri')).toBe(true))
-    await user.click(within(card).getByRole('checkbox', { name: 'Friend' }))
-    await user.selectOptions(within(card).getByLabelText('Objective completed'), 'realm/clear-the-realm')
+    const objectives = screen.getByRole('region', { name: 'Objectives' })
+    expect(await within(objectives).findByText('No one has completed an objective here yet.')).not.toBeVisible() // Player completion starts folded
+    // The weaver is ticked by default; the table shows who has completed it and who holds the map.
+    const table = within(card).getByRole('table', { name: 'Players' })
+    expect(await within(table).findByRole('checkbox', { name: /Wanderer/ })).toBeChecked()
+    expect(within(table).getAllByText('Not yet')).toHaveLength(2)
+    expect(within(table).getAllByText('No map')).toHaveLength(2)
+    await user.type(within(card).getByRole('searchbox', { name: 'Search players' }), 'Fri')
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/roster').some((c) => c.query.get('search') === 'Fri')).toBe(true))
+    // The weaver is off this page but still selected, so they stay in view at the top.
+    await user.click(await within(table).findByRole('checkbox', { name: 'Friend' }))
+    expect(within(table).getByRole('checkbox', { name: /Wanderer/ })).toBeChecked()
+    expect(within(card).getByText('2 selected, 2 without the map.')).toBeInTheDocument()
+    // Objectives are named with their event, so two with the same title can be told apart.
+    const select = within(card).getByRole('combobox', { name: 'Objective' })
+    expect(within(select).getByRole('option', { name: 'E2 · Take the post (Floor 1)' })).toBeInTheDocument()
+    await user.selectOptions(select, 'Clear the realm (whole realm)')
     await user.click(within(card).getByRole('button', { name: 'Complete objective' }))
 
     expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toEqual({
@@ -404,12 +426,13 @@ describe('Realm pages', () => {
     expect(status).toHaveTextContent('Clear the realm completed, and they’re the first to complete this realm.')
     expect(status).toHaveTextContent('Map handed to Friend.')
 
-    // The form stays: another party can complete the realm later. The player list is collapsed under a toggle.
+    // The form stays: another party can complete the realm later. Who completed it is in its own fold.
     expect(within(card).getByRole('button', { name: 'Complete objective' })).toBeInTheDocument()
-    await user.click(await within(card).findByText(/Player completion \(2 players, 1 completion\)/))
-    const completers = within(card).getByRole('list', { name: 'Players who completed an objective' })
+    await user.click(await within(objectives).findByText(/Player completion/))
+    expect(within(objectives).getByText('(2 players, 1 completion)')).toBeInTheDocument()
+    const completers = within(objectives).getByRole('list', { name: 'Players who completed an objective' })
     expect(within(completers).getAllByText('First to complete')).toHaveLength(2)
-    expect(within(card).getByRole('list', { name: 'Completion history' })).toHaveTextContent('Friend (got the map)')
+    expect(within(objectives).getByRole('list', { name: 'Completion history' })).toHaveTextContent('Friend (got the map)')
   })
 
   it('can complete without handing out the map', async () => {
@@ -432,11 +455,58 @@ describe('Realm pages', () => {
 
     const card = await screen.findByRole('region', { name: 'Completion' })
     await within(card).findByRole('checkbox', { name: /Wanderer/ })
-    await user.click(within(card).getByRole('checkbox', { name: 'Hand the map to players who don’t have it yet' }))
+    await user.click(within(card).getByRole('checkbox', { name: 'When completing, hand the map to selected players who don’t have it yet' }))
     await user.click(within(card).getByRole('button', { name: 'Complete objective' }))
 
     expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toMatchObject({ playerIds: [player.id], mapRecipientIds: [] })
     expect(await within(card).findByRole('status')).toHaveTextContent('No one new received the map.')
+  })
+
+  it('assigns the map to selected players who don’t hold it, without recording a completion', async () => {
+    const holder = { id: 'p3', name: 'Holder', completions: 1, holdsMap: true, isWeaver: false }
+    const finisher = { id: 'p4', name: 'Finisher', completions: 2, holdsMap: false, isWeaver: false }
+    const api = fakeApi({
+      ...routes(),
+      'GET /api/realms/:id/roster': (call: ApiCall) =>
+        rosterOf(call.query.get('all') === 'true' ? [finisher, holder, weaverRow] : [finisher, weaverRow])(call),
+      'POST /api/components/:id/assign': {},
+    })
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const card = await screen.findByRole('region', { name: 'Completion' })
+    const table = within(card).getByRole('table', { name: 'Players' })
+    expect(await within(table).findByRole('checkbox', { name: 'Finisher' })).toBeInTheDocument()
+    expect(within(table).getByText('2×')).toBeInTheDocument()
+    // Players who completed it and hold the map are hidden until asked for.
+    expect(within(table).queryByText('Holder')).not.toBeInTheDocument()
+    await user.click(within(card).getByRole('checkbox', { name: 'Include players who completed it and hold the map' }))
+    expect(await within(table).findByText('Has map')).toBeInTheDocument()
+
+    await user.click(within(table).getByRole('checkbox', { name: 'Select everyone on this page' }))
+    expect(within(card).getByText('3 selected, 2 without the map.')).toBeInTheDocument()
+    await user.click(within(card).getByRole('button', { name: 'Assign map (2)' }))
+
+    await waitFor(() => expect(api.callsTo('POST', '/api/components/map-1/assign').map((c) => c.body)).toEqual([
+      { playerId: player.id, quantity: 1 },
+      { playerId: finisher.id, quantity: 1 },
+    ]))
+    expect(await within(card).findByRole('status')).toHaveTextContent('Map assigned to Wanderer, Finisher. No completion was recorded.')
+    expect(api.callsTo('POST', '/api/realms/realm-1/completion')).toHaveLength(0)
+  })
+
+  it('folds the placements away so the map can use the full width', async () => {
+    fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const placements = await screen.findByRole('complementary', { name: 'Placements' })
+    await user.click(within(placements).getByRole('button', { name: 'Hide' }))
+    expect(screen.queryByRole('complementary', { name: 'Placements' })).not.toBeInTheDocument()
+    expect(document.querySelector('.realm')).toHaveClass('realm--wide')
+
+    await user.click(screen.getByRole('button', { name: 'Show placements' }))
+    expect(screen.getByRole('complementary', { name: 'Placements' })).toBeInTheDocument()
   })
 
   it('opens the map details for the GM', async () => {

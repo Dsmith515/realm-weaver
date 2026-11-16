@@ -1,17 +1,19 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 
 interface SvgViewerProps {
   /** SVG markup from our own export endpoint (the exporter escapes every text value). */
   svg: string
   /** The id of an event (`E3`) or feature (`T1`) to highlight. The exporter tags them with data attributes. */
   highlight?: string
+  /** Extra controls at the right end of the zoom toolbar. */
+  tools?: ReactNode
 }
 
 const minScale = 0.25
 const maxScale = 6
 
 /** Shows the server-rendered map with wheel or button zoom and drag to pan. */
-export function SvgViewer({ svg, highlight }: SvgViewerProps) {
+export function SvgViewer({ svg, highlight, tools }: SvgViewerProps) {
   const frame = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
   const drag = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | undefined>(undefined)
@@ -67,6 +69,7 @@ export function SvgViewer({ svg, highlight }: SvgViewerProps) {
           Reset view
         </button>
         <span className="muted">{Math.round(view.scale * 100)}%</span>
+        {tools && <span className="svg-viewer__extra">{tools}</span>}
       </div>
       <div
         ref={frame}

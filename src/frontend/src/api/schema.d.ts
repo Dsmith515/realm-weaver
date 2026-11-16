@@ -70,6 +70,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realms/{id}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Players for the GM's completion table, by name. By default players who have completed an objective here and hold the map are left out; all=true lists everyone. search matches any part of the name. */
+        get: operations["GetRealmRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/components": {
         parameters: {
             query?: never;
@@ -939,6 +956,16 @@ export interface components {
             eventName?: null | string;
             location?: null | string;
         };
+        RealmRosterDto: {
+            items: components["schemas"]["RosterPlayerDto"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            totalCount: number;
+            weaver: null | components["schemas"]["RosterPlayerDto"];
+        };
         RealmSummaryDto: {
             /** Format: uuid */
             id: string;
@@ -1072,6 +1099,15 @@ export interface components {
         RitualSlot: "needle" | "thread" | "coating" | "map";
         /** @enum {unknown} */
         RoomStyle: "masonry" | "mine" | "cave";
+        RosterPlayerDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int32 */
+            completions: number;
+            holdsMap: boolean;
+            isWeaver: boolean;
+        };
         RunCompletionDto: {
             /** Format: uuid */
             completionId: string;
@@ -1232,6 +1268,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MapDetailsDto"];
+                };
+            };
+        };
+    };
+    GetRealmRoster: {
+        parameters: {
+            query?: {
+                search?: string;
+                all?: boolean;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmRosterDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };

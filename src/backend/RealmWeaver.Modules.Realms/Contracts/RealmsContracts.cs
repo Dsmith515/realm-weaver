@@ -121,6 +121,9 @@ public interface IRealmsModule
     /// </summary>
     Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, IReadOnlyList<CompletionPlayerDto> players, CancellationToken cancellationToken = default);
 
+    /// <summary>The completion history of the realm's map, newest first, with everyone who completed something. Null when the realm doesn't exist.</summary>
+    Task<RealmCompletionsDto?> GetCompletionsAsync(Guid realmId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.
     /// Null when no such realm is stored (for example a map an admin created by hand).

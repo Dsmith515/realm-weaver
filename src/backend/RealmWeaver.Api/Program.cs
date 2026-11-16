@@ -84,6 +84,7 @@ app.MapInventoryModule();
 app.MapRealmsModule();
 app.MapRitualsModule();
 app.MapMapDetails();
+app.MapRealmRoster();
 
 await app.RunAsync();
 

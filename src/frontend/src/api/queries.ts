@@ -1,5 +1,5 @@
 import { keepPreviousData, type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, unwrap } from './client'
+import { api, errorMessage, unwrap } from './client'
 import type { CompleteRunInput, ComponentInput, Player, QuickWeaveRequest, Realm, RitualPreviewRequest, RitualSelection } from './types'
 
 /** Query keys in one place, so mutations invalidate exactly what they change. */
@@ -13,6 +13,8 @@ export const keys = {
   allRealms: ['realms'] as const,
   realm: (id: string) => ['realm', id] as const,
   completions: (realmId: string) => ['completions', realmId] as const,
+  roster: (realmId: string, filter: RosterFilter) => ['roster', realmId, filter] as const,
+  allRosters: ['roster'] as const,
   preview: (request: RitualPreviewRequest) => ['ritual-preview', request] as const,
   allPreviews: ['ritual-preview'] as const,
 }
@@ -219,6 +221,60 @@ export function useCompletions(realmId: string) {
   })
 }
 
+export interface RosterFilter {
+  search: string
+  /** Include players who completed an objective here and already hold the map. */
+  all: boolean
+  page: number
+}
+
+export const rosterPageSize = 10
+
+/** GM: players for the completion table, a page at a time, with their completions here and whether they hold the map. */
+export function useRealmRoster(realmId: string, filter: RosterFilter) {
+  return useQuery({
+    queryKey: keys.roster(realmId, filter),
+    queryFn: () =>
+      unwrap(
+        api.GET('/api/realms/{id}/roster', {
+          params: { path: { id: realmId }, query: { search: filter.search || undefined, all: filter.all || undefined, page: filter.page, pageSize: rosterPageSize } },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export interface HandOutResult {
+  given: string[]
+  failed: { playerId: string; message: string }[]
+}
+
+/**
+ * GM: gives the map to each player without recording a completion. One assign per player, so one refusal (a Unique
+ * map someone else holds) doesn't stop the rest.
+ */
+export function useHandOutMap(mapId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (playerIds: string[]): Promise<HandOutResult> => {
+      const result: HandOutResult = { given: [], failed: [] }
+      for (const playerId of playerIds) {
+        try {
+          await unwrap(api.POST('/api/components/{id}/assign', { params: { path: { id: mapId } }, body: { playerId, quantity: 1 } }))
+          result.given.push(playerId)
+        } catch (error) {
+          result.failed.push({ playerId, message: errorMessage(error) })
+        }
+      }
+      return result
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.allRosters })
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] })
+    },
+  })
+}
+
 /** GM: records that a party completed an objective and hands the map to those who don't have it. Repeatable. */
 export function useCompleteRun(realmId: string) {
   const queryClient = useQueryClient()
@@ -227,6 +283,7 @@ export function useCompleteRun(realmId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.realm(realmId) })
       void queryClient.invalidateQueries({ queryKey: ['completions'] })
+      void queryClient.invalidateQueries({ queryKey: keys.allRosters })
       void queryClient.invalidateQueries({ queryKey: keys.allRealms })
       void queryClient.invalidateQueries({ queryKey: ['inventory'] })
       void queryClient.invalidateQueries({ queryKey: keys.allPreviews })

@@ -22,15 +22,45 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
     /// <summary>Players by name, optionally only those whose name contains <paramref name="search"/>, at most <paramref name="limit"/>.</summary>
     public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(string? search, int limit, CancellationToken cancellationToken)
     {
+        var list = await Matching(search).OrderBy(p => p.Name).ThenBy(p => p.Id).Take(Math.Clamp(limit, 1, MaxPlayerList)).ToListAsync(cancellationToken);
+        return [.. list.Select(ToDto)];
+    }
+
+    public async Task<PlayerPage> ListPlayersPageAsync(string? search, int page, int pageSize, IReadOnlyCollection<Guid> excludeIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(excludeIds);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, MaxPlayerList);
+        var excluded = excludeIds.ToList();
+        var players = Matching(search).Where(p => !excluded.Contains(p.Id));
+        var total = await players.CountAsync(cancellationToken);
+        var list = await players.OrderBy(p => p.Name).ThenBy(p => p.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new PlayerPage([.. list.Select(ToDto)], page, pageSize, total);
+    }
+
+    public async Task<IReadOnlySet<Guid>> HoldersAsync(Guid componentId, IReadOnlyCollection<Guid> playerIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        var ids = playerIds.ToList();
+        var holders = await db.Items
+            .Where(i => i.ComponentDefinitionId == componentId && i.Quantity > 0 && ids.Contains(i.PlayerId))
+            .Select(i => i.PlayerId)
+            .ToListAsync(cancellationToken);
+        return holders.ToHashSet();
+    }
+
+    /// <summary>Players whose name contains <paramref name="search"/>; <c>%</c> and <c>_</c> are literal.</summary>
+    private IQueryable<Persistence.Player> Matching(string? search)
+    {
         var players = db.Players.AsNoTracking();
-        if (!string.IsNullOrWhiteSpace(search))
+        if (string.IsNullOrWhiteSpace(search))
         {
-            var escaped = search.Trim().Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
-            players = players.Where(p => EF.Functions.ILike(p.Name, $"%{escaped}%", @"\"));
+            return players;
         }
 
-        var list = await players.OrderBy(p => p.Name).ThenBy(p => p.Id).Take(Math.Clamp(limit, 1, MaxPlayerList)).ToListAsync(cancellationToken);
-        return [.. list.Select(ToDto)];
+        // Npgsql's two-argument ILike disables the escape character, so it's passed explicitly.
+        var escaped = search.Trim().Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
+        return players.Where(p => EF.Functions.ILike(p.Name, $"%{escaped}%", @"\"));
     }
 
     /// <summary>Attunes a needle the player owns, or clears the attunement when <paramref name="needleId"/> is null.</summary>

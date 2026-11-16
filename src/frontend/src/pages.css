@@ -35,9 +35,18 @@ button:disabled {
 }
 
 .button--quiet {
-  border-color: transparent;
+  border-color: var(--border);
   background: transparent;
-  color: var(--muted);
+  color: var(--text);
+}
+
+button:not(:disabled):hover,
+.button:hover {
+  border-color: var(--accent);
+}
+
+.button--quiet:not(:disabled):hover {
+  background: var(--bg);
 }
 
 input,
@@ -710,11 +719,31 @@ textarea {
   gap: 1rem;
 }
 
+/* Placements hidden: the map takes the full width. */
+.realm--wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.placements__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.placements__header h2 {
+  margin: 0;
+}
+
 .svg-viewer__tools {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   margin-bottom: 0.4rem;
+}
+
+.svg-viewer__extra {
+  margin-left: auto;
 }
 
 .svg-viewer__frame {
@@ -820,11 +849,6 @@ textarea {
 }
 
 .objectives {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
   display: grid;
   gap: 0.5rem;
   justify-items: start;
@@ -930,12 +954,105 @@ textarea {
   color: var(--ok);
 }
 
-.complete-realm {
+/* The realm's Objectives region: one card, each part folding on its own. */
+.realm-objectives {
   margin-bottom: 1rem;
 }
 
-.complete-realm h2 {
-  margin-top: 0;
+.fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold > summary::before {
+  content: "▸";
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.fold[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.fold > summary h2,
+.fold > summary h3 {
+  margin: 0;
+}
+
+.fold > summary h2 {
+  font-size: 1.25rem;
+}
+
+.fold > summary h3 {
+  font-size: 1.05rem;
+}
+
+.fold__note {
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.fold__body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.5rem 0 0 1.1rem;
+}
+
+.fold--top > .fold__body > .fold {
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.complete-realm p {
+  margin: 0;
+}
+
+.complete-realm__form {
+  max-width: 44rem;
+}
+
+.roster {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem 0.75rem;
+  min-width: 0;
+}
+
+.roster__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+/* Ten rows to a page, but long names or a narrow window still scroll inside the region. */
+.roster__table {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.roster__table .table {
+  width: 100%;
+}
+
+.roster__pinned td {
+  background: var(--bg);
+}
+
+.roster__selected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .complete-realm__players {
@@ -1113,13 +1230,8 @@ th[aria-sort] .sort-header__arrow {
   overflow: auto;
 }
 
-.player-completion {
-  margin-top: 1rem;
-}
-
-.player-completion summary {
-  cursor: pointer;
-  font-weight: 600;
+.player-completion h4 {
+  margin: 0.75rem 0 0.25rem;
 }
 
 .player-completion__players,
