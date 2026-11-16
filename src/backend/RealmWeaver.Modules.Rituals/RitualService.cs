@@ -202,7 +202,8 @@ internal sealed class RitualService(
         int? height,
         int? eventCount,
         SettlementPopulation? population = null,
-        bool includeStructures = true)
+        bool includeStructures = true,
+        bool suggestStructures = false)
     {
         // Layout (shape, size, biome) comes from the map's recorded recipe (ADR 0006), so editing a component never
         // re-shapes an existing map. A matching ritual takes its encounter inputs from the recipe too and rebuilds the
@@ -228,6 +229,7 @@ internal sealed class RitualService(
             // A recorded map keeps its settlement settings so it rebuilds the same realm.
             SettlementPopulation = recipe is null ? population : recipe.SettlementPopulation,
             IncludeStructures = recipe?.IncludeStructures ?? includeStructures,
+            SuggestStructures = recipe?.SuggestStructures ?? suggestStructures,
         };
     }
 
@@ -251,7 +253,8 @@ internal sealed class RitualService(
         request.Difficulty,
         request.SettlementPopulation,
         request.IncludeStructures,
-        needle.Needle?.BaseType);
+        needle.Needle?.BaseType,
+        request.SuggestStructures);
 
     /// <summary>"Beginner's Reedwoven Beastward Wax Swamp Field and Dungeon Map": the components without their type word.</summary>
     internal static string MapNameFor(ComponentDto needle, ComponentDto thread, ComponentDto coating, Biome biome, RealmKind kind)

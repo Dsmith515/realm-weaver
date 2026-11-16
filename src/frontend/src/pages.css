@@ -563,10 +563,21 @@ textarea {
   padding: 0.2rem 0.6rem;
 }
 
+/* A small outlined action, so it reads as clickable next to the chips' label. */
 .limit-chips .limit-chips__all {
-  border-color: transparent;
-  padding: 0.1rem 0.3rem;
+  border: 1px dashed var(--accent);
+  background: transparent;
+  color: var(--accent);
+  padding: 0.1rem 0.55rem;
   font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.limit-chips .limit-chips__all:hover,
+.limit-chips .limit-chips__all:focus-visible {
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .limit-chips button[aria-pressed="true"] {
@@ -896,4 +907,193 @@ textarea {
 
 .complete-realm .banner {
   margin: 0;
+}
+
+/* Pages whose list fills the window: the list scrolls inside it and the pager stays under it, always in view. */
+.app:has(.page-fill) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.app:has(.page-fill) .app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.page-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.scroll-region {
+  flex: 1;
+  min-height: 14rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.scroll-region .realm-list {
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.page-fill .pager {
+  margin-top: 0.5rem;
+}
+
+.table--sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* Column headers that sort: the whole header is the button. */
+.sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sort-header__arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+th[aria-sort] .sort-header__arrow {
+  color: var(--accent);
+}
+
+/* A component's name opens it, so it reads as a link. */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.link-button:hover,
+.link-button:focus-visible {
+  text-decoration: underline;
+}
+
+/* The ritual page's inventory stays beside the slots and scrolls on its own. */
+.inventory-panel {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+}
+
+/* Map rule tags with their explanation on hover or keyboard focus. */
+.map-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.map-tag {
+  position: relative;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: help;
+}
+
+.map-tag--unique {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.map-tag[data-tip]:hover::after,
+.map-tag[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 5;
+  width: max-content;
+  max-width: min(18rem, 80vw);
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 400;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.15);
+}
+
+/* Player search: a search box next to its select, or above a checklist. */
+.player-select {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.player-select input[type="search"] {
+  width: 9rem;
+}
+
+.player-checklist {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.player-checklist__list {
+  display: grid;
+  gap: 0.2rem;
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.player-completion {
+  margin-top: 1rem;
+}
+
+.player-completion summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.player-completion__players,
+.player-completion__history {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1.2rem;
+}
+
+.placements__ideas {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.placements__ideas .badge {
+  margin-left: 0;
 }

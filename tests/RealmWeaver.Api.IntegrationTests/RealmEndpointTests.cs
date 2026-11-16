@@ -82,8 +82,8 @@ public class RealmEndpointTests(RealmWeaverApiFactory factory)
         var first = await PerformAndRecordAsync(client, SmallField(player.Id));
         var second = await PerformOkAsync(client, new Modules.Rituals.Contracts.RitualSelection(player.Id, MapId: first.MapId));
 
-        var byPlayer = await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}");
-        var byMap = await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?mapId={first.MapId}");
+        var byPlayer = (await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?playerId={player.Id}")).Items;
+        var byMap = (await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?mapId={first.MapId}")).Items;
 
         Assert.Equal([second.RealmId, first.RealmId], byPlayer.Select(r => r.Id));
         Assert.Equal([second.RealmId, first.RealmId], byMap.Select(r => r.Id));

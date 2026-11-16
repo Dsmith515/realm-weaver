@@ -9,9 +9,10 @@ export const keys = {
   components: (filters: ComponentFilters) => ['components', filters] as const,
   allComponents: ['components'] as const,
   settings: ['settings'] as const,
-  realms: (playerId: string) => ['realms', playerId] as const,
+  realms: (filter: RealmFilter) => ['realms', filter] as const,
   allRealms: ['realms'] as const,
   realm: (id: string) => ['realm', id] as const,
+  completions: (realmId: string) => ['completions', realmId] as const,
   preview: (request: RitualPreviewRequest) => ['ritual-preview', request] as const,
   allPreviews: ['ritual-preview'] as const,
 }
@@ -25,10 +26,28 @@ export interface ComponentFilters {
   includeArchived?: boolean
   page?: number
   pageSize?: number
+  sort?: ComponentSort
+  desc?: boolean
 }
 
-export function usePlayers() {
-  return useQuery({ queryKey: keys.players, queryFn: () => unwrap(api.GET('/api/players')) })
+export type ComponentSort = 'name' | 'type' | 'rarity' | 'rank' | 'assignable' | 'created'
+
+/** Whose realms to list: one player's, or the GM's Quick Weaves. */
+export interface RealmFilter {
+  playerId?: string
+  gm?: boolean
+  page?: number
+  pageSize?: number
+}
+
+/** Players by name; with a search, only those whose name contains it (the API does the matching, so this scales). */
+export function usePlayers(search = '') {
+  const text = search.trim()
+  return useQuery({
+    queryKey: [...keys.players, text],
+    queryFn: () => unwrap(api.GET('/api/players', { params: { query: text ? { search: text } : {} } })),
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function useCreatePlayer() {
@@ -53,7 +72,7 @@ export function useAttune(playerId: string) {
 
 /** Puts the player the API returned into the cached list, so the page updates without waiting for a refetch. */
 function replacePlayer(queryClient: QueryClient, player: Player) {
-  queryClient.setQueryData<Player[]>(keys.players, (old) => old?.map((p) => (p.id === player.id ? player : p)))
+  queryClient.setQueriesData<Player[]>({ queryKey: keys.players }, (old) => old?.map((p) => (p.id === player.id ? player : p)))
   void queryClient.invalidateQueries({ queryKey: keys.players })
 }
 
@@ -146,20 +165,13 @@ export function useUpdateSettings() {
   })
 }
 
-export function useRealms(playerId: string | undefined) {
+/** A page of realms: one player's, or the GM's Quick Weaves (which belong to no player). */
+export function useRealms(filter: RealmFilter, enabled = true) {
   return useQuery({
-    queryKey: keys.realms(playerId ?? ''),
-    queryFn: () => unwrap(api.GET('/api/realms', { params: { query: { playerId } } })),
-    enabled: !!playerId,
-  })
-}
-
-/** Realms a GM wove with Quick Weave: they belong to no player. */
-export function useGmRealms(enabled: boolean) {
-  return useQuery({
-    queryKey: ['realms', 'gm'],
-    queryFn: () => unwrap(api.GET('/api/realms', { params: { query: { gm: true } } })),
+    queryKey: keys.realms(filter),
+    queryFn: () => unwrap(api.GET('/api/realms', { params: { query: clean(filter) } })),
     enabled,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -199,13 +211,22 @@ export function useObjectiveCandidates(realmId: string, enabled: boolean) {
   })
 }
 
-/** GM: completes the run, optionally with an objective, and hands the map to the chosen players. */
+/** The completion history of the realm's map and everyone who has completed something there. */
+export function useCompletions(realmId: string) {
+  return useQuery({
+    queryKey: keys.completions(realmId),
+    queryFn: () => unwrap(api.GET('/api/realms/{id}/completions', { params: { path: { id: realmId } } })),
+  })
+}
+
+/** GM: records that a party completed an objective and hands the map to those who don't have it. Repeatable. */
 export function useCompleteRun(realmId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: CompleteRunInput) => unwrap(api.POST('/api/realms/{id}/completion', { params: { path: { id: realmId } }, body })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.realm(realmId) })
+      void queryClient.invalidateQueries({ queryKey: ['completions'] })
       void queryClient.invalidateQueries({ queryKey: keys.allRealms })
       void queryClient.invalidateQueries({ queryKey: ['inventory'] })
       void queryClient.invalidateQueries({ queryKey: keys.allPreviews })

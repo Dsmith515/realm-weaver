@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { errorMessage } from '../api/client'
 import { useCreatePlayer, usePlayers } from '../api/queries'
+import { PlayerSelect } from '../components/PlayerPicker'
 import { usePlayerSelection } from './playerContext'
 
 export function PlayerSwitcher() {
@@ -38,15 +39,10 @@ export function PlayerSwitcher() {
 
   return (
     <div className="player-switcher">
-      <label htmlFor="player-select">Player</label>
-      <select id="player-select" value={playerId ?? ''} onChange={(e) => setPlayerId(e.target.value || undefined)} disabled={!players.data?.length}>
-        {!players.data?.length && <option value="">No players</option>}
-        {players.data?.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
+      <span className="player-switcher__label" aria-hidden="true">
+        Player
+      </span>
+      <PlayerSelect label="Player" value={playerId ?? ''} onChange={(id) => setPlayerId(id || undefined)} selected={players.data?.find((p) => p.id === playerId)} />
       <button type="button" className="button--quiet" onClick={() => setAdding(true)}>
         New player
       </button>

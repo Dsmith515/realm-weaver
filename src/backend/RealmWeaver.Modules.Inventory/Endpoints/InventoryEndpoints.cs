@@ -19,7 +19,8 @@ internal static class InventoryEndpoints
     public static void Map(IEndpointRouteBuilder app)
     {
         var players = app.MapGroup("/api/players").WithTags("Players");
-        players.MapGet("/", ListPlayersAsync).WithName("ListPlayers");
+        players.MapGet("/", ListPlayersAsync).WithName("ListPlayers")
+            .WithDescription("Players by name. search matches any part of the name (case-insensitive); limit caps the list (default and most 200).");
         players.MapPost("/", CreatePlayerAsync).WithName("CreatePlayer")
             .WithDescription("Creates a player with the starter kit: the beginner needle, 2 threads ×3 and 2 coatings ×3.");
         players.MapGet("/{id:guid}", GetPlayerAsync).WithName("GetPlayer");
@@ -37,8 +38,16 @@ internal static class InventoryEndpoints
             .WithDescription("Admin: gives a component to a player, regardless of the self-assign rules.");
     }
 
-    private static async Task<Ok<IReadOnlyList<PlayerDto>>> ListPlayersAsync(InventoryService inventory, CancellationToken cancellationToken) =>
-        TypedResults.Ok(await inventory.ListPlayersAsync(cancellationToken));
+    private static async Task<Results<Ok<IReadOnlyList<PlayerDto>>, ValidationProblem>> ListPlayersAsync(
+        InventoryService inventory, CancellationToken cancellationToken, string? search = null, int limit = InventoryService.MaxPlayerList)
+    {
+        if (limit is < 1 or > InventoryService.MaxPlayerList)
+        {
+            return Problems.Validation(new Dictionary<string, string[]> { ["limit"] = [$"Limit must be between 1 and {InventoryService.MaxPlayerList}."] });
+        }
+
+        return TypedResults.Ok(await inventory.ListPlayersAsync(search, limit, cancellationToken));
+    }
 
     private static async Task<Results<Created<PlayerDto>, ValidationProblem>> CreatePlayerAsync(
         [FromBody] CreatePlayerInput input, InventoryService inventory, CancellationToken cancellationToken)

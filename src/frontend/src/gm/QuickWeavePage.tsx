@@ -21,7 +21,9 @@ export function QuickWeavePage() {
   const [limits, setLimits] = useState<QuickWeaveLimits>({ rarities: [], biomes: [], kinds: [], includeArchived: false })
   const [size, setSize] = useState({ width: '', height: '', eventCount: '' })
   const [population, setPopulation] = useState<SettlementPopulation | ''>('')
-  const [includeStructures, setIncludeStructures] = useState(true)
+  // Off by default: image generators add buildings on their own, and a GM may prefer to place them by hand.
+  const [includeStructures, setIncludeStructures] = useState(false)
+  const [suggestStructures, setSuggestStructures] = useState(false)
   const preview = useQuickWeavePreview()
   const weave = useQuickWeave()
   const navigate = useNavigate()
@@ -38,6 +40,7 @@ export function QuickWeavePage() {
     eventCount: toNumber(size.eventCount),
     population: population || null,
     includeStructures,
+    suggestStructures: !includeStructures && suggestStructures,
   })
 
   const roll = () => preview.mutate(request(picks))
@@ -85,7 +88,16 @@ export function QuickWeavePage() {
               </label>
               <label className="checkbox">
                 <input type="checkbox" checked={includeStructures} onChange={(e) => setIncludeStructures(e.target.checked)} />
-                Include structures
+                Place structures
+              </label>
+              <label className="checkbox" title="A few structure ideas for each settlement, listed on the realm page and placement sheet but not drawn on the map">
+                <input
+                  type="checkbox"
+                  checked={!includeStructures && suggestStructures}
+                  disabled={includeStructures}
+                  onChange={(e) => setSuggestStructures(e.target.checked)}
+                />
+                Suggest structures instead (ideas, not placed)
               </label>
             </div>
           </details>
@@ -158,7 +170,11 @@ function Chips<T extends string>({ legend, options, selected, onChange }: { lege
     <div role="group" aria-label={legend} className="limit-chips">
       <div className="limit-chips__header">
         <span className="muted">{legend}</span>
-        <button type="button" className="button--quiet limit-chips__all" onClick={() => onChange(allSelected ? [] : [...options])}>
+        <button
+          type="button"
+          className="limit-chips__all"
+          onClick={() => onChange(allSelected ? [] : [...options])}
+        >
           {allSelected ? 'Unselect all' : 'Select all'}
         </button>
       </div>

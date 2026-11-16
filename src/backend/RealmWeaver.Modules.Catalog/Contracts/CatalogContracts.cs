@@ -76,7 +76,8 @@ public sealed record MapRecipe(
     int Difficulty,
     SettlementPopulation? SettlementPopulation = null,
     bool IncludeStructures = true,
-    string? NeedleBaseType = null);
+    string? NeedleBaseType = null,
+    bool SuggestStructures = false);
 
 /// <summary>
 /// Map: a realm already visited. Its seed and recipe rebuild the same realm.
@@ -160,7 +161,23 @@ public sealed record ComponentQuery(
     bool? Assignable = null,
     bool IncludeArchived = false,
     int Page = 1,
-    int PageSize = 50);
+    int PageSize = 50,
+    ComponentSort Sort = ComponentSort.Name,
+    bool Descending = false);
+
+/// <summary>
+/// What a catalog page is ordered by. Type and rarity sort in their natural order (needle → map, common → legendary),
+/// not alphabetically. Ties break on name, then id, so pages never shuffle.
+/// </summary>
+public enum ComponentSort
+{
+    Name,
+    Type,
+    Rarity,
+    Rank,
+    Assignable,
+    Created,
+}
 
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 

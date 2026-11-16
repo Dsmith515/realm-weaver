@@ -69,6 +69,12 @@ public sealed record GenerationRequest
     /// <summary>Places buildings and grounds inside field settlements.</summary>
     public bool IncludeStructures { get; init; } = true;
 
+    /// <summary>
+    /// When structures aren't placed: names a few structure ideas for each field settlement without placing them, so a
+    /// GM can lay the buildings out themselves. Ignored when <see cref="IncludeStructures"/> is on.
+    /// </summary>
+    public bool SuggestStructures { get; init; }
+
     /// <summary>Danger level used to pick mob counts and difficulty templates.</summary>
     [JsonIgnore]
     public int Threat => Difficulty + DangerModifier;

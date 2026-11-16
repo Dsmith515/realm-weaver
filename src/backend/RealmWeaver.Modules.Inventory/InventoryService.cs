@@ -17,10 +17,20 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         return player is null ? null : ToDto(player);
     }
 
-    public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(CancellationToken cancellationToken)
+    public const int MaxPlayerList = 200;
+
+    /// <summary>Players by name, optionally only those whose name contains <paramref name="search"/>, at most <paramref name="limit"/>.</summary>
+    public async Task<IReadOnlyList<PlayerDto>> ListPlayersAsync(string? search, int limit, CancellationToken cancellationToken)
     {
-        var players = await db.Players.AsNoTracking().OrderBy(p => p.Name).ThenBy(p => p.Id).ToListAsync(cancellationToken);
-        return [.. players.Select(ToDto)];
+        var players = db.Players.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var escaped = search.Trim().Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
+            players = players.Where(p => EF.Functions.ILike(p.Name, $"%{escaped}%", @"\"));
+        }
+
+        var list = await players.OrderBy(p => p.Name).ThenBy(p => p.Id).Take(Math.Clamp(limit, 1, MaxPlayerList)).ToListAsync(cancellationToken);
+        return [.. list.Select(ToDto)];
     }
 
     /// <summary>Attunes a needle the player owns, or clears the attunement when <paramref name="needleId"/> is null.</summary>

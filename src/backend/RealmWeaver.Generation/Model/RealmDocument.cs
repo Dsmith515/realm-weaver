@@ -177,7 +177,13 @@ public sealed record PlacedEvent
 
     /// <summary>Field settlements only: buildings and grounds inside the footprint.</summary>
     public IReadOnlyList<PlacedStructure> Structures { get; init; } = [];
+
+    /// <summary>Field settlements woven with suggestions instead of structures: ideas for the GM, not placed on the map.</summary>
+    public IReadOnlyList<StructureSuggestion> SuggestedStructures { get; init; } = [];
 }
+
+/// <summary>A structure a GM could put in a settlement: a <see cref="StructureTemplate"/> with no position.</summary>
+public sealed record StructureSuggestion(string TemplateId, string Name);
 
 /// <summary>A building or ground inside a settlement, e.g. "B3 Training pit".</summary>
 public sealed record PlacedStructure

@@ -66,7 +66,7 @@ dotnet test RealmWeaver.slnx      # API tests start their own Postgres container
 cd src/frontend && npm run lint && npm test
 ```
 
-End-to-end tests (Playwright) run against the containerized stack. They cover a new player's random ritual, the realm page and its exports, the GM completing the run and handing out the map, and a GM Quick Weave. Each test creates its own player, so they run against any database.
+End-to-end tests (Playwright) run against the containerized stack. They cover a new player's random ritual, the realm page and its exports, the GM completing an objective and handing out the map, and a GM Quick Weave. Each test creates its own player, so they run against any database.
 
 ```bash
 docker compose --profile full up -d --build --wait   # from the repo root
@@ -81,22 +81,23 @@ npm run e2e                                          # E2E_BASE_URL=... to test 
 | Endpoint | What it does |
 |---|---|
 | `GET /api/info` | API name and version |
-| `GET/POST /api/components`, `GET/PUT/DELETE /api/components/{id}` | Component catalog. Filter with `type`, `rarity`, `biome`, `search`, `assignable`, `includeArchived`, `page`, `pageSize`. Delete archives. |
+| `GET/POST /api/components`, `GET/PUT/DELETE /api/components/{id}` | Component catalog. Filter with `type`, `rarity`, `biome`, `search`, `assignable`, `includeArchived`, `page`, `pageSize`; order with `sort=name\|type\|rarity\|rank\|assignable\|created` and `desc`. Delete archives. |
 | `GET /api/components/name-suffixes` | The words a Needle, Thread or Coating name may end with |
 | `POST /api/components/{id}/assign` | Admin: give a component to a player |
 | `GET/PUT /api/settings` | The global `playersCanSelfAssign` toggle |
-| `GET/POST /api/players`, `GET /api/players/{id}` | Players. A new player gets the starter kit and is attuned to the beginner needle. `cartographer` says whether they can record maps. |
+| `GET/POST /api/players`, `GET /api/players/{id}` | Players, searchable by name (`search`, `limit`). A new player gets the starter kit and is attuned to the beginner needle. |
 | `PUT` / `DELETE /api/players/{id}/attunement` | Attune one of the player's needles (body `{ needleId }`), or clear it. The attuned needle's abilities and boon go on the realm sheet. |
 | `GET/POST /api/players/{id}/inventory` | A player's inventory, and adding to it yourself (when allowed) |
 | `PUT /api/players/{id}/inventory/{componentId}/notes` | Replace a player's notes on an item they own |
 | `GET /api/maps/{id}/details` | Map details: seed, kind, threat, mobs, potential loot and resource nodes |
 | `POST /api/rituals/preview` | Resolve the four slots: map auto-fill, `randomize`, mismatch and danger, and what's missing |
 | `POST /api/rituals` (header `Idempotency-Key`), `GET /api/rituals/{id}` | Perform a ritual in one transaction. Retrying with the same key replays the result. |
-| `GET /api/realms?playerId=&mapId=`, `GET /api/realms/{id}` | Realm summaries, and a full realm with its generated document |
+| `GET /api/realms?playerId=&mapId=&gm=&page=&pageSize=`, `GET /api/realms/{id}` | A page of realm summaries, and a full realm with its generated document |
+| `GET /api/realms/{id}/completions` | The completion history of the realm's map (every run of it), and everyone who completed an objective there, with the first party marked |
 | `GET /api/realms/{id}/export?format=svg\|prompt\|json\|md&area=` | Exports. `svg` and `prompt` are per area (field or `floor-N`). |
 | `GET /api/realms/{id}/objectives/candidates` | Every objective a GM can pin: the rolled ones, then the other event hooks and realm-wide objectives |
 | `PUT` / `DELETE /api/realms/{id}/pinned-objective` | Pin an objective (body `{ key }`) or clear the pin. Stored on the realm, never on the map. |
-| `POST /api/realms/{id}/completion` | GM: complete the run, optionally with one of its objectives, and hand the map to chosen players (body `{ objectiveKey?, recipientPlayerIds }`). Players who can't take it are listed with a reason. Rituals never grant maps. |
+| `POST /api/realms/{id}/completion` | GM: record that a party completed an objective (body `{ objectiveKey, playerIds, mapRecipientIds? }`) and hand the map to those who don't hold it. Repeatable for any party (ADR 0011). Rituals never grant maps. |
 | `POST /api/gm/weave/preview`, `POST /api/gm/weave` | GM Quick Weave: resolve a realm from the whole catalog (chosen slots as given, empty ones random within the limits) without saving, then weave it. Nothing is consumed. |
 
 Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a concurrency conflict or missing components, and `422` for a reused idempotency key. See [ADR 0005](docs/adr/0005-ritual-transaction.md) for the ritual rules.
@@ -107,9 +108,9 @@ Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a co
 |---|---|
 | **Ritual** | Drag items from your inventory onto the four slots (or click them). The preview shows map auto-fill, the mismatch warning and anything missing. **Random** fills empty slots from your items; **Perform** opens the portal. Size and event count are under **Advanced**. Any needle you own can weave; a needle of the map's base type (any Beginner's Needle) still matches it. Ingredients woven before reopen the same realm, even without its map, unless the GM sealed it. |
 | **Player** | Your attuned needle (its abilities and boon go on the realm sheet). Your inventory grouped by type, and adding assignable components yourself (when the admin allows it). Open an item to keep your own notes on it; a map also shows its details (seed, recipe, threat, mobs, potential loot and resource nodes). |
-| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; Its **Objectives** (1–3, complete any one) jump to their event on the map; a GM can pin any candidate objective. **Complete the run (GM)** closes it, optionally with an objective, and hands the map to the players you tick. Click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
-| **Components** | Admin catalog: filter, create, edit, archive, assign to a player, and the self-assign switch. Needles have a base type and a boon; maps have rules (Map required seals a map to its holders; Components must match; Unique). |
-| **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options, **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
+| **Realms** | Your realms. A realm shows the server-rendered SVG with zoom, pan and floor tabs; Its **Objectives** (1–3, complete any one) jump to their event on the map; a GM can pin any candidate objective. **Complete an objective (GM)** records it for the party you tick (search to find players) and hands the map to those who don't hold it; any party can complete it again later, and **Player completion** lists everyone who has, with the first party marked. **Map details** shows the GM's view of what the map holds. Structure ideas (when suggested) are listed under their settlement. Click a placement to highlight it. Exports download as SVG, Markdown or JSON; the image prompt opens in a window with Copy and Download. |
+| **Components** | Admin catalog: filter, sort by any column header, create, edit (click a name; maps open on their **Map details** tab), clone (a clone must differ from its template), archive, assign to a player (with player search), and the self-assign switch. Needles have a base type and a boon; maps have rules (Map required seals a map to its holders; Components must match; Unique). |
+| **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options (structures are off by default; ask for placed structures or just structure ideas), **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
 | **About** | What Realm Weaver is for and how a ritual works. |
 
 The navigation leads with the GM pages (Quick Weave, Realms, Components). Ritual and Player sit under *Player preview*: groundwork for a later session client with logins (ADR 0010). The player switcher is in the header.

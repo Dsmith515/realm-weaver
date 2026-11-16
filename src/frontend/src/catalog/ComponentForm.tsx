@@ -37,13 +37,16 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
     setMobTypes((next.coating?.mobTypes ?? []).join(', '))
   }
 
+  const body = withLists(input, abilities, mobTypes)
+  // A clone identical to its template would just be a duplicate, so it needs at least one change. A new name counts,
+  // but keeping the old one gets a warning: two components with one name are hard to tell apart.
+  const original = template && !component ? toInput(template) : undefined
+  const unchangedClone = original !== undefined && sameInput(body, withLists(original, (original.needle?.abilities ?? []).join(', '), (original.coating?.mobTypes ?? []).join(', ')))
+  const sameNameAsOriginal = original !== undefined && !unchangedClone && body.name.trim() === original.name.trim()
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    const body: ComponentInput = {
-      ...input,
-      needle: input.needle && { ...input.needle, abilities: splitList(abilities) },
-      coating: input.coating && { ...input.coating, mobTypes: splitList(mobTypes) },
-    }
+    if (unchangedClone) return
     try {
       await save.mutateAsync({ id: component?.id, input: body })
       onDone()
@@ -212,7 +215,7 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
           <p className="muted">Maps are made by rituals; their seed and components can't be edited.</p>
           {(
             [
-              ['mapRequired', 'Map required', 'Players must hold this map to weave it. Off: anyone with the components can.'],
+              ['mapRequired', 'Map required', 'Sealed: players must hold this map to enter. Off: anyone with the components can.'],
               ['componentsMustMatch', 'Components must match', 'Only the recorded recipe opens it: no mirrors.'],
               ['unique', 'Unique', 'Only one player can hold it, so it can’t be shared or assigned twice.'],
             ] as const
@@ -234,8 +237,18 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
           {errorMessage(save.error)}
         </p>
       )}
+      {unchangedClone && (
+        <p className="field__hint" role="note">
+          Change something to create a copy. An identical clone would just be a duplicate.
+        </p>
+      )}
+      {sameNameAsOriginal && (
+        <p className="banner banner--warn" role="note">
+          The copy keeps the name {original.name}. Consider renaming it so the two are easy to tell apart.
+        </p>
+      )}
       <div className="actions">
-        <button type="submit" className="button--primary" disabled={save.isPending}>
+        <button type="submit" className="button--primary" disabled={save.isPending || unchangedClone}>
           {component ? 'Save' : template ? 'Create copy' : 'Create'}
         </button>
         <button type="button" className="button--quiet" onClick={onDone}>
@@ -257,6 +270,22 @@ function Field({ label: text, error, hint, children }: { label: string; error?: 
       {error && <span className="error-text">{error}</span>}
     </div>
   )
+}
+
+/** The input with the comma-separated fields split into lists, as the API takes it. */
+function withLists(input: ComponentInput, abilities: string, mobTypes: string): ComponentInput {
+  return {
+    ...input,
+    needle: input.needle && { ...input.needle, abilities: splitList(abilities) },
+    coating: input.coating && { ...input.coating, mobTypes: splitList(mobTypes) },
+  }
+}
+
+/** Equal once trimmed, treating a missing value and null alike, the way the server would store them. */
+function sameInput(a: ComponentInput, b: ComponentInput): boolean {
+  const normalize = (value: ComponentInput) =>
+    JSON.stringify(value, (_, v: unknown) => (v === undefined || v === '' ? null : typeof v === 'string' ? v.trim() : v))
+  return normalize(a) === normalize(b)
 }
 
 function splitList(text: string): string[] {
@@ -296,7 +325,7 @@ function toInput(c: Component): ComponentInput {
   }
 }
 
-/** A map's rules, with the server's defaults for maps recorded before flags existed. */
+/** A map's rules, with the server's defaults (open, mirrors allowed, shareable; ADR 0010). */
 function flagsOf(map: NonNullable<ComponentInput['map']>) {
-  return { mapRequired: true, componentsMustMatch: false, unique: false, ...(map.flags ?? {}) }
+  return { mapRequired: false, componentsMustMatch: false, unique: false, ...(map.flags ?? {}) }
 }

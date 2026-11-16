@@ -153,6 +153,11 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - Cartographer status is parked until player sessions exist. Attunement stays.
      - The navigation leads with GM pages; Ritual and Player are a *Player preview*.
      - The catalog no longer crashes on maps whose stored JSON lacks objectives.
+   - **8f. GM feedback round** (ADR 0011):
+     - Completions repeat: any party can complete a realm again, and only newcomers receive the map. A collapsible *Player completion* list shows everyone who has completed an objective, with the first party marked.
+     - Player and GM map views: players see kinds of creatures and loot plus rule tags with hover help; the GM sees counts, locations and objective locations, from the realm page and the catalog (click a component's name).
+     - Sortable catalog columns; tables and lists fill the window with the pager below; player search wherever players are picked.
+     - Clones must differ from their template. Quick Weave leaves structures out by default and can suggest structure ideas instead.
 9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.

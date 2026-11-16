@@ -71,14 +71,20 @@ describe('Quick Weave page', () => {
     await screen.findByRole('option', { name: needle.name })
     await user.click(screen.getByRole('button', { name: 'Roll' }))
     await screen.findByRole('region', { name: 'Rolled components' })
-    expect(api.callsTo('POST', '/api/gm/weave/preview')[0].body).toMatchObject({ population: null, includeStructures: true })
+    expect(api.callsTo('POST', '/api/gm/weave/preview')[0].body).toMatchObject({ population: null, includeStructures: false, suggestStructures: false })
 
     await user.click(screen.getByText('Settlements (new maps only)'))
     await user.selectOptions(screen.getByRole('combobox', { name: 'Population' }), 'bustling')
-    await user.click(screen.getByRole('checkbox', { name: 'Include structures' }))
+    // Placing structures replaces the suggestions.
+    await user.click(screen.getByRole('checkbox', { name: 'Place structures' }))
+    expect(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' })).toBeDisabled()
+    await user.click(screen.getByRole('checkbox', { name: 'Place structures' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' }))
     await user.click(screen.getByRole('button', { name: 'Weave' }))
 
-    await waitFor(() => expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ population: 'bustling', includeStructures: false }))
+    await waitFor(() =>
+      expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ population: 'bustling', includeStructures: false, suggestStructures: true }),
+    )
   })
 
   it('selects and unselects every option in a limit at once', async () => {

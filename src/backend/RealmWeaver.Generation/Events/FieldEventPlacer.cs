@@ -116,6 +116,7 @@ public sealed class FieldEventPlacer
     {
         SettlementPopulation? population = null;
         IReadOnlyList<PlacedStructure> structures = [];
+        IReadOnlyList<StructureSuggestion> suggestions = [];
         IReadOnlyList<MobGroup> groups;
         if (template.Category == EventCategory.Settlement)
         {
@@ -125,6 +126,10 @@ public sealed class FieldEventPlacer
             if (_request.IncludeStructures)
             {
                 structures = Settlements.PlaceStructures(footprint, level, _catalog, _request, rng.Fork("structures"), firstStructure);
+            }
+            else if (_request.SuggestStructures)
+            {
+                suggestions = Settlements.SuggestStructures(footprint, level, _catalog, _request, rng.Fork("structures"));
             }
         }
         else
@@ -144,6 +149,7 @@ public sealed class FieldEventPlacer
             Notes = template.Description,
             Population = population,
             Structures = structures,
+            SuggestedStructures = suggestions,
         };
     }
 

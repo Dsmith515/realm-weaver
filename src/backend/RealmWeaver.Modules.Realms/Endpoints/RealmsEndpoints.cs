@@ -20,8 +20,10 @@ internal static class RealmsEndpoints
     {
         var realms = app.MapGroup("/api/realms").WithTags("Realms");
         realms.MapGet("/", ListAsync).WithName("ListRealms")
-            .WithDescription("Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.");
+            .WithDescription("A page of realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.");
         realms.MapGet("/{id:guid}", GetAsync).WithName("GetRealm");
+        realms.MapGet("/{id:guid}/completions", CompletionsAsync).WithName("ListCompletions")
+            .WithDescription("The completion history of the realm's map (every run woven from it), newest first, and every player who completed at least one objective there.");
         realms.MapGet("/{id:guid}/objectives/candidates", CandidatesAsync).WithName("ListObjectiveCandidates")
             .WithDescription("Every objective a GM can pin: the rolled objectives first, then the other hooks of the placed events and the realm-wide objectives.");
         realms.MapPut("/{id:guid}/pinned-objective", PinAsync).WithName("PinObjective")
@@ -32,16 +34,31 @@ internal static class RealmsEndpoints
             .WithDescription("format=svg|prompt (one area; area defaults to the first) or json|md (the whole realm).");
     }
 
-    private static async Task<Results<Ok<IReadOnlyList<RealmSummaryDto>>, ValidationProblem>> ListAsync(
-        RealmsService realms, CancellationToken cancellationToken, Guid? playerId = null, Guid? mapId = null, int limit = 50, bool gm = false)
+    private static async Task<Results<Ok<RealmSummaryPage>, ValidationProblem>> ListAsync(
+        RealmsService realms,
+        CancellationToken cancellationToken,
+        Guid? playerId = null,
+        Guid? mapId = null,
+        int page = 1,
+        int pageSize = 25,
+        bool gm = false)
     {
-        if (limit is < 1 or > RealmsService.MaxListSize)
+        var errors = new ValidationErrors();
+        errors.Require(page >= 1, "page", "Pages start at 1.");
+        errors.Require(pageSize is >= 1 and <= RealmsService.MaxListSize, "pageSize", $"Page size must be between 1 and {RealmsService.MaxListSize}.");
+        if (!errors.IsValid)
         {
-            return Problems.Validation(new Dictionary<string, string[]> { ["limit"] = [$"Limit must be between 1 and {RealmsService.MaxListSize}."] });
+            return Problems.Validation(errors.ToDictionary());
         }
 
-        return TypedResults.Ok(await realms.ListAsync(playerId, mapId, limit, cancellationToken, gmOnly: gm));
+        return TypedResults.Ok(await realms.ListAsync(playerId, mapId, page, pageSize, cancellationToken, gmOnly: gm));
     }
+
+    private static async Task<Results<Ok<RealmCompletionsDto>, ProblemHttpResult>> CompletionsAsync(
+        Guid id, RealmsService realms, CancellationToken cancellationToken) =>
+        await realms.GetCompletionsAsync(id, cancellationToken) is { } completions
+            ? TypedResults.Ok(completions)
+            : Problems.NotFound("Realm", id);
 
     private static async Task<Results<Ok<RealmDto>, ProblemHttpResult>> GetAsync(Guid id, RealmsService realms, CancellationToken cancellationToken) =>
         await realms.GetAsync(id, cancellationToken) is { } realm

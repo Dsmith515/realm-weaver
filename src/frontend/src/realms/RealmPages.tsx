@@ -1,58 +1,73 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../api/client'
-import { exportUrl, useGmRealms, useRealm, useRealms, useRealmSvg } from '../api/queries'
+import { exportUrl, useRealm, useRealms, useRealmSvg } from '../api/queries'
 import type { Realm, RealmArea, RealmSummary } from '../api/types'
 import { boonLabel, label, tileLabel } from '../api/types'
+import { Pager } from '../components/Pager'
+import { MapDetailsModal } from '../maps/MapDetailsView'
 import { usePlayerSelection } from '../player/playerContext'
 import { CompleteRealmCard } from './CompleteRealmCard'
 import { ObjectivesPanel } from './ObjectivesPanel'
 import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
 
+const realmsPageSize = 25
+
 export function RealmsPage() {
   const { playerId } = usePlayerSelection()
   const [gm, setGm] = useState(false)
-  const playerRealms = useRealms(gm ? undefined : playerId)
-  const gmRealms = useGmRealms(gm)
-  const realms = gm ? gmRealms : playerRealms
+  const [page, setPage] = useState(1)
+  const realms = useRealms(gm ? { gm: true, page, pageSize: realmsPageSize } : { playerId, page, pageSize: realmsPageSize }, gm || !!playerId)
+  const showTab = (toGm: boolean) => {
+    setGm(toGm)
+    setPage(1)
+  }
+  const result = realms.data
 
   return (
-    <section>
+    <section className="page-fill">
       <h1>Realms</h1>
       <div role="tablist" aria-label="Whose realms" className="tabs">
-        <button type="button" role="tab" aria-selected={!gm} onClick={() => setGm(false)}>
+        <button type="button" role="tab" aria-selected={!gm} onClick={() => showTab(false)}>
           Player
         </button>
-        <button type="button" role="tab" aria-selected={gm} onClick={() => setGm(true)}>
+        <button type="button" role="tab" aria-selected={gm} onClick={() => showTab(true)}>
           GM Quick Weaves
         </button>
       </div>
       {!gm && !playerId && <p>Choose a player in the header.</p>}
       {realms.isError && <p className="error-text">{errorMessage(realms.error)}</p>}
-      {realms.data?.length === 0 && (
+      {result?.totalCount === 0 && (
         <p>
           No realms yet. {gm ? <Link to="/gm/weave">Quick Weave</Link> : <Link to="/ritual">Perform a ritual</Link>} to open one.
         </p>
       )}
-      <ul className="realm-list">
-        {realms.data?.map((realm) => (
-          <li key={realm.id} className="card realm-list__item">
-            <div>
-              <Link to={`/realms/${realm.id}`}>
-                <strong>{title(realm)}</strong>
-              </Link>
-              {realm.isMirror && <MirrorBadge />}
-              {realm.completion && <span className="badge badge--ok">Complete</span>}
-              {realm.components && <p className="realm-list__components">{componentsLine(realm)}</p>}
-            </div>
-            <span className="muted">
-              {label(realm.kind)} · threat {realm.threat}
-              {realm.dangerModifier > 0 && ` (danger +${realm.dangerModifier})`} · {new Date(realm.createdAt).toLocaleString()}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="scroll-region">
+        <ul className="realm-list">
+          {result?.items.map((realm) => (
+            <li key={realm.id} className="card realm-list__item">
+              <div>
+                <Link to={`/realms/${realm.id}`}>
+                  <strong>{title(realm)}</strong>
+                </Link>
+                {realm.isMirror && <MirrorBadge />}
+                {realm.completionCount > 0 && (
+                  <span className="badge badge--ok" title="Objectives completed on this realm's map, across every run">
+                    Completed ×{realm.completionCount}
+                  </span>
+                )}
+                {realm.components && <p className="realm-list__components">{componentsLine(realm)}</p>}
+              </div>
+              <span className="muted">
+                {label(realm.kind)} · threat {realm.threat}
+                {realm.dangerModifier > 0 && ` (danger +${realm.dangerModifier})`} · {new Date(realm.createdAt).toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {result && result.totalCount > 0 && <Pager page={result.page} pageSize={result.pageSize} totalCount={result.totalCount} noun="realms" onPage={setPage} />}
     </section>
   )
 }
@@ -79,6 +94,7 @@ function RealmView({ realm }: { realm: Realm }) {
   const [areaId, setAreaId] = useState(summary.areas[0]?.id)
   const [highlight, setHighlight] = useState<string>()
   const [promptOpen, setPromptOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const svg = useRealmSvg(summary.id, areaId)
   const area = document.areas.find((a) => a.id === areaId)
 
@@ -104,6 +120,12 @@ function RealmView({ realm }: { realm: Realm }) {
           {summary.components.attunedNeedle.boon && ` · boon: ${boonLabel(summary.components.attunedNeedle.boon)}`}
         </p>
       )}
+      <p className="actions">
+        <button type="button" onClick={() => setDetailsOpen(true)}>
+          Map details
+        </button>
+      </p>
+      {detailsOpen && <MapDetailsModal mapId={summary.mapComponentId} name={summary.components?.mapName ?? title(summary)} onClose={() => setDetailsOpen(false)} />}
       <p className="muted">
         {label(summary.kind)} · Seed {summary.seed} · {summary.width}×{summary.height} · threat {summary.threat}
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}
@@ -169,6 +191,11 @@ function RealmView({ realm }: { realm: Realm }) {
                     ))}
                   </ul>
                 )}
+                {p.ideas && p.ideas.length > 0 && (
+                  <p className="placements__ideas" aria-label={`Structure ideas for ${p.id}`}>
+                    <span className="badge">Ideas, not placed</span> {p.ideas.join(', ')}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -202,6 +229,8 @@ interface Placement {
   detail?: string
   /** Buildings inside a settlement, one line each. */
   structures?: string[]
+  /** Structure suggestions for the GM to place themselves. */
+  ideas?: string[]
   /** Where the party enters the area: the spawn, a dungeon entrance, the way up, or the host structure. */
   isEntry: boolean
 }
@@ -222,6 +251,7 @@ function placementsOf(area: RealmArea): Placement[] {
       location: e.location ?? '',
       detail: detail || undefined,
       structures: e.structures?.map((b) => `${b.id} ${b.name}${b.ruined ? ' (ruined)' : ''} ${b.location ?? ''}`.trim()),
+      ideas: e.suggestedStructures?.map((s) => s.name),
       isEntry: e.category === 'structure',
     }
   })

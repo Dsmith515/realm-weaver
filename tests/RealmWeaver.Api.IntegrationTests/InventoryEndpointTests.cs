@@ -22,6 +22,23 @@ public class InventoryEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
+    public async Task Players_can_be_searched_by_part_of_their_name()
+    {
+        using var client = factory.CreateClient();
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        foreach (var name in new[] { $"Ash {tag}", $"Briar {tag}", $"100%_{tag}" })
+        {
+            await client.PostJsonAsync("/api/players", new CreatePlayerInput(name));
+        }
+
+        var matches = await client.GetJsonAsync<List<PlayerDto>>($"/api/players?search={tag.ToUpperInvariant()}");
+        Assert.Equal([$"100%_{tag}", $"Ash {tag}", $"Briar {tag}"], matches.Select(p => p.Name));
+        Assert.Equal([$"100%_{tag}"], (await client.GetJsonAsync<List<PlayerDto>>($"/api/players?search={Uri.EscapeDataString($"%_{tag}")}")).Select(p => p.Name));
+        Assert.Single(await client.GetJsonAsync<List<PlayerDto>>($"/api/players?search={tag}&limit=1"));
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync(new Uri("/api/players?limit=0", UriKind.Relative))).StatusCode);
+    }
+
+    [Fact]
     public async Task New_player_gets_the_starter_kit()
     {
         using var client = factory.CreateClient();

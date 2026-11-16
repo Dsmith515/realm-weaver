@@ -153,6 +153,32 @@ public class SettlementTests
     }
 
     [Fact]
+    public void Suggestions_name_structure_ideas_without_placing_them_or_changing_anything_else()
+    {
+        for (ulong seed = 1; seed <= 40; seed++)
+        {
+            var plain = RealmGenerator.Generate(Goblins(seed * 13, structures: false));
+            var suggested = RealmGenerator.Generate(Goblins(seed * 13, structures: false) with { SuggestStructures = true });
+            var events = suggested.Areas.Single().Events;
+
+            Assert.All(events, e => Assert.Empty(e.Structures));
+            Assert.All(events.Where(e => e.Category != EventCategory.Settlement), e => Assert.Empty(e.SuggestedStructures));
+            Assert.All(events.Where(e => e.Category == EventCategory.Settlement), e => Assert.NotEmpty(e.SuggestedStructures));
+            Assert.Equal(plain.Areas.Single().Events.Select(e => (e.Id, e.Location, Mobs: e.Mobs.Sum(m => m.Count))), events.Select(e => (e.Id, e.Location, Mobs: e.Mobs.Sum(m => m.Count))));
+            Assert.Equal(PromptExporter.Build(plain), PromptExporter.Build(suggested));
+        }
+
+        // Placed structures win: suggestions only apply when structures are off.
+        Assert.All(RealmGenerator.Generate(Goblins(7) with { SuggestStructures = true }).Areas.Single().Events, e => Assert.Empty(e.SuggestedStructures));
+
+        var withIdeas = Enumerable.Range(1, 60)
+            .Select(i => RealmGenerator.Generate(Goblins((ulong)i * 104729, structures: false) with { SuggestStructures = true }))
+            .First(r => r.Areas.Single().Events.Any(e => e.SuggestedStructures.Count > 0));
+        var settlement = withIdeas.Areas.Single().Events.First(e => e.SuggestedStructures.Count > 0);
+        Assert.Contains($"Structure ideas for {settlement.Id} {settlement.Name} (not placed): {settlement.SuggestedStructures[0].Name}", MarkdownExporter.Build(withIdeas), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Settlements_are_deterministic()
     {
         var first = RealmJson.Serialize(RealmGenerator.Generate(Goblins(99)));

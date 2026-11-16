@@ -1,16 +1,29 @@
 import { useState } from 'react'
 import { errorMessage } from '../api/client'
-import { useArchiveComponent, useAssignComponent, useComponents, usePlayers, useSettings, useUpdateSettings, type ComponentFilters } from '../api/queries'
+import { useArchiveComponent, useAssignComponent, useComponents, useSettings, useUpdateSettings, type ComponentFilters, type ComponentSort } from '../api/queries'
 import type { Component } from '../api/types'
 import { biomes, componentTypes, label, rarities } from '../api/types'
 import { Modal } from '../components/Modal'
+import { Pager } from '../components/Pager'
+import { PlayerSelect } from '../components/PlayerPicker'
+import { MapDetailsView } from '../maps/MapDetailsView'
 import { ComponentForm } from './ComponentForm'
 import { creatableTypes } from './randomComponent'
 import { describe } from './describe'
 
 const pageSize = 25
 
-type Editing = { mode: 'new' } | { mode: 'edit'; component: Component } | { mode: 'clone'; component: Component }
+type Editing = { mode: 'new' } | { mode: 'edit'; component: Component; tab?: 'edit' | 'details' } | { mode: 'clone'; component: Component }
+
+/** Sortable columns and the API's sort key for each. Details and actions don't sort. */
+const columns: { label: string; sort?: ComponentSort }[] = [
+  { label: 'Name', sort: 'name' },
+  { label: 'Type', sort: 'type' },
+  { label: 'Rarity', sort: 'rarity' },
+  { label: 'Rank', sort: 'rank' },
+  { label: 'Details' },
+  { label: 'Self-add', sort: 'assignable' },
+]
 
 const canClone = (c: Component) => (creatableTypes as readonly string[]).includes(c.type)
 
@@ -24,10 +37,12 @@ export function ComponentsPage() {
 
   const filter = (change: Partial<ComponentFilters>) => setFilters({ ...filters, ...change, page: 1 })
   const result = components.data
-  const pages = result ? Math.max(1, Math.ceil(result.totalCount / result.pageSize)) : 1
+  const sort = filters.sort ?? 'name'
+  // Clicking the sorted column flips it; another column sorts ascending.
+  const sortBy = (column: ComponentSort) => filter({ sort: column, desc: column === sort ? !filters.desc : undefined })
 
   return (
-    <section>
+    <section className="page-fill">
       <h1>Components</h1>
       <SelfAssignToggle />
 
@@ -68,11 +83,28 @@ export function ComponentsPage() {
 
       {editing && (
         <Modal title={editing.mode === 'new' ? 'New component' : `${editing.mode === 'edit' ? 'Edit' : 'Clone'} ${editing.component.name}`} onClose={() => setEditing(undefined)}>
-          <ComponentForm
-            component={editing.mode === 'edit' ? editing.component : undefined}
-            template={editing.mode === 'clone' ? editing.component : undefined}
-            onDone={() => setEditing(undefined)}
-          />
+          {editing.mode === 'edit' && editing.component.type === 'map' && (
+            <div role="tablist" aria-label="Map views" className="tabs">
+              <button type="button" role="tab" aria-selected={editing.tab !== 'details'} onClick={() => setEditing({ ...editing, tab: 'edit' })}>
+                Edit
+              </button>
+              <button type="button" role="tab" aria-selected={editing.tab === 'details'} onClick={() => setEditing({ ...editing, tab: 'details' })}>
+                Map details
+              </button>
+            </div>
+          )}
+          {editing.mode === 'edit' && editing.tab === 'details' ? (
+            <>
+              <h2>{editing.component.name}</h2>
+              <MapDetailsView mapId={editing.component.id} audience="gm" />
+            </>
+          ) : (
+            <ComponentForm
+              component={editing.mode === 'edit' ? editing.component : undefined}
+              template={editing.mode === 'clone' ? editing.component : undefined}
+              onDone={() => setEditing(undefined)}
+            />
+          )}
         </Modal>
       )}
       {assigning && (
@@ -83,15 +115,24 @@ export function ComponentsPage() {
       {components.isError && <p className="error-text">{errorMessage(components.error)}</p>}
       {archive.isError && <p className="error-text">{errorMessage(archive.error)}</p>}
 
-      <table className="table">
+      <div className="scroll-region">
+      <table className="table table--sticky">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Rarity</th>
-            <th>Rank</th>
-            <th>Details</th>
-            <th>Self-add</th>
+            {columns.map((column) =>
+              column.sort ? (
+                <th key={column.label} aria-sort={sort === column.sort ? (filters.desc ? 'descending' : 'ascending') : undefined}>
+                  <button type="button" className="sort-header" onClick={() => sortBy(column.sort!)}>
+                    {column.label}
+                    <span className="sort-header__arrow" aria-hidden="true">
+                      {sort === column.sort ? (filters.desc ? '▼' : '▲') : '↕'}
+                    </span>
+                  </button>
+                </th>
+              ) : (
+                <th key={column.label}>{column.label}</th>
+              ),
+            )}
             <th>
               <span className="visually-hidden">Actions</span>
             </th>
@@ -101,7 +142,14 @@ export function ComponentsPage() {
           {result?.items.map((c) => (
             <tr key={c.id} className={c.isArchived ? 'row--archived' : undefined}>
               <td>
-                {c.name}
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => setEditing({ mode: 'edit', component: c, tab: c.type === 'map' ? 'details' : 'edit' })}
+                  title={c.type === 'map' ? 'Map details and edit' : 'Edit'}
+                >
+                  {c.name}
+                </button>
                 {c.isArchived && <span className="badge">Archived</span>}
                 {c.usedByMapCount > 0 && (
                   <span className="badge" title="Its recipe fields are locked">
@@ -144,20 +192,9 @@ export function ComponentsPage() {
           ))}
         </tbody>
       </table>
+      </div>
 
-      {result && (
-        <div className="pager">
-          <button type="button" disabled={(filters.page ?? 1) <= 1} onClick={() => setFilters({ ...filters, page: (filters.page ?? 1) - 1 })}>
-            Previous
-          </button>
-          <span>
-            Page {result.page} of {pages} · {result.totalCount} components
-          </span>
-          <button type="button" disabled={(filters.page ?? 1) >= pages} onClick={() => setFilters({ ...filters, page: (filters.page ?? 1) + 1 })}>
-            Next
-          </button>
-        </div>
-      )}
+      {result && <Pager page={result.page} pageSize={result.pageSize} totalCount={result.totalCount} noun="components" onPage={(page) => setFilters({ ...filters, page })} />}
     </section>
   )
 }
@@ -179,11 +216,10 @@ function SelfAssignToggle() {
 }
 
 function AssignForm({ component, onDone }: { component: Component; onDone: () => void }) {
-  const players = usePlayers()
   const assign = useAssignComponent()
   const [playerId, setPlayerId] = useState('')
   const [quantity, setQuantity] = useState(1)
-  const chosen = playerId || players.data?.[0]?.id || ''
+  const chosen = playerId
 
   return (
     <form
@@ -195,13 +231,7 @@ function AssignForm({ component, onDone }: { component: Component; onDone: () =>
       }}
     >
       <h2>Give {component.name} to</h2>
-      <select aria-label="Player" value={chosen} onChange={(e) => setPlayerId(e.target.value)}>
-        {players.data?.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
+      <PlayerSelect label="Player" value={chosen} onChange={setPlayerId} />
       {component.isConsumable && (
         <input type="number" aria-label="Quantity" min={1} max={99} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
       )}

@@ -32,8 +32,8 @@ public class QuickWeaveEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(Biome.Forest, map.Map?.Recipe?.Biome);
         var realm = await GetRealmAsync(client, result.RealmId);
         Assert.Null(realm.Summary.PlayerId);
-        Assert.Contains(await client.GetJsonAsync<List<RealmSummaryDto>>("/api/realms?gm=true"), r => r.Id == result.RealmId);
-        Assert.DoesNotContain(await client.GetJsonAsync<List<RealmSummaryDto>>($"/api/realms?playerId={player.Id}"), r => r.Id == result.RealmId);
+        Assert.Contains((await client.GetJsonAsync<RealmSummaryPage>("/api/realms?gm=true")).Items, r => r.Id == result.RealmId);
+        Assert.DoesNotContain((await client.GetJsonAsync<RealmSummaryPage>($"/api/realms?playerId={player.Id}")).Items, r => r.Id == result.RealmId);
     }
 
     [Fact]
@@ -89,6 +89,27 @@ public class QuickWeaveEndpointTests(RealmWeaverApiFactory factory)
         var assign = await client.PostJsonAsync($"/api/components/{first.MapId}/assign", new AssignComponentInput(player.Id));
         Assert.Equal(HttpStatusCode.OK, assign.StatusCode);
         Assert.Equal(1, (await QuantitiesAsync(client, player.Id))[first.MapId]);
+    }
+
+    [Fact]
+    public async Task Quick_weave_leaves_structures_out_by_default_and_can_suggest_them_instead()
+    {
+        using var client = factory.CreateClient();
+        var plain = await WeaveOkAsync(client, new QuickWeaveRequest(BeginnerNeedle, MossgreenThread, BrigandsPitch, Width: 60, Height: 40, EventCount: 20));
+        var ideas = await WeaveOkAsync(
+            client,
+            new QuickWeaveRequest(BeginnerNeedle, MossgreenThread, BrigandsPitch, Width: 60, Height: 40, EventCount: 20, SuggestStructures: true));
+
+        Assert.False((await client.GetJsonAsync<ComponentDto>($"/api/components/{plain.MapId}")).Map!.Recipe!.IncludeStructures);
+        Assert.True((await client.GetJsonAsync<ComponentDto>($"/api/components/{ideas.MapId}")).Map!.Recipe!.SuggestStructures);
+
+        static List<System.Text.Json.JsonElement> SettlementsOf(RealmView realm) => [.. realm.Document.GetProperty("areas").EnumerateArray().Where(a => a.GetProperty("kind").GetString() == "field")
+            .SelectMany(a => a.GetProperty("events").EnumerateArray())
+            .Where(e => e.GetProperty("category").GetString() == "settlement")];
+        Assert.All(SettlementsOf(await GetRealmAsync(client, plain.RealmId)), e => Assert.Equal(0, e.GetProperty("structures").GetArrayLength()));
+        var suggested = SettlementsOf(await GetRealmAsync(client, ideas.RealmId));
+        Assert.All(suggested, e => Assert.Equal(0, e.GetProperty("structures").GetArrayLength()));
+        Assert.All(suggested, e => Assert.NotEqual(0, e.GetProperty("suggestedStructures").GetArrayLength()));
     }
 
     [Fact]

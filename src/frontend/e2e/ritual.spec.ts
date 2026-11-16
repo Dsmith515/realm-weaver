@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { expectMapDrawn, nav, newPlayer } from './helpers.ts'
 
-test('a new player performs a random ritual, the GM completes the run and hands out the map, and exports download', async ({ page }) => {
+test('a new player performs a random ritual, the GM completes an objective and hands out the map, and exports download', async ({ page }) => {
   await newPlayer(page, 'E2E Ritual')
 
   await nav(page, 'Ritual')
@@ -35,12 +35,16 @@ test('a new player performs a random ritual, the GM completes the run and hands 
   await expect(page.getByRole('dialog')).toContainText('battle map')
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
 
-  // The run has one to three objectives. The GM completes it with one and hands the map to the weaver (ticked by default).
-  await expect(page.getByRole('region', { name: 'Objectives' })).toContainText('Complete any one to complete the run.')
+  // The GM completes an objective (the first is chosen) and hands the map to the weaver, who is ticked by default.
+  await expect(page.getByRole('region', { name: 'Objectives' })).toContainText('as often as the realm is run')
   const completion = page.getByRole('region', { name: 'Completion' })
-  await completion.getByLabel('Objective completed').selectOption({ index: 1 })
-  await completion.getByRole('button', { name: 'Complete and hand out the map' }).click()
+  await expect(completion.getByRole('checkbox', { name: /\(weaver\)/ })).toBeChecked()
+  await completion.getByRole('button', { name: 'Complete objective' }).click()
   await expect(completion.getByRole('status')).toContainText('Map handed to E2E Ritual')
+
+  // The realm stays open for the next party; the weaver is now on its completion list.
+  await completion.getByText(/^Player completion/).click()
+  await expect(completion.getByRole('list', { name: 'Players who completed an objective' })).toContainText('E2E Ritual')
 
   await nav(page, 'Player')
   await expect(page.getByRole('region', { name: 'Maps' }).getByRole('heading')).toContainText('(1)')

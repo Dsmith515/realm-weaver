@@ -73,26 +73,13 @@ public static class Settlements
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(rng);
 
-        var fits = catalog.StructureTemplates
-            .Where(t => t.Biomes.Count == 0 || t.Biomes.Contains(request.Biome))
-            .Where(t => t.MinSide <= Math.Min(footprint.Width, footprint.Height))
-            .ToList();
-        var cultural = fits.Where(t => t.Tags.Any(tag => request.MobTags.Contains(tag, StringComparer.OrdinalIgnoreCase))).ToList();
-        var pool = fits.Where(t => t.Tags.Count == 0).Concat(cultural).ToList();
+        var pool = StructurePool(footprint, catalog, request);
         if (pool.Count == 0)
         {
             return [];
         }
 
-        var tilesPerStructure = population switch
-        {
-            SettlementPopulation.Abandoned => 18,
-            SettlementPopulation.Sparse => 24,
-            SettlementPopulation.Modest => 16,
-            SettlementPopulation.Bustling => 12,
-            _ => 9,
-        };
-        var target = Math.Clamp(footprint.Area / tilesPerStructure, 1, 12);
+        var target = StructureTarget(footprint, population);
 
         var used = new Dictionary<string, int>(StringComparer.Ordinal);
         var placed = new List<PlacedStructure>();
@@ -133,5 +120,65 @@ public static class Settlements
         }
 
         return placed;
+    }
+
+    /// <summary>
+    /// Structure ideas for a settlement the GM lays out themselves: about as many as <see cref="PlaceStructures"/> would
+    /// place, from the same pool and weights, with no positions. Abandoned settlements suggest ruins.
+    /// </summary>
+    public static IReadOnlyList<StructureSuggestion> SuggestStructures(
+        GridRect footprint,
+        SettlementPopulation population,
+        IContentCatalog catalog,
+        GenerationRequest request,
+        SeededRandom rng)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(rng);
+
+        var pool = StructurePool(footprint, catalog, request);
+        var used = new Dictionary<string, int>(StringComparer.Ordinal);
+        var suggestions = new List<StructureSuggestion>();
+        var target = StructureTarget(footprint, population);
+        while (suggestions.Count < target)
+        {
+            var available = pool.Where(t => used.GetValueOrDefault(t.Id) < t.MaxPerSettlement).ToList();
+            if (available.Count == 0)
+            {
+                break;
+            }
+
+            var template = rng.PickWeighted(available, t => t.Weight * (t.Tags.Count > 0 ? 3 : 1));
+            used[template.Id] = used.GetValueOrDefault(template.Id) + 1;
+            var name = population == SettlementPopulation.Abandoned ? $"Ruined {template.Name.ToLowerInvariant()}" : template.Name;
+            suggestions.Add(new StructureSuggestion(template.Id, name));
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>Structures that fit the footprint and biome: ones any settlement could have, plus the Coating's cultural ones.</summary>
+    private static List<StructureTemplate> StructurePool(GridRect footprint, IContentCatalog catalog, GenerationRequest request)
+    {
+        var fits = catalog.StructureTemplates
+            .Where(t => t.Biomes.Count == 0 || t.Biomes.Contains(request.Biome))
+            .Where(t => t.MinSide <= Math.Min(footprint.Width, footprint.Height))
+            .ToList();
+        var cultural = fits.Where(t => t.Tags.Any(tag => request.MobTags.Contains(tag, StringComparer.OrdinalIgnoreCase))).ToList();
+        return [.. fits.Where(t => t.Tags.Count == 0).Concat(cultural)];
+    }
+
+    private static int StructureTarget(GridRect footprint, SettlementPopulation population)
+    {
+        var tilesPerStructure = population switch
+        {
+            SettlementPopulation.Abandoned => 18,
+            SettlementPopulation.Sparse => 24,
+            SettlementPopulation.Modest => 16,
+            SettlementPopulation.Bustling => 12,
+            _ => 9,
+        };
+        return Math.Clamp(footprint.Area / tilesPerStructure, 1, 12);
     }
 }
