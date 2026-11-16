@@ -155,7 +155,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
     }
 
     /// <summary>The completion history of the realm's map, newest first, with everyone who completed something. Null when the realm doesn't exist.</summary>
-    public async Task<RealmCompletionsDto?> GetCompletionsAsync(Guid realmId, CancellationToken cancellationToken)
+    public async Task<RealmCompletionsDto?> GetCompletionsAsync(Guid realmId, CancellationToken cancellationToken = default)
     {
         var mapId = await db.Realms.Where(r => r.Id == realmId).Select(r => (Guid?)r.MapComponentId).FirstOrDefaultAsync(cancellationToken);
         if (mapId is null)

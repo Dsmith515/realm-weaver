@@ -25,10 +25,22 @@ public sealed record AddInventoryItemInput(Guid ComponentId, int Quantity = 1);
 /// <summary>Body for an admin giving a component to a player.</summary>
 public sealed record AssignComponentInput(Guid PlayerId, int Quantity = 1);
 
+/// <summary>One page of players by name.</summary>
+public sealed record PlayerPage(IReadOnlyList<PlayerDto> Items, int Page, int PageSize, int TotalCount);
+
 /// <summary>The Inventory module's public contract for other modules.</summary>
 public interface IInventoryModule
 {
     Task<PlayerDto?> GetPlayerAsync(Guid playerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Players by name, a page at a time. <paramref name="search"/> matches any part of the name (case-insensitive,
+    /// <c>%</c> and <c>_</c> literal). <paramref name="excludeIds"/> are left out of the page and the count.
+    /// </summary>
+    Task<PlayerPage> ListPlayersPageAsync(string? search, int page, int pageSize, IReadOnlyCollection<Guid> excludeIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Which of <paramref name="playerIds"/> hold <paramref name="componentId"/>.</summary>
+    Task<IReadOnlySet<Guid>> HoldersAsync(Guid componentId, IReadOnlyCollection<Guid> playerIds, CancellationToken cancellationToken = default);
 
     /// <summary>Returns null when the player doesn't exist.</summary>
     Task<IReadOnlyList<InventoryItemDto>?> GetInventoryAsync(Guid playerId, CancellationToken cancellationToken = default);

@@ -160,6 +160,81 @@
         }
       }
     },
+    "/api/realms/{id}/roster": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "Players for the GM\u0027s completion table, by name. By default players who have completed an objective here and hold the map are left out; all=true lists everyone. search matches any part of the name.",
+        "operationId": "GetRealmRoster",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmRosterDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/components": {
       "get": {
         "tags": [
@@ -3476,6 +3551,46 @@
           }
         }
       },
+      "RealmRosterDto": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "weaver"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RosterPlayerDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weaver": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RosterPlayerDto"
+              }
+            ]
+          }
+        }
+      },
       "RealmSummaryDto": {
         "required": [
           "id",
@@ -3943,6 +4058,35 @@
           "mine",
           "cave"
         ]
+      },
+      "RosterPlayerDto": {
+        "required": [
+          "id",
+          "name",
+          "completions",
+          "holdsMap",
+          "isWeaver"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "completions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "holdsMap": {
+            "type": "boolean"
+          },
+          "isWeaver": {
+            "type": "boolean"
+          }
+        }
       },
       "RunCompletionDto": {
         "required": [

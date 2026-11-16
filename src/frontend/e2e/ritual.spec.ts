@@ -43,8 +43,9 @@ test('a new player performs a random ritual, the GM completes an objective and h
   await expect(completion.getByRole('status')).toContainText('Map handed to E2E Ritual')
 
   // The realm stays open for the next party; the weaver is now on its completion list.
-  await completion.getByText(/^Player completion/).click()
-  await expect(completion.getByRole('list', { name: 'Players who completed an objective' })).toContainText('E2E Ritual')
+  const objectives = page.getByRole('region', { name: 'Objectives' })
+  await objectives.getByText('Player completion').click()
+  await expect(objectives.getByRole('list', { name: 'Players who completed an objective' })).toContainText('E2E Ritual')
 
   await nav(page, 'Player')
   await expect(page.getByRole('region', { name: 'Maps' }).getByRole('heading')).toContainText('(1)')

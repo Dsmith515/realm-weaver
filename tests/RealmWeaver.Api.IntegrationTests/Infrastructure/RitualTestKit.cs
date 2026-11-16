@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
+using RealmWeaver.Generation.Export;
+using RealmWeaver.Generation.Model;
 using RealmWeaver.Modules.Catalog.Contracts;
 using RealmWeaver.Modules.Inventory.Contracts;
 using RealmWeaver.Modules.Realms.Contracts;
@@ -100,6 +102,16 @@ internal static class RitualTestKit
     /// <summary>A small field ritual: quick to generate.</summary>
     public static RitualSelection SmallField(Guid playerId, Guid? thread = null, Guid? coating = null) =>
         new(playerId, BeginnerNeedle, thread ?? MossgreenThread, coating ?? BeastwardWax, Width: 24, Height: 20);
+
+    public static async Task<RunCompletionDto> CompleteAsync(HttpClient client, Guid realmId, CompleteRunInput input)
+    {
+        var response = await client.PostJsonAsync($"/api/realms/{realmId}/completion", input);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        return await response.ReadJsonAsync<RunCompletionDto>();
+    }
+
+    public static async Task<List<RealmObjective>> ObjectivesAsync(HttpClient client, Guid realmId) =>
+        (await GetRealmAsync(client, realmId)).Document.GetProperty("objectives").Deserialize<List<RealmObjective>>(RealmJson.Options)!;
 }
 
 /// <summary>A realm as the API returns it, with the document kept as raw JSON for comparisons.</summary>

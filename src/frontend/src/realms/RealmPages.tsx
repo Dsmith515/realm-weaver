@@ -7,8 +7,7 @@ import { boonLabel, label, tileLabel } from '../api/types'
 import { Pager } from '../components/Pager'
 import { MapDetailsModal } from '../maps/MapDetailsView'
 import { usePlayerSelection } from '../player/playerContext'
-import { CompleteRealmCard } from './CompleteRealmCard'
-import { ObjectivesPanel } from './ObjectivesPanel'
+import { RealmObjectives } from './RealmObjectives'
 import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
 
@@ -95,6 +94,7 @@ function RealmView({ realm }: { realm: Realm }) {
   const [highlight, setHighlight] = useState<string>()
   const [promptOpen, setPromptOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [placementsOpen, setPlacementsOpen] = useState(true)
   const svg = useRealmSvg(summary.id, areaId)
   const area = document.areas.find((a) => a.id === areaId)
 
@@ -138,7 +138,7 @@ function RealmView({ realm }: { realm: Realm }) {
         {summary.dangerModifier > 0 && ` (mismatch danger +${summary.dangerModifier})`} · generator {summary.generatorVersion}
       </p>
 
-      <ObjectivesPanel
+      <RealmObjectives
         realm={realm}
         highlighted={highlight ? `${areaId}/${highlight}` : undefined}
         onShow={(objective) => {
@@ -147,7 +147,6 @@ function RealmView({ realm }: { realm: Realm }) {
           setHighlight(objective.eventId)
         }}
       />
-      <CompleteRealmCard key={summary.id} realm={realm} />
 
       {summary.areas.length > 1 && (
         <div role="tablist" aria-label="Areas" className="tabs">
@@ -159,11 +158,23 @@ function RealmView({ realm }: { realm: Realm }) {
         </div>
       )}
 
-      <div className="realm">
+      <div className={placementsOpen ? 'realm' : 'realm realm--wide'}>
         <div className="realm__map">
           {svg.isPending && <p className="muted">Drawing the map…</p>}
           {svg.isError && <p className="error-text">{errorMessage(svg.error)}</p>}
-          {svg.data && <SvgViewer svg={svg.data} highlight={highlight} />}
+          {svg.data && (
+            <SvgViewer
+              svg={svg.data}
+              highlight={highlight}
+              tools={
+                !placementsOpen && (
+                  <button type="button" aria-expanded={false} aria-controls="placements" onClick={() => setPlacementsOpen(true)}>
+                    Show placements
+                  </button>
+                )
+              }
+            />
+          )}
           <div className="actions">
             <a className="button" href={exportUrl(summary.id, 'svg', areaId)} download>
               Download SVG
@@ -181,8 +192,13 @@ function RealmView({ realm }: { realm: Realm }) {
           {promptOpen && <PromptDialog realmId={summary.id} areaId={areaId} onClose={() => setPromptOpen(false)} />}
         </div>
 
-        <aside className="placements" aria-label="Placements">
-          <h2>Placements</h2>
+        <aside className="placements" aria-label="Placements" id="placements" hidden={!placementsOpen}>
+          <div className="placements__header">
+            <h2>Placements</h2>
+            <button type="button" className="button--quiet" aria-expanded aria-controls="placements" onClick={() => setPlacementsOpen(false)} title="Hide placements so the map can use the full width">
+              Hide
+            </button>
+          </div>
           <p className="muted">Click one to highlight it on the map.</p>
           <ul>
             {area && placementsOf(area).map((p) => (

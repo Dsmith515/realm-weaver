@@ -162,6 +162,11 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - Settlements roll a wealth (Destitute to Opulent; generator 0.6.0). The GM's map details list each settlement with its population and wealth, instead of how settlements were set up. Wealth also shows on the realm page, the placement sheet and the image prompt.
      - Every modal has a × in the corner, and the catalog's Map details tab has a Close button.
      - Map details opened from a realm page link on only for a mirror, to the realm it mirrors.
+   - **8h. The realm's Objectives region** (ADR 0011):
+     - One collapsible *Objectives* card holds three folds: the objective list and pin, *Complete an objective (GM)* and *Player completion*.
+     - The GM picks players from a paged table (10 a page, `GET /api/realms/{id}/roster`) showing each player's completions here and whether they hold the map. Players who completed it and hold the map are hidden unless asked for, and the weaver starts selected.
+     - From the table the GM can complete an objective, or *Assign map* without recording a completion.
+     - The objective list names each objective's event (E4, plus the floor when there are several). Placements can be hidden so the map uses the full width, and quiet buttons look like buttons.
 9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.

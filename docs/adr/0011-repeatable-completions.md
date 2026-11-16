@@ -20,6 +20,8 @@ The same round of feedback separated what a player sees on a map from what the G
   - An objective and at least one known player are required.
   - With no `mapRecipientIds`, every player in the party who doesn't hold the map receives it. An empty list hands it to no one.
   - Recipients must be in the party. A Unique map takes one recipient, and the GM picks who keeps it.
+  - The GM picks the party from a paged roster (`GET /api/realms/{id}/roster`), composed in the API host from the Inventory (players, map holders) and Realms (completions) contracts. By default it leaves out players who completed an objective and hold the map, since there's nothing left to give them. It always returns the weaver, so they can start selected.
+  - The GM can also hand out the map without a completion. That reuses the component assign endpoint, once per player.
   - The completion and the grants still run in one transaction (ADR 0005). Two completions racing both count, and a map is only ever granted once (the grant is idempotent).
 - **Player and GM views of a map.**
   - The player's view (inventory) shows kinds of creatures and loot without counts or locations, and objective titles without locations. Its rules show as tags (*Map required*, *Unique*, *No mirrors*) with an explanation on hover or focus. An open map shows no rules.
