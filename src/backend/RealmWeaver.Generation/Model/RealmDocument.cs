@@ -175,6 +175,9 @@ public sealed record PlacedEvent
     /// <summary>Settlements only: how crowded it is. Mob counts scale with this and the footprint.</summary>
     public SettlementPopulation? Population { get; init; }
 
+    /// <summary>Settlements only: how well off it is. Rolled from its own stream, so it never changes the mobs.</summary>
+    public SettlementWealth? Wealth { get; init; }
+
     /// <summary>Field settlements only: buildings and grounds inside the footprint.</summary>
     public IReadOnlyList<PlacedStructure> Structures { get; init; } = [];
 

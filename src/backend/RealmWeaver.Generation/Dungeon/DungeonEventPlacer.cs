@@ -97,11 +97,13 @@ internal static class DungeonEventPlacer
             {
                 var mobRng = eventRng.Fork(i.ToString(CultureInfo.InvariantCulture));
                 SettlementPopulation? population = null;
+                SettlementWealth? wealth = null;
                 IReadOnlyList<MobGroup> groups;
                 if (p.Template.Category == EventCategory.Settlement)
                 {
                     var level = Settlements.RollPopulation(ctx.Request, mobRng.Fork("population"));
                     population = level;
+                    wealth = Settlements.RollWealth(level, ctx.Request, mobRng.Fork("wealth"));
                     groups = mobs.ResolveSettlement(p.Template, p.Rooms.Sum(r => r.Floor.Count), level, mobRng);
                 }
                 else
@@ -122,6 +124,7 @@ internal static class DungeonEventPlacer
                     DifficultyTemplateIds = groups.Count > 0 ? mobs.DifficultyTemplates(mobRng) : [],
                     Notes = $"{p.Template.Description} ({materials})",
                     Population = population,
+                    Wealth = wealth,
                 };
             })
             .ToList();

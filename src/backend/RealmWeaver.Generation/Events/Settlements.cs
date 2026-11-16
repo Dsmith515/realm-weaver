@@ -8,7 +8,7 @@ namespace RealmWeaver.Generation.Events;
 
 /// <summary>
 /// Population, residents and structures for settlement events. Each piece draws from its own fork of the event's
-/// stream ("population", "structures"), so turning structures off doesn't change the mobs.
+/// stream ("population", "wealth", "structures"), so turning structures off doesn't change the mobs.
 /// </summary>
 public static class Settlements
 {
@@ -35,6 +35,28 @@ public static class Settlements
             SettlementPopulation.Modest => 35,
             SettlementPopulation.Bustling => 25 + threat,
             _ => 10 + threat,
+        });
+    }
+
+    private static readonly SettlementWealth[] WealthLevels = Enum.GetValues<SettlementWealth>();
+
+    /// <summary>
+    /// How well off a settlement is. Abandoned ones are at best Poor (what's left behind); otherwise it leans richer
+    /// as the realm gets more dangerous.
+    /// </summary>
+    public static SettlementWealth RollWealth(SettlementPopulation population, GenerationRequest request, SeededRandom rng)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(rng);
+        var threat = Math.Max(0, request.Threat);
+        var levels = population == SettlementPopulation.Abandoned ? WealthLevels[..2] : WealthLevels;
+        return rng.PickWeighted(levels, level => level switch
+        {
+            SettlementWealth.Destitute => 15,
+            SettlementWealth.Poor => 25,
+            SettlementWealth.Comfortable => 35,
+            SettlementWealth.Prosperous => 15 + threat,
+            _ => 5 + threat,
         });
     }
 

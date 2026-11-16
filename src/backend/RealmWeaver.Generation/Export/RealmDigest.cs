@@ -1,3 +1,4 @@
+using RealmWeaver.Generation.Content;
 using RealmWeaver.Generation.Model;
 
 namespace RealmWeaver.Generation.Export;
@@ -8,11 +9,18 @@ public sealed record MobTally(string ArchetypeId, string Name, int Count);
 /// <summary>One thing worth finding: a chest, a vault, or a resource node, and where it is.</summary>
 public sealed record DigestEntry(string AreaName, string Id, string Name, string Location);
 
+/// <summary>A settlement and how crowded and well off it is.</summary>
+public sealed record SettlementEntry(string AreaName, string Id, string Name, string Location, SettlementPopulation? Population, SettlementWealth? Wealth);
+
 /// <summary>
-/// What a realm holds at a glance, for a map's details: its mobs, its potential loot (chests and treasure vaults)
-/// and its resource nodes. Built from the document only, so it's as deterministic as the realm itself.
+/// What a realm holds at a glance, for a map's details: its mobs, its potential loot (chests and treasure vaults),
+/// its resource nodes and its settlements. Built from the document only, so it's as deterministic as the realm itself.
 /// </summary>
-public sealed record RealmDigest(IReadOnlyList<MobTally> Mobs, IReadOnlyList<DigestEntry> Loot, IReadOnlyList<DigestEntry> ResourceNodes)
+public sealed record RealmDigest(
+    IReadOnlyList<MobTally> Mobs,
+    IReadOnlyList<DigestEntry> Loot,
+    IReadOnlyList<DigestEntry> ResourceNodes,
+    IReadOnlyList<SettlementEntry> Settlements)
 {
     public const string ResourceNodeTemplateId = "resource-node";
     public const string TreasureVaultTemplateId = "treasure-vault";
@@ -40,6 +48,11 @@ public sealed record RealmDigest(IReadOnlyList<MobTally> Mobs, IReadOnlyList<Dig
             .SelectMany(a => a.Events.Where(e => e.TemplateId == ResourceNodeTemplateId).Select(e => new DigestEntry(a.Name, e.Id, e.Name, e.Location)))
             .ToList();
 
-        return new RealmDigest(mobs, loot, resources);
+        var settlements = document.Areas
+            .SelectMany(a => a.Events.Where(e => e.Category == EventCategory.Settlement)
+                .Select(e => new SettlementEntry(a.Name, e.Id, e.Name, e.Location, e.Population, e.Wealth)))
+            .ToList();
+
+        return new RealmDigest(mobs, loot, resources, settlements);
     }
 }

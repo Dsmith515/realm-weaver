@@ -33,7 +33,7 @@ test('a new player performs a random ritual, the GM completes an objective and h
 
   await page.getByRole('button', { name: 'Image prompt' }).click()
   await expect(page.getByRole('dialog')).toContainText('battle map')
-  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
 
   // The GM completes an objective (the first is chosen) and hands the map to the weaver, who is ticked by default.
   await expect(page.getByRole('region', { name: 'Objectives' })).toContainText('as often as the realm is run')

@@ -2682,6 +2682,16 @@
               }
             ]
           },
+          "wealth": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementWealth"
+              }
+            ]
+          },
           "structures": {
             "type": "array",
             "items": {
@@ -3288,7 +3298,8 @@
         "required": [
           "mobs",
           "loot",
-          "resourceNodes"
+          "resourceNodes",
+          "settlements"
         ],
         "type": "object",
         "properties": {
@@ -3308,6 +3319,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DigestEntry"
+            }
+          },
+          "settlements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettlementEntry"
             }
           }
         }
@@ -3985,6 +4002,51 @@
           }
         }
       },
+      "SettlementEntry": {
+        "required": [
+          "areaName",
+          "id",
+          "name",
+          "location",
+          "population",
+          "wealth"
+        ],
+        "type": "object",
+        "properties": {
+          "areaName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "population": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementPopulation"
+              }
+            ]
+          },
+          "wealth": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SettlementWealth"
+              }
+            ]
+          }
+        }
+      },
       "SettlementPopulation": {
         "enum": [
           "abandoned",
@@ -3992,6 +4054,16 @@
           "modest",
           "bustling",
           "overcrowded",
+          null
+        ]
+      },
+      "SettlementWealth": {
+        "enum": [
+          "destitute",
+          "poor",
+          "comfortable",
+          "prosperous",
+          "opulent",
           null
         ]
       },

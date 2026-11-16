@@ -5,7 +5,7 @@ namespace RealmWeaver.Generation.Model;
 /// <summary>Hard limits shared by the generator, API validation and UI.</summary>
 public static class GeneratorLimits
 {
-    public const string Version = "0.5.0";
+    public const string Version = "0.6.0";
     public const int MinSize = 15;
     public const int MaxSize = 100;
     public const int MinEvents = 5;

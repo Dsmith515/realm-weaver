@@ -595,6 +595,7 @@ textarea {
 
 /* Modal dialogs (native <dialog>) */
 .modal {
+  position: fixed;
   width: min(560px, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
   padding: 0;
@@ -604,12 +605,52 @@ textarea {
   color: var(--text);
 }
 
+.modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal__close:hover,
+.modal__close:focus-visible {
+  background: var(--bg);
+  color: var(--text);
+}
+
 .modal::backdrop {
   background: rgb(0 0 0 / 0.45);
 }
 
+/* Only the body scrolls, so the × stays in the corner. */
+.modal[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .modal__body {
   padding: 1rem 1.25rem;
+  overflow: auto;
+}
+
+/* Keep headings clear of the × button. */
+.modal__body > h2:first-child,
+.modal__body > .tabs:first-child {
+  margin-right: 2rem;
+}
+
+.settlement-list li > span + span {
+  margin-left: 0.5rem;
 }
 
 .modal .form {

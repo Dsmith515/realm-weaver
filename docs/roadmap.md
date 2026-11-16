@@ -158,6 +158,10 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
      - Player and GM map views: players see kinds of creatures and loot plus rule tags with hover help; the GM sees counts, locations and objective locations, from the realm page and the catalog (click a component's name).
      - Sortable catalog columns; tables and lists fill the window with the pager below; player search wherever players are picked.
      - Clones must differ from their template. Quick Weave leaves structures out by default and can suggest structure ideas instead.
+   - **8g. Map details polish** (ADR 0011):
+     - Settlements roll a wealth (Destitute to Opulent; generator 0.6.0). The GM's map details list each settlement with its population and wealth, instead of how settlements were set up. Wealth also shows on the realm page, the placement sheet and the image prompt.
+     - Every modal has a × in the corner, and the catalog's Map details tab has a Close button.
+     - Map details opened from a realm page link on only for a mirror, to the realm it mirrors.
 9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.

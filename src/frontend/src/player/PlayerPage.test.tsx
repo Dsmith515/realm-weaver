@@ -34,6 +34,7 @@ const mapDetails = {
       mobs: [{ archetypeId: 'grey-wolf', name: 'Grey wolf', count: 5 }],
       loot: [{ areaName: 'Floor 1', id: 'C1', name: 'Hidden chest (rare)', location: 'D4' }],
       resourceNodes: [{ areaName: 'Forest field', id: 'E3', name: 'Resource node', location: 'B2-B3' }],
+      settlements: [{ areaName: 'Forest field', id: 'E2', name: 'Village', location: 'D2-F5', population: 'modest' as const, wealth: 'comfortable' as const }],
     },
   },
 }
@@ -65,6 +66,7 @@ describe('Player page', () => {
     expect(within(dialog).getByText('Hidden chest (rare)')).toBeInTheDocument()
     expect(within(dialog).getByText('Resource node')).toBeInTheDocument()
     expect(within(dialog).queryByRole('link', { name: 'Open the original realm' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('list', { name: 'Settlements' })).not.toBeInTheDocument()
 
     await user.type(within(dialog).getByRole('textbox', { name: 'Your notes' }), 'Wolves by the river.')
     await user.click(within(dialog).getByRole('button', { name: 'Save notes' }))

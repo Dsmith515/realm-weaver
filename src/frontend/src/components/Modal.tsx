@@ -9,7 +9,7 @@ interface ModalProps {
 
 /**
  * A native modal `<dialog>`: the browser handles the backdrop, focus trapping, Escape and returning focus to the
- * control that opened it. Clicking the backdrop closes it too.
+ * control that opened it. Clicking the backdrop or the × in the corner closes it too.
  */
 export function Modal({ title, onClose, children }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -35,6 +35,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
         if (e.target === ref.current) onClose()
       }}
     >
+      <button type="button" className="modal__close" aria-label="Close dialog" title="Close" onClick={onClose}>
+        ×
+      </button>
       <div className="modal__body">{children}</div>
     </dialog>
   )

@@ -101,7 +101,15 @@ const mapDetails = {
   originalRealm: {
     realmId: 'realm-1',
     threat: 2,
-    digest: { mobs: [{ archetypeId: 'wolf', name: 'Wolf', count: 4 }], loot: [{ areaName: 'Field', id: 'F1', name: 'Chest', location: 'C4' }], resourceNodes: [] },
+    digest: {
+      mobs: [{ archetypeId: 'wolf', name: 'Wolf', count: 4 }],
+      loot: [{ areaName: 'Field', id: 'F1', name: 'Chest', location: 'C4' }],
+      resourceNodes: [],
+      settlements: [
+        { areaName: 'Field', id: 'E2', name: 'Village', location: 'D2-F5', population: 'bustling' as const, wealth: 'prosperous' as const },
+        { areaName: 'Field', id: 'E4', name: 'Hamlet', location: 'J8-K9', population: 'sparse' as const, wealth: 'poor' as const },
+      ],
+    },
   },
 }
 
@@ -442,5 +450,29 @@ describe('Realm pages', () => {
     expect(within(dialog).getByText('Map required')).toHaveAttribute('data-tip', expect.stringMatching(/only players holding this map/))
     expect(within(dialog).getByText('Chest')).toBeInTheDocument()
     expect(within(dialog).getByText('Field, C4')).toBeInTheDocument()
+
+    // Each settlement with its population and wealth; nothing about how settlements were set up.
+    const settlements = within(dialog).getByRole('list', { name: 'Settlements' })
+    expect(within(dialog).getByRole('heading', { name: 'Settlements (2)' })).toBeInTheDocument()
+    expect(within(settlements).getByText('Bustling · Prosperous')).toBeInTheDocument()
+    expect(within(settlements).getByText('Sparse · Poor')).toBeInTheDocument()
+    expect(within(dialog).queryByText(/Random population|structures/)).not.toBeInTheDocument()
+
+    // This is the original realm, so there's no link back to itself.
+    expect(within(dialog).queryByRole('link', { name: /Open the/ })).not.toBeInTheDocument()
+
+    // The × closes it, like the Close button.
+    await user.click(within(dialog).getByRole('button', { name: 'Close dialog' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('links a mirror’s map details to the realm it mirrors', async () => {
+    fakeApi({ ...routes(), 'GET /api/realms/:id': { summary: mirror, document: realm.document } })
+    const user = userEvent.setup()
+    renderApp(`/realms/${mirror.id}`)
+
+    await user.click(await screen.findByRole('button', { name: 'Map details' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByRole('link', { name: 'Open the realm this mirrors' })).toHaveAttribute('href', '/realms/realm-1')
   })
 })

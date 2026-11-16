@@ -97,6 +97,11 @@ export function ComponentsPage() {
             <>
               <h2>{editing.component.name}</h2>
               <MapDetailsView mapId={editing.component.id} audience="gm" />
+              <div className="actions">
+                <button type="button" className="button--quiet" onClick={() => setEditing(undefined)}>
+                  Close
+                </button>
+              </div>
             </>
           ) : (
             <ComponentForm
