@@ -77,6 +77,58 @@
         }
       }
     },
+    "/api/realms/{id}/completion": {
+      "post": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "Marks the run complete with one of its objectives (any rolled one, or the GM\u0027s pin). When the weaver is a Cartographer the realm\u0027s map is recorded into their inventory in the same transaction. 400: not one of the realm\u0027s objectives. 409: already completed.",
+        "operationId": "CompleteRun",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteRunInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCompletionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/maps/{id}/details": {
       "get": {
         "tags": [
@@ -1455,6 +1507,17 @@
           "floorCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CompleteRunInput": {
+        "required": [
+          "objectiveKey"
+        ],
+        "type": "object",
+        "properties": {
+          "objectiveKey": {
+            "type": "string"
           }
         }
       },
@@ -3019,6 +3082,26 @@
           }
         }
       },
+      "RealmCompletionDto": {
+        "required": [
+          "objective",
+          "completedAt",
+          "mapRecorded"
+        ],
+        "type": "object",
+        "properties": {
+          "objective": {
+            "$ref": "#/components/schemas/RealmObjective"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mapRecorded": {
+            "type": "boolean"
+          }
+        }
+      },
       "RealmComponentsDto": {
         "required": [
           "mapName",
@@ -3327,6 +3410,16 @@
               },
               {
                 "$ref": "#/components/schemas/RealmObjective"
+              }
+            ]
+          },
+          "completion": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmCompletionDto"
               }
             ]
           },
@@ -3661,6 +3754,43 @@
           "cave"
         ]
       },
+      "RunCompletionDto": {
+        "required": [
+          "realmId",
+          "objective",
+          "completedAt",
+          "mapRecorded",
+          "mapId",
+          "mapNotRecordedReason"
+        ],
+        "type": "object",
+        "properties": {
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "objective": {
+            "$ref": "#/components/schemas/RealmObjective"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mapRecorded": {
+            "type": "boolean"
+          },
+          "mapId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapNotRecordedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SettlementPopulation": {
         "enum": [
           "abandoned",
@@ -3724,6 +3854,9 @@
       "name": "Components"
     },
     {
+      "name": "Realms"
+    },
+    {
       "name": "Maps"
     },
     {
@@ -3731,9 +3864,6 @@
     },
     {
       "name": "Players"
-    },
-    {
-      "name": "Realms"
     },
     {
       "name": "Rituals"

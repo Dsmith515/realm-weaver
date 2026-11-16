@@ -857,3 +857,23 @@ textarea {
 .attunement__status {
   font-weight: 600;
 }
+
+.objectives__list li {
+  display: flex;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.objectives__list li .objectives__objective {
+  flex: 1;
+}
+
+.objectives__item--done .objectives__objective {
+  border-color: var(--ok);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+.badge--ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}

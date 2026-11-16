@@ -17,7 +17,7 @@ public class MapDetailsEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, WheatgoldThread, BrigandsPitch);
-        var first = await PerformOkAsync(client, SmallField(player.Id, coating: BrigandsPitch));
+        var first = await PerformAndRecordAsync(client, SmallField(player.Id, coating: BrigandsPitch));
         await PerformOkAsync(client, new RitualSelection(player.Id, ThreadId: WheatgoldThread, MapId: first.MapId)); // a mirror
 
         var details = await client.GetJsonAsync<MapDetails>($"/api/maps/{first.MapId}/details");
@@ -51,7 +51,7 @@ public class MapDetailsEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
-        var ritual = await PerformOkAsync(client, SmallField(player.Id));
+        var ritual = await PerformAndRecordAsync(client, SmallField(player.Id));
 
         var saved = await client.PutJsonAsync($"/api/players/{player.Id}/inventory/{ritual.MapId}/notes", new InventoryNotesInput("  Wolves by the river.  "));
         var tooLong = await client.PutJsonAsync($"/api/players/{player.Id}/inventory/{ritual.MapId}/notes", new InventoryNotesInput(new string('x', 1001)));

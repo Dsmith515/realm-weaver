@@ -54,6 +54,14 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("coating_name");
 
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("CompletedObjective")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("completed_objective");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -99,6 +107,10 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("map_name");
+
+                    b.Property<bool>("MapRecorded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("map_recorded");
 
                     b.Property<Guid?>("NeedleId")
                         .HasColumnType("uuid")

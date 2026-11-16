@@ -146,3 +146,19 @@ public sealed record RitualResultDto(
     int DangerModifier,
     int EncounterVariant,
     DateTimeOffset CreatedAt);
+
+/// <summary>Body for completing a run: the key of one of the realm's objectives (rolled, or the GM's pin).</summary>
+public sealed record CompleteRunInput(string ObjectiveKey);
+
+/// <summary>
+/// A completed run. <see cref="MapRecorded"/> is true when the map was added to the weaver's inventory; otherwise
+/// <see cref="MapNotRecordedReason"/> says why: <c>gm-realm</c>, <c>not-cartographer</c>, <c>already-held</c> or
+/// <c>map-missing</c>.
+/// </summary>
+public sealed record RunCompletionDto(
+    Guid RealmId,
+    Generation.Model.RealmObjective Objective,
+    DateTimeOffset CompletedAt,
+    bool MapRecorded,
+    Guid MapId,
+    string? MapNotRecordedReason);

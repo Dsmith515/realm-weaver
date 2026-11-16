@@ -119,6 +119,46 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         return new PinOutcome.Pinned(ToSummary(entity));
     }
 
+    public async Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, bool mapRecorded, CancellationToken cancellationToken = default)
+    {
+        var entity = await db.Realms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == realmId, cancellationToken);
+        if (entity is null)
+        {
+            return new RealmCompletionResult(CompletionResult.NotFound);
+        }
+
+        if (entity.CompletedAt is not null)
+        {
+            return new RealmCompletionResult(CompletionResult.AlreadyCompleted, ToSummary(entity));
+        }
+
+        // Any rolled objective completes the run, and so does the GM's pin.
+        var pinned = entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options);
+        var objective = RealmJson.Deserialize(entity.Document).Objectives.Append(pinned).FirstOrDefault(o => o?.Key == objectiveKey);
+        if (objective is null)
+        {
+            return new RealmCompletionResult(CompletionResult.UnknownObjective);
+        }
+
+        // A conditional update, so two completions racing can't both win.
+        var now = clock.GetDatabaseUtcNow();
+        var json = JsonSerializer.Serialize(objective, RealmJson.Options);
+        var updated = await db.Realms
+            .Where(r => r.Id == realmId && r.CompletedAt == null)
+            .ExecuteUpdateAsync(
+                set => set.SetProperty(r => r.CompletedAt, now).SetProperty(r => r.CompletedObjective, json).SetProperty(r => r.MapRecorded, mapRecorded),
+                cancellationToken);
+        if (updated == 0)
+        {
+            return new RealmCompletionResult(CompletionResult.AlreadyCompleted, await GetSummaryAsync(realmId, cancellationToken));
+        }
+
+        entity.CompletedAt = now;
+        entity.CompletedObjective = json;
+        entity.MapRecorded = mapRecorded;
+        return new RealmCompletionResult(CompletionResult.Completed, ToSummary(entity));
+    }
+
     /// <summary>Rolled objectives keep their ids (O1..O3); the rest are marked "P" because they only appear when pinned.</summary>
     private static List<RealmObjective> CandidatesOf(RealmDocument document)
     {
@@ -179,6 +219,9 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 CoatingName = r.CoatingName,
                 PinnedObjective = r.PinnedObjective,
                 AttunedNeedle = r.AttunedNeedle,
+                CompletedAt = r.CompletedAt,
+                CompletedObjective = r.CompletedObjective,
+                MapRecorded = r.MapRecorded,
             })
             .ToListAsync(cancellationToken);
 
@@ -205,7 +248,10 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         entity.CreatedAt,
         JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? [],
         ComponentsOf(entity),
-        entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options));
+        entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options),
+        entity is { CompletedAt: { } completedAt, CompletedObjective: { } completed }
+            ? new RealmCompletionDto(JsonSerializer.Deserialize<RealmObjective>(completed, RealmJson.Options)!, completedAt, entity.MapRecorded)
+            : null);
 
     private static RealmComponentsDto? ComponentsOf(Realm entity) =>
         entity is { MapName: { } mapName, NeedleId: { } needleId, ThreadId: { } threadId, CoatingId: { } coatingId }

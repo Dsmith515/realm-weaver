@@ -70,8 +70,7 @@ public class AttunementEndpointTests(RealmWeaverApiFactory factory)
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerWithAsync(client, MossgreenThread, MossgreenThread, BeastwardWax, BeastwardWax);
-        var ritual = await PerformOkAsync(client, SmallField(player.Id));
-        await RecordMapAsync(client, player.Id, ritual.MapId);
+        var ritual = await PerformAndRecordAsync(client, SmallField(player.Id));
 
         var variant = await CreateNeedleAsync(client, "Etched Beginner's", tier: 1, baseType: "Beginner's Needle");
         var other = await CreateNeedleAsync(client, "Unrelated", tier: 1);
@@ -137,8 +136,4 @@ public class AttunementEndpointTests(RealmWeaverApiFactory factory)
 
     private static async Task AssignAsync(HttpClient client, Guid componentId, Guid playerId) =>
         Assert.Equal(HttpStatusCode.OK, (await client.PostJsonAsync($"/api/components/{componentId}/assign", new AssignComponentInput(playerId))).StatusCode);
-
-    /// <summary>Until map recording lands (8c), a ritual grants its map, so this only checks the player holds it.</summary>
-    private static async Task RecordMapAsync(HttpClient client, Guid playerId, Guid mapId) =>
-        Assert.Contains(mapId, (await QuantitiesAsync(client, playerId)).Keys);
 }

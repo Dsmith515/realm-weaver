@@ -20,8 +20,9 @@ namespace RealmWeaver.Modules.Rituals;
 
 /// <summary>
 /// Performs a ritual as one local ACID transaction (ADR 0005):
-/// claim the idempotency key, spend the Thread and Coating, create the Map if new, grant it, and store the realm.
-/// Any failure rolls all of it back.
+/// claim the idempotency key, spend the Thread and Coating, create the Map if new, and store the realm.
+/// Any failure rolls all of it back. The player doesn't get the map here: a Cartographer records it when they
+/// complete the run (<see cref="RunCompletionService"/>).
 /// </summary>
 internal sealed class RitualService(
     RitualsDbContext db,
@@ -122,10 +123,8 @@ internal sealed class RitualService(
                     // 3. Reuse the map, or record a new one in the catalog.
                     var map = existingMap ?? await catalog.CreateMapAsync(NewMapFor(ritual.MapId, document, needle, thread, coating, selection.PlayerId), ct);
 
-                    // 4. The player keeps the map (a no-op when they already own it).
-                    await inventory.GrantAsync(selection.PlayerId, map, 1, ct);
-
-                    // 5. Store the realm snapshot.
+                    // 4. Store the realm snapshot. The map reaches the player's inventory only when a Cartographer
+                    //    completes the run (Milestone 8), not here.
                     await realms.SaveAsync(
                         new NewRealm(
                             ritual.RealmId,

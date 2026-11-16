@@ -202,6 +202,21 @@ export function useObjectiveCandidates(realmId: string, enabled: boolean) {
   })
 }
 
+/** Completes the run with one of its objectives; a Cartographer weaver gets the map recorded into their inventory. */
+export function useCompleteRun(realmId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (objectiveKey: string) =>
+      unwrap(api.POST('/api/realms/{id}/completion', { params: { path: { id: realmId } }, body: { objectiveKey } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.realm(realmId) })
+      void queryClient.invalidateQueries({ queryKey: keys.allRealms })
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      void queryClient.invalidateQueries({ queryKey: keys.allPreviews })
+    },
+  })
+}
+
 /** Pins an objective by key, or clears the pin with null. */
 export function usePinObjective(realmId: string) {
   const queryClient = useQueryClient()

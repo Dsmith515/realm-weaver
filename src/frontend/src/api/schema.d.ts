@@ -37,6 +37,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realms/{id}/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marks the run complete with one of its objectives (any rolled one, or the GM's pin). When the weaver is a Cartographer the realm's map is recorded into their inventory in the same transaction. 400: not one of the realm's objectives. 409: already completed. */
+        post: operations["CompleteRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/maps/{id}/details": {
         parameters: {
             query?: never;
@@ -441,6 +458,9 @@ export interface components {
             /** Format: int32 */
             floorCount: number;
         };
+        CompleteRunInput: {
+            objectiveKey: string;
+        };
         ComponentDto: {
             /** Format: uuid */
             id: string;
@@ -824,6 +844,12 @@ export interface components {
             /** Format: int32 */
             floorNumber: number;
         };
+        RealmCompletionDto: {
+            objective: components["schemas"]["RealmObjective"];
+            /** Format: date-time */
+            completedAt: string;
+            mapRecorded: boolean;
+        };
         RealmComponentsDto: {
             mapName: string;
             needle: components["schemas"]["ComponentRefDto"];
@@ -901,6 +927,7 @@ export interface components {
             areas: components["schemas"]["RealmAreaSummaryDto"][];
             components?: null | components["schemas"]["RealmComponentsDto"];
             pinnedObjective?: null | components["schemas"]["RealmObjective"];
+            completion?: null | components["schemas"]["RealmCompletionDto"];
             isMirror?: boolean;
         };
         RitualIssue: {
@@ -991,6 +1018,17 @@ export interface components {
         RitualSlot: "needle" | "thread" | "coating" | "map";
         /** @enum {unknown} */
         RoomStyle: "masonry" | "mine" | "cave";
+        RunCompletionDto: {
+            /** Format: uuid */
+            realmId: string;
+            objective: components["schemas"]["RealmObjective"];
+            /** Format: date-time */
+            completedAt: string;
+            mapRecorded: boolean;
+            /** Format: uuid */
+            mapId: string;
+            mapNotRecordedReason: null | string;
+        };
         /** @enum {unknown} */
         SettlementPopulation: "abandoned" | "sparse" | "modest" | "bustling" | "overcrowded" | null;
         SlotPreview: {
@@ -1056,6 +1094,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InventoryItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CompleteRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteRunInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunCompletionDto"];
                 };
             };
             /** @description Bad Request */
