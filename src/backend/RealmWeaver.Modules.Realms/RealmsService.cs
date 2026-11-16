@@ -2,8 +2,10 @@ using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
+using RealmWeaver.Generation.Content;
 using RealmWeaver.Generation.Export;
 using RealmWeaver.Generation.Model;
+using RealmWeaver.Generation.Objectives;
 using RealmWeaver.Infrastructure.Persistence;
 using RealmWeaver.Modules.Realms.Contracts;
 using RealmWeaver.Modules.Realms.Persistence;
@@ -78,6 +80,54 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             : new RealmDigestDto(original.Id, original.Threat, RealmDigest.From(RealmJson.Deserialize(original.Document)));
     }
 
+    /// <summary>
+    /// Every objective the realm could offer: the rolled ones first, then the other hooks of its placed events and the
+    /// realm-wide objectives. Null when the realm doesn't exist.
+    /// </summary>
+    public async Task<IReadOnlyList<RealmObjective>?> GetObjectiveCandidatesAsync(Guid realmId, CancellationToken cancellationToken)
+    {
+        var json = await db.Realms.AsNoTracking().Where(r => r.Id == realmId).Select(r => r.Document).FirstOrDefaultAsync(cancellationToken);
+        return json is null ? null : CandidatesOf(RealmJson.Deserialize(json));
+    }
+
+    /// <summary>Pins one of the realm's candidate objectives, or clears the pin when <paramref name="key"/> is null.</summary>
+    public async Task<PinOutcome> PinObjectiveAsync(Guid realmId, string? key, CancellationToken cancellationToken)
+    {
+        var entity = await db.Realms.FirstOrDefaultAsync(r => r.Id == realmId, cancellationToken);
+        if (entity is null)
+        {
+            return new PinOutcome.NotFound();
+        }
+
+        if (key is null)
+        {
+            entity.PinnedObjective = null;
+        }
+        else
+        {
+            var candidate = CandidatesOf(RealmJson.Deserialize(entity.Document)).FirstOrDefault(o => o.Key == key);
+            if (candidate is null)
+            {
+                return new PinOutcome.UnknownObjective();
+            }
+
+            entity.PinnedObjective = JsonSerializer.Serialize(candidate, RealmJson.Options);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return new PinOutcome.Pinned(ToSummary(entity));
+    }
+
+    /// <summary>Rolled objectives keep their ids (O1..O3); the rest are marked "P" because they only appear when pinned.</summary>
+    private static List<RealmObjective> CandidatesOf(RealmDocument document)
+    {
+        var rolled = document.Objectives;
+        var others = ObjectivePicker.Candidates(document.Areas, StaticContentCatalog.Default)
+            .Where(c => rolled.All(o => o.Key != c.Key))
+            .Select(c => c with { Id = "P" });
+        return [.. rolled, .. others];
+    }
+
     /// <summary>Newest first. Summaries only; the documents can be large.</summary>
     public async Task<IReadOnlyList<RealmSummaryDto>> ListAsync(Guid? playerId, Guid? mapComponentId, int limit, CancellationToken cancellationToken, bool gmOnly = false)
     {
@@ -126,6 +176,7 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 ThreadName = r.ThreadName,
                 CoatingId = r.CoatingId,
                 CoatingName = r.CoatingName,
+                PinnedObjective = r.PinnedObjective,
             })
             .ToListAsync(cancellationToken);
 
@@ -151,7 +202,8 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
         entity.GeneratorVersion,
         entity.CreatedAt,
         JsonSerializer.Deserialize<List<RealmAreaSummaryDto>>(entity.Areas, RealmJson.Options) ?? [],
-        ComponentsOf(entity));
+        ComponentsOf(entity),
+        entity.PinnedObjective is null ? null : JsonSerializer.Deserialize<RealmObjective>(entity.PinnedObjective, RealmJson.Options));
 
     private static RealmComponentsDto? ComponentsOf(Realm entity) =>
         entity is { MapName: { } mapName, NeedleId: { } needleId, ThreadId: { } threadId, CoatingId: { } coatingId }
@@ -161,4 +213,13 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
                 new ComponentRefDto(threadId, entity.ThreadName ?? string.Empty),
                 new ComponentRefDto(coatingId, entity.CoatingName ?? string.Empty))
             : null;
+}
+
+internal abstract record PinOutcome
+{
+    public sealed record Pinned(RealmSummaryDto Summary) : PinOutcome;
+
+    public sealed record NotFound : PinOutcome;
+
+    public sealed record UnknownObjective : PinOutcome;
 }

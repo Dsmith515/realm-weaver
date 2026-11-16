@@ -186,6 +186,48 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
                                 .HasForeignKey("ComponentDefinitionId")
                                 .HasConstraintName("fk_component_definitions_component_definitions_id");
 
+                            b1.OwnsMany("RealmWeaver.Modules.Catalog.Persistence.MapObjectiveData", "Objectives", b2 =>
+                                {
+                                    b2.Property<Guid>("MapDataComponentDefinitionId");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAdd();
+
+                                    b2.Property<string>("AreaId");
+
+                                    b2.Property<string>("Description")
+                                        .IsRequired();
+
+                                    b2.Property<string>("EventId");
+
+                                    b2.Property<string>("EventName");
+
+                                    b2.Property<string>("Id");
+
+                                    b2.Property<string>("Key")
+                                        .IsRequired();
+
+                                    b2.Property<string>("Location");
+
+                                    b2.Property<string>("Scope")
+                                        .IsRequired();
+
+                                    b2.Property<string>("TemplateId")
+                                        .IsRequired();
+
+                                    b2.Property<string>("Title")
+                                        .IsRequired();
+
+                                    b2.HasKey("MapDataComponentDefinitionId", "__synthesizedOrdinal")
+                                        .HasName("pk_component_definitions");
+
+                                    b2.ToTable("component_definitions", "catalog");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("MapDataComponentDefinitionId")
+                                        .HasConstraintName("fk_component_definitions_component_definitions_map_data_componen");
+                                });
+
                             b1.OwnsOne("RealmWeaver.Modules.Catalog.Persistence.MapRecipeData", "Recipe", b2 =>
                                 {
                                     b2.Property<Guid>("MapDataComponentDefinitionId");
@@ -219,6 +261,8 @@ namespace RealmWeaver.Modules.Catalog.Persistence.Migrations
                                         .HasForeignKey("MapDataComponentDefinitionId")
                                         .HasConstraintName("fk_component_definitions_component_definitions_map_data_componen");
                                 });
+
+                            b1.Navigation("Objectives");
 
                             b1.Navigation("Recipe");
                         });

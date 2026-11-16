@@ -183,6 +183,10 @@ internal static partial class ComponentRules
                 !string.IsNullOrWhiteSpace(map.GeneratorVersion) && map.GeneratorVersion.Length <= MaxGeneratorVersionLength,
                 "map.generatorVersion",
                 $"A generator version of at most {MaxGeneratorVersionLength} characters is required.");
+            errors.Require(
+                (map.Objectives ?? []).Count <= GeneratorLimits.MaxObjectives,
+                "map.objectives",
+                $"A map records at most {GeneratorLimits.MaxObjectives} objectives.");
             if (map.Recipe is { } recipe)
             {
                 errors.Require(Enum.IsDefined(recipe.Kind), "map.recipe.kind", "Unknown realm kind.");
@@ -236,6 +240,8 @@ internal static partial class ComponentRules
         entity.Coating = input.Coating is { } c
             ? new CoatingData { MobTypes = [.. c.MobTypes], RealmKind = c.RealmKind, FloorCount = c.FloorCount }
             : null;
+        // Fresh copies: EF tracks owned instances, so the old ones can't move onto the new MapData.
+        List<RealmObjective> recordedObjectives = [.. (entity.Map?.Objectives ?? []).Select(ToObjective)];
         entity.Map = input.Map is { } m
             ? new MapData
             {
@@ -252,6 +258,9 @@ internal static partial class ComponentRules
                     ? new MapRecipeData { Kind = r.Kind, FloorCount = r.FloorCount, Biome = r.Biome, Element = r.Element, MobTags = [.. r.MobTags], Difficulty = r.Difficulty, SettlementPopulation = r.SettlementPopulation, IncludeStructures = r.IncludeStructures }
                     : null,
                 Threat = m.Threat,
+
+                // Objectives are recorded when a ritual creates the map; an edit that leaves them out keeps them.
+                Objectives = [.. (m.Objectives ?? recordedObjectives).Select(ToData)],
             }
             : null;
     }
@@ -282,7 +291,36 @@ internal static partial class ComponentRules
                 m.GeneratorVersion,
                 m.CreatedByPlayerId,
                 m.Recipe is { } r ? new MapRecipe(r.Kind, r.FloorCount, r.Biome, r.Element, r.MobTags, r.Difficulty, r.SettlementPopulation, r.IncludeStructures ?? true) : null,
-                m.Threat)
+                m.Threat,
+                m.Objectives.Count == 0 ? null : [.. m.Objectives.Select(ToObjective)])
             : null,
         usedByMapCount);
+
+    private static MapObjectiveData ToData(RealmObjective o) => new()
+    {
+        Id = o.Id,
+        Key = o.Key,
+        TemplateId = o.TemplateId,
+        Title = o.Title,
+        Description = o.Description,
+        Scope = o.Scope,
+        AreaId = o.AreaId,
+        EventId = o.EventId,
+        EventName = o.EventName,
+        Location = o.Location,
+    };
+
+    private static RealmObjective ToObjective(MapObjectiveData o) => new()
+    {
+        Id = o.Id,
+        Key = o.Key,
+        TemplateId = o.TemplateId,
+        Title = o.Title,
+        Description = o.Description,
+        Scope = o.Scope,
+        AreaId = o.AreaId,
+        EventId = o.EventId,
+        EventName = o.EventName,
+        Location = o.Location,
+    };
 }

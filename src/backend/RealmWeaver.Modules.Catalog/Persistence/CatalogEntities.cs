@@ -92,6 +92,32 @@ internal sealed class MapData
     public MapRecipeData? Recipe { get; set; }
 
     public int? Threat { get; set; }
+
+    /// <summary>The objectives recorded with the map. Empty for maps made by hand or before objectives existed.</summary>
+    public List<MapObjectiveData> Objectives { get; set; } = [];
+}
+
+internal sealed class MapObjectiveData
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Key { get; set; } = string.Empty;
+
+    public string TemplateId { get; set; } = string.Empty;
+
+    public string Title { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public ObjectiveScope Scope { get; set; }
+
+    public string? AreaId { get; set; }
+
+    public string? EventId { get; set; }
+
+    public string? EventName { get; set; }
+
+    public string? Location { get; set; }
 }
 
 internal sealed class MapRecipeData

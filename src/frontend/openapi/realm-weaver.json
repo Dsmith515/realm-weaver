@@ -750,6 +750,122 @@
         }
       }
     },
+    "/api/realms/{id}/objectives/candidates": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "Every objective a GM can pin: the rolled objectives first, then the other hooks of the placed events and the realm-wide objectives.",
+        "operationId": "ListObjectiveCandidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RealmObjective"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realms/{id}/pinned-objective": {
+      "put": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "Pins one candidate objective, by key, for this run. Stored on the realm, never on the map.",
+        "operationId": "PinObjective",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinObjectiveInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmSummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Realms"
+        ],
+        "operationId": "UnpinObjective",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/realms/{id}/export": {
       "get": {
         "tags": [
@@ -1814,6 +1930,15 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "objectives": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RealmObjective"
+            }
           }
         }
       },
@@ -2027,6 +2152,12 @@
           }
         }
       },
+      "ObjectiveScope": {
+        "enum": [
+          "event",
+          "realm"
+        ]
+      },
       "PagedResultOfComponentDto": {
         "required": [
           "items",
@@ -2053,6 +2184,17 @@
           "totalCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "PinObjectiveInput": {
+        "required": [
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
           }
         }
       },
@@ -2727,6 +2869,12 @@
             "items": {
               "$ref": "#/components/schemas/RealmArea"
             }
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RealmObjective"
+            }
           }
         }
       },
@@ -2751,6 +2899,61 @@
           "dungeon",
           "fieldWithDungeon"
         ]
+      },
+      "RealmObjective": {
+        "required": [
+          "id",
+          "key",
+          "templateId",
+          "title",
+          "description",
+          "scope"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ObjectiveScope"
+          },
+          "areaId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "eventId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "eventName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "location": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "RealmSummaryDto": {
         "required": [
@@ -2842,6 +3045,16 @@
               },
               {
                 "$ref": "#/components/schemas/RealmComponentsDto"
+              }
+            ]
+          },
+          "pinnedObjective": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RealmObjective"
               }
             ]
           },

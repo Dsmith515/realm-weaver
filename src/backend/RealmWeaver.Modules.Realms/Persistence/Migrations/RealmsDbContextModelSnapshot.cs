@@ -105,6 +105,10 @@ namespace RealmWeaver.Modules.Realms.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("needle_name");
 
+                    b.Property<string>("PinnedObjective")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("pinned_objective");
+
                     b.Property<Guid?>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");

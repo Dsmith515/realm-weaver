@@ -41,7 +41,8 @@ public sealed record RealmSummaryDto(
     string GeneratorVersion,
     DateTimeOffset CreatedAt,
     IReadOnlyList<RealmAreaSummaryDto> Areas,
-    RealmComponentsDto? Components = null)
+    RealmComponentsDto? Components = null,
+    RealmObjective? PinnedObjective = null)
 {
     /// <summary>A mirror: a recorded map woven with different components. Same layout, rerolled encounters.</summary>
     public bool IsMirror => EncounterVariant != 0;
@@ -51,6 +52,9 @@ public sealed record RealmSummaryDto(
 public sealed record RealmAreaSummaryDto(string Id, AreaKind Kind, string Name, int FloorNumber);
 
 public sealed record RealmDto(RealmSummaryDto Summary, RealmDocument Document);
+
+/// <summary>Body for a GM pinning an objective: the <see cref="RealmObjective.Key"/> of a rolled or candidate objective.</summary>
+public sealed record PinObjectiveInput(string Key);
 
 /// <summary>The Realms module's public contract for other modules.</summary>
 public interface IRealmsModule

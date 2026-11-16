@@ -30,6 +30,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Environments = Environments.Field, Footprint = new(3, 5), Weight = 12, ClearsTerrain = true,
             MobSlots = [new(MobRole.Minion, 3, 6), new(MobRole.Brute, 0, 2), new(MobRole.Leader, 1, 1)],
             Description = "Tents, a fire pit and sentries.",
+            ObjectiveHooks = [new("break-the-camp", "Break the camp", "Scatter the camp's occupants and burn their supplies.")],
         },
         new()
         {
@@ -37,6 +38,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Environments = Environments.Any, Footprint = new(2, 4), Weight = 12,
             MobSlots = [new(MobRole.Brute, 1, 2), new(MobRole.Minion, 0, 3)],
             Description = "A den with bones and a territorial occupant.",
+            ObjectiveHooks = [new("slay-the-beast", "Slay or drive off the beast", "Deal with the lair's occupant for good.")],
         },
         new()
         {
@@ -54,6 +56,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Weight = 6, MaxPerArea = 1, ClearsTerrain = true,
             MobSlots = [new(MobRole.Leader, 1, 1), new(MobRole.Minion, 2, 6)],
             Description = "A village held by hostile occupants.",
+            ObjectiveHooks = [new("settle-the-dispute", "Settle the dispute", "End the trouble in the village, by word or by force.") { NeedsResidents = true }],
         },
         new()
         {
@@ -61,6 +64,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Environments = Environments.Field, Footprint = new(4, 7), Weight = 6, MaxPerArea = 2, ClearsTerrain = true,
             MobSlots = [new(MobRole.Minion, 2, 4), new(MobRole.Caster, 0, 1)],
             Description = "A walled outpost or watch camp.",
+            ObjectiveHooks = [new("take-the-outpost", "Take the outpost", "Drive out the garrison and hold the walls.")],
         },
 
         // Social
@@ -69,12 +73,14 @@ public sealed class StaticContentCatalog : IContentCatalog
             Id = "merchant-caravan", Name = "Merchant caravan", Category = EventCategory.Social,
             Environments = Environments.Field, Footprint = new(2, 3), Weight = 6, MaxPerArea = 2,
             Description = "Traders willing to barter. Friendly unless provoked.",
+            ObjectiveHooks = [new("complete-the-trade", "Complete the trade", "Strike a deal with the caravan before it moves on.")],
         },
         new()
         {
             Id = "lost-traveler", Name = "Lost traveler", Category = EventCategory.Social,
             Environments = Environments.Any, Footprint = new(1, 1), Weight = 6,
             Description = "Someone who needs help, or has information.",
+            ObjectiveHooks = [new("escort-to-safety", "Escort the traveler to safety", "Bring them back to the way out alive.")],
         },
 
         // Landmarks
@@ -83,6 +89,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Id = "shrine", Name = "Shrine", Category = EventCategory.Landmark,
             Environments = Environments.Any, Footprint = new(1, 2), Weight = 7,
             Description = "An old shrine; may grant a blessing.",
+            ObjectiveHooks = [new("uncover-the-past", "Uncover what happened", "Learn why the shrine was abandoned.", 8)],
         },
         new()
         {
@@ -90,6 +97,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Environments = Environments.Field, Footprint = new(3, 6), Weight = 6, MaxPerArea = 3,
             MobSlots = [new(MobRole.Minion, 0, 3)],
             Description = "Collapsed walls hiding salvage and squatters.",
+            ObjectiveHooks = [new("uncover-the-past", "Uncover what happened", "Piece together who lived here and why they left.", 8)],
         },
         new()
         {
@@ -118,12 +126,14 @@ public sealed class StaticContentCatalog : IContentCatalog
             Id = "frozen-cairn", Name = "Frozen cairn", Category = EventCategory.Landmark, Environments = Environments.Field,
             Footprint = new(1, 2), Weight = 8, Biomes = [Biome.Tundra, Biome.Mountains],
             Description = "A stone marker encased in ice, holding an offering.",
+            ObjectiveHooks = [new("claim-the-offering", "Claim the cairn's offering", "Free the offering from the ice without angering whoever left it.", 6)],
         },
         new()
         {
             Id = "bog-hut", Name = "Bog hermit's hut", Category = EventCategory.Social, Environments = Environments.Field,
             Footprint = new(2, 2), Weight = 8, MaxPerArea = 1, Biomes = [Biome.Swamp],
             Description = "A reclusive alchemist who trades in strange brews.",
+            ObjectiveHooks = [new("gather-reagents", "Gather the hermit's reagents", "Bring back what the hermit asks for in exchange for a brew.", 8)],
         },
         new()
         {
@@ -137,6 +147,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(2, 3), Weight = 6, MaxPerArea = 1, Biomes = [Biome.Forest, Biome.Plains],
             MobSlots = [new(MobRole.Skirmisher, 0, 2)],
             Description = "A circle of mushrooms where the veil is thin.",
+            ObjectiveHooks = [new("bargain-with-the-fey", "Strike a bargain with the fey", "Step into the ring and leave with a fair deal.", 8)],
         },
         new()
         {
@@ -144,6 +155,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(2, 4), Weight = 8, MaxPerArea = 1, Biomes = [Biome.Coast],
             MobSlots = [new(MobRole.Minion, 0, 3)],
             Description = "A beached hull with cargo still aboard.",
+            ObjectiveHooks = [new("salvage-the-cargo", "Salvage the cargo", "Recover the hull's cargo before the tide or the scavengers do.")],
         },
 
         // Dungeon hosts: field structures holding the way down. Their material sets the dungeon's primary material.
@@ -203,6 +215,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 16, AllowedStyles = [RoomStyle.Cave, RoomStyle.Mine], PreferredStyles = [RoomStyle.Cave],
             MobSlots = [new(MobRole.Minion, 3, 6), new(MobRole.Brute, 0, 1)],
             Description = "Eggs, webbing and something guarding them.",
+            ObjectiveHooks = [new("destroy-the-nest", "Destroy the nest", "Burn the eggs and kill what guards them.")],
         },
         new()
         {
@@ -210,6 +223,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 8, MaxPerArea = 1, MaxRooms = 3,
             MobSlots = [new(MobRole.Minion, 3, 6), new(MobRole.Leader, 1, 1), new(MobRole.Caster, 0, 1)],
             Description = "A warren of dwellings spread over connected rooms.",
+            ObjectiveHooks = [new("settle-the-dispute", "Settle the dispute", "End the trouble in the warren, by word or by force.") { NeedsResidents = true }],
         },
         new()
         {
@@ -217,6 +231,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 6, MaxPerArea = 1, MaxRooms = 2, AllowedStyles = [RoomStyle.Masonry, RoomStyle.Mine],
             MobSlots = [new(MobRole.Minion, 2, 4), new(MobRole.Leader, 1, 1)],
             Description = "Crates of contraband and people who would rather not be found.",
+            ObjectiveHooks = [new("seize-the-contraband", "Seize the contraband", "Take the smugglers' goods and find out who they were for.")],
         },
         new()
         {
@@ -224,6 +239,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 6, MaxPerArea = 1, AllowedStyles = [RoomStyle.Masonry],
             MobSlots = [new(MobRole.Minion, 1, 2)],
             Description = "Captives who may help if freed.",
+            ObjectiveHooks = [new("free-the-captive", "Free the captive", "Get the prisoners out of their cells and out of the dungeon.", 12)],
         },
         new()
         {
@@ -231,6 +247,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 5, MaxPerArea = 1,
             MobSlots = [new(MobRole.Brute, 1, 1)],
             Description = "A guarded hoard behind a heavy door.",
+            ObjectiveHooks = [new("recover-the-relic", "Recover the relic", "Get past the vault's guardian and carry out its relic.", 12)],
         },
         new()
         {
@@ -250,6 +267,7 @@ public sealed class StaticContentCatalog : IContentCatalog
             Footprint = new(1, 1), Weight = 1, MaxPerArea = 1, IsBoss = true,
             MobSlots = [new(MobRole.Boss, 1, 1), new(MobRole.Minion, 0, 3)],
             Description = "The deepest room and whatever rules it.",
+            ObjectiveHooks = [new("defeat-the-guardian", "Defeat the guardian", "Overcome whatever rules the deepest room.", 15)],
         },
     ];
 
@@ -348,6 +366,12 @@ public sealed class StaticContentCatalog : IContentCatalog
         new() { Id = "rune-circle", Name = "Rune circle", Tags = ["elemental", "construct"], MinSide = 2, MaxSide = 3, Weight = 10, MaxPerSettlement = 2 },
         new() { Id = "scale-shrine", Name = "Scale shrine", Tags = ["dragonkin"], MinSide = 2, MaxSide = 3, Weight = 10, MaxPerSettlement = 2 },
         new() { Id = "hoard-cairn", Name = "Hoard cairn", Tags = ["dragonkin"], MinSide = 2, MaxSide = 2, Weight = 6, MaxPerSettlement = 1 },
+    ];
+
+    public IReadOnlyList<RealmObjectiveTemplate> RealmObjectives { get; } =
+    [
+        new("clear-the-realm", "Clear the realm", "Defeat or drive off every hostile group in the realm.", 6, ObjectiveRequirement.None),
+        new("chart-every-floor", "Chart every floor", "Walk every room on every floor and record it. A Cartographer's favorite.", 6, ObjectiveRequirement.DungeonFloors),
     ];
 
     public IReadOnlyList<TrapTemplate> TrapTemplates { get; } =

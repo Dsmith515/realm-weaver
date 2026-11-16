@@ -115,6 +115,18 @@ public static class MarkdownExporter
             Line(sb, $"- Dungeon host: {theme.HostName}; primary material: {DungeonMaterials.Of(theme.PrimaryMaterial).Name}; possible branches: {branches}");
         }
 
+        if (realm.Objectives.Count > 0)
+        {
+            Line(sb, $"");
+            Line(sb, $"## Objectives (complete any one)");
+            Line(sb, $"");
+            foreach (var o in realm.Objectives)
+            {
+                var where = o.EventId is null ? "anywhere in the realm" : $"{o.EventId} {o.EventName} at {o.Location} ({AreaName(realm, o.AreaId)})";
+                Line(sb, $"- **{o.Id} {o.Title}**: {o.Description} *{where}*");
+            }
+        }
+
         foreach (var area in realm.Areas)
         {
             Line(sb, $"");
@@ -180,6 +192,9 @@ public static class MarkdownExporter
 
         return sb.ToString();
     }
+
+    private static string AreaName(RealmDocument realm, string? areaId) =>
+        realm.Areas.FirstOrDefault(a => a.Id == areaId)?.Name ?? areaId ?? "";
 
     private static void Line(StringBuilder sb, FormattableString text) => sb.AppendLine(text.ToString(CultureInfo.InvariantCulture));
 }

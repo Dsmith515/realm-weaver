@@ -5,6 +5,7 @@ using RealmWeaver.Generation.Events;
 using RealmWeaver.Generation.Field;
 using RealmWeaver.Generation.Grid;
 using RealmWeaver.Generation.Model;
+using RealmWeaver.Generation.Objectives;
 using RealmWeaver.Generation.Randomness;
 
 namespace RealmWeaver.Generation;
@@ -57,6 +58,9 @@ public static class RealmGenerator
                 throw new RealmGenerationException($"Unknown realm kind {request.Kind}.");
         }
 
+        // Objectives come from the events placed above, on their own stream, so they never move the layout or events.
+        var objectives = ObjectivePicker.Pick(areas, catalog, root.Fork("objectives"));
+
         return new RealmDocument
         {
             GeneratorVersion = GeneratorLimits.Version,
@@ -65,6 +69,7 @@ public static class RealmGenerator
             Threat = request.Threat,
             Theme = theme,
             Areas = areas,
+            Objectives = objectives,
         };
     }
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 using RealmWeaver.Generation.Export;
+using RealmWeaver.Generation.Model;
 using RealmWeaver.Infrastructure.Http;
 using RealmWeaver.Modules.Realms.Contracts;
 
@@ -21,6 +22,11 @@ internal static class RealmsEndpoints
         realms.MapGet("/", ListAsync).WithName("ListRealms")
             .WithDescription("Realm summaries, newest first. Filter by player, by the map they were opened from, or gm=true for GM Quick Weaves.");
         realms.MapGet("/{id:guid}", GetAsync).WithName("GetRealm");
+        realms.MapGet("/{id:guid}/objectives/candidates", CandidatesAsync).WithName("ListObjectiveCandidates")
+            .WithDescription("Every objective a GM can pin: the rolled objectives first, then the other hooks of the placed events and the realm-wide objectives.");
+        realms.MapPut("/{id:guid}/pinned-objective", PinAsync).WithName("PinObjective")
+            .WithDescription("Pins one candidate objective, by key, for this run. Stored on the realm, never on the map.");
+        realms.MapDelete("/{id:guid}/pinned-objective", UnpinAsync).WithName("UnpinObjective");
         realms.MapGet("/{id:guid}/export", ExportAsync).WithName("ExportRealm")
             .Produces<string>(StatusCodes.Status200OK, "image/svg+xml", "text/plain", "text/markdown", "application/json")
             .WithDescription("format=svg|prompt (one area; area defaults to the first) or json|md (the whole realm).");
@@ -40,6 +46,33 @@ internal static class RealmsEndpoints
     private static async Task<Results<Ok<RealmDto>, ProblemHttpResult>> GetAsync(Guid id, RealmsService realms, CancellationToken cancellationToken) =>
         await realms.GetAsync(id, cancellationToken) is { } realm
             ? TypedResults.Ok(realm)
+            : Problems.NotFound("Realm", id);
+
+    private static async Task<Results<Ok<IReadOnlyList<RealmObjective>>, ProblemHttpResult>> CandidatesAsync(
+        Guid id, RealmsService realms, CancellationToken cancellationToken) =>
+        await realms.GetObjectiveCandidatesAsync(id, cancellationToken) is { } candidates
+            ? TypedResults.Ok(candidates)
+            : Problems.NotFound("Realm", id);
+
+    private static async Task<Results<Ok<RealmSummaryDto>, ProblemHttpResult, ValidationProblem>> PinAsync(
+        Guid id, PinObjectiveInput input, RealmsService realms, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(input.Key))
+        {
+            return Problems.Validation(new Dictionary<string, string[]> { ["key"] = ["Give the key of the objective to pin."] });
+        }
+
+        return await realms.PinObjectiveAsync(id, input.Key, cancellationToken) switch
+        {
+            PinOutcome.Pinned pinned => TypedResults.Ok(pinned.Summary),
+            PinOutcome.UnknownObjective => Problems.Validation(new Dictionary<string, string[]> { ["key"] = ["This realm offers no objective with that key."] }),
+            _ => Problems.NotFound("Realm", id),
+        };
+    }
+
+    private static async Task<Results<Ok<RealmSummaryDto>, ProblemHttpResult>> UnpinAsync(Guid id, RealmsService realms, CancellationToken cancellationToken) =>
+        await realms.PinObjectiveAsync(id, key: null, cancellationToken) is PinOutcome.Pinned pinned
+            ? TypedResults.Ok(pinned.Summary)
             : Problems.NotFound("Realm", id);
 
     private static async Task<Results<FileContentHttpResult, ProblemHttpResult, ValidationProblem>> ExportAsync(

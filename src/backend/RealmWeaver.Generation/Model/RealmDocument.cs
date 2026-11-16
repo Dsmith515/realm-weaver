@@ -21,6 +21,52 @@ public sealed record RealmDocument
 
     /// <summary>The field and/or dungeon floors, in travel order.</summary>
     public required IReadOnlyList<RealmArea> Areas { get; init; }
+
+    /// <summary>
+    /// One to three goals for the run; completing any one completes it. Empty for realms generated before objectives
+    /// existed (generator 0.4.0 and older).
+    /// </summary>
+    public IReadOnlyList<RealmObjective> Objectives { get; init; } = [];
+}
+
+public enum ObjectiveScope
+{
+    /// <summary>Tied to one placed event, e.g. "Free the captive" in a prison.</summary>
+    Event,
+
+    /// <summary>About the whole realm, e.g. "Clear the realm".</summary>
+    Realm,
+}
+
+/// <summary>
+/// A goal for the run. Event objectives point at the event they come from, so the realm page can highlight it.
+/// <see cref="Key"/> is stable for a given realm and identifies the objective when a GM pins it.
+/// </summary>
+public sealed record RealmObjective
+{
+    /// <summary>"O1".."O3" for rolled objectives; "P" for a GM's pin.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>"field/E3/free-the-captive" or "realm/clear-the-realm".</summary>
+    public required string Key { get; init; }
+
+    /// <summary>The objective hook or realm objective template id.</summary>
+    public required string TemplateId { get; init; }
+
+    public required string Title { get; init; }
+
+    public required string Description { get; init; }
+
+    public required ObjectiveScope Scope { get; init; }
+
+    /// <summary>The area holding the event. Null for realm-wide objectives.</summary>
+    public string? AreaId { get; init; }
+
+    public string? EventId { get; init; }
+
+    public string? EventName { get; init; }
+
+    public string? Location { get; init; }
 }
 
 /// <summary>A single map: the field, or one dungeon floor.</summary>

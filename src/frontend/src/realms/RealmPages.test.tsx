@@ -55,8 +55,24 @@ function area(id: string, eventId: string, eventName: string): RealmArea {
 
 const realm = {
   summary,
-  document: { generatorVersion: '0.3.0', seed: summary.seed, threat: 2, request: {}, theme: null, areas: [area('field', 'E1', 'Wolf den'), area('floor-1', 'E2', 'Guard post')] },
+  document: {
+    generatorVersion: '0.3.0',
+    seed: summary.seed,
+    threat: 2,
+    request: {},
+    theme: null,
+    areas: [area('field', 'E1', 'Wolf den'), area('floor-1', 'E2', 'Guard post')],
+    objectives: [
+      { id: 'O1', key: 'floor-1/E2/take-the-post', templateId: 'take-the-post', title: 'Take the post', description: 'Hold it.', scope: 'event', areaId: 'floor-1', eventId: 'E2', eventName: 'Guard post', location: 'B2:C3' },
+      { id: 'O2', key: 'realm/clear-the-realm', templateId: 'clear-the-realm', title: 'Clear the realm', description: 'Every hostile group.', scope: 'realm' },
+    ],
+  },
 } as unknown as Realm
+
+const candidates = [
+  ...(realm.document.objectives ?? []),
+  { id: 'P', key: 'field/E1/slay-the-beast', templateId: 'slay-the-beast', title: 'Slay or drive off the beast', description: 'For good.', scope: 'event', areaId: 'field', eventId: 'E1', eventName: 'Wolf den', location: 'B2:C3' },
+]
 
 const svgFor = (call: ApiCall) =>
   new Response(
@@ -189,7 +205,8 @@ describe('Realm pages', () => {
     await user.click(await screen.findByRole('tab', { name: 'Floor 1' }))
 
     expect(screen.getByRole('tab', { name: 'Floor 1' })).toHaveAttribute('aria-selected', 'true')
-    expect(await screen.findByRole('button', { name: /E2 Guard post/ })).toBeInTheDocument()
+    const placements = screen.getByRole('complementary', { name: 'Placements' })
+    expect(await within(placements).findByRole('button', { name: /E2 Guard post/ })).toBeInTheDocument()
     await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/export').at(-1)!.query.get('area')).toBe('floor-1'))
     expect(screen.getByRole('link', { name: 'Download SVG' })).toHaveAttribute('href', '/api/realms/realm-1/export?format=svg&area=floor-1')
     expect(screen.getByRole('link', { name: 'JSON' })).toHaveAttribute('href', '/api/realms/realm-1/export?format=json')
@@ -245,5 +262,58 @@ describe('Realm pages', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Copy to clipboard' }))
 
     expect(within(dialog).getByRole('status')).toHaveTextContent("Couldn't copy")
+  })
+
+  it('lists the objectives and shows an objective’s event on its floor', async () => {
+    const api = fakeApi(routes())
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const objectives = await screen.findByRole('region', { name: 'Objectives' })
+    expect(within(objectives).getByText('Complete any one to complete the run.')).toBeInTheDocument()
+    expect(within(objectives).getByRole('button', { name: /Clear the realm Whole realm/ })).toBeInTheDocument()
+
+    await user.click(within(objectives).getByRole('button', { name: /Take the post E2 Guard post · B2:C3/ }))
+
+    expect(screen.getByRole('tab', { name: 'Floor 1' })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/export').at(-1)!.query.get('area')).toBe('floor-1'))
+    const svg = await screen.findByTestId('realm-svg')
+    await waitFor(() => expect(svg.querySelector('[data-event-id="E2"]')).toHaveClass('rw-highlight'))
+    expect(within(objectives).getByRole('button', { name: /Take the post/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('lets a GM pin a candidate objective and unpin it', async () => {
+    const pinned = { ...summary, pinnedObjective: candidates[2] }
+    const api = fakeApi({
+      ...routes(),
+      'GET /api/realms/:id/objectives/candidates': candidates,
+      'PUT /api/realms/:id/pinned-objective': pinned,
+      'DELETE /api/realms/:id/pinned-objective': summary,
+    })
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    const objectives = await screen.findByRole('region', { name: 'Objectives' })
+    await user.click(within(objectives).getByRole('button', { name: 'Pin an objective (GM)…' }))
+    const chooser = await within(objectives).findByRole('form', { name: 'Pin an objective' })
+    await user.selectOptions(within(chooser).getByLabelText('Objective to pin'), 'field/E1/slay-the-beast')
+    await user.click(within(chooser).getByRole('button', { name: 'Pin' }))
+
+    expect(api.callsTo('PUT', '/api/realms/realm-1/pinned-objective')[0].body).toEqual({ key: 'field/E1/slay-the-beast' })
+    expect(await within(objectives).findByText('GM pin')).toBeInTheDocument()
+    expect(within(objectives).getByRole('button', { name: /Slay or drive off the beast/ })).toBeInTheDocument()
+
+    await user.click(within(objectives).getByRole('button', { name: 'Unpin' }))
+    await waitFor(() => expect(within(objectives).queryByText('GM pin')).not.toBeInTheDocument())
+    expect(api.callsTo('DELETE', '/api/realms/realm-1/pinned-objective')).toHaveLength(1)
+  })
+
+  it('notes that a mirror’s objectives may differ and explains realms without objectives', async () => {
+    fakeApi({ ...routes(), 'GET /api/realms/:id': { summary: mirror, document: { ...realm.document, objectives: [] } } })
+    renderApp('/realms/realm-2')
+
+    const objectives = await screen.findByRole('region', { name: 'Objectives' })
+    expect(within(objectives).getByText(/This is a mirror/)).toBeInTheDocument()
+    expect(within(objectives).getByText(/woven before objectives existed/)).toBeInTheDocument()
   })
 })
