@@ -230,10 +230,10 @@ Design notes for these ideas live in the Notion pages "Thimbles, Needle Roles an
 
 ## Learning-plan coverage
 How the milestones line up with the maintainer's skills plan (a 5-project, 5-phase portfolio plan), so the gaps stay visible:
-- **Done:** procedural map and dungeon generator (plan project 1), deterministic generation, a modular monolith with module-owned data, ACID transactions, `xmin` optimistic concurrency, idempotency keys, xUnit, Testcontainers, Vitest, Playwright, Docker images and CI/CD to GHCR.
+- **Done:** procedural map and dungeon generator (plan project 1), deterministic generation, a modular monolith with module-owned data, ACID transactions, `xmin` optimistic concurrency, idempotency keys, xUnit, Testcontainers, Vitest, Playwright, Docker images and CI/CD to GHCR, and liveness and readiness health checks (`/health/live`, `/health/ready`, with `/health` kept as an alias for ready).
 - **Milestone 9:** service extraction, RabbitMQ, transactional outbox and inbox, saga with compensation, OpenTelemetry tracing.
 - **Campaign Manager (plan project 4):** auth and RBAC, API security, an external API integration, optional AI.
-- **Not scheduled yet:** health checks and structured logging (small; can come before Milestone 9), Redis caching, Terraform and a free cloud deploy (Phase 3). The plan's tactical combat and tower-defense projects (2 and 3) are covered by the related portfolio ideas above.
+- **Not scheduled yet:** structured logging (small; can come before Milestone 9), Redis caching, Terraform and a free cloud deploy (Phase 3). The plan's tactical combat and tower-defense projects (2 and 3) are covered by the related portfolio ideas above.
 
 ## Verification
 - `dotnet test` passes, including the generation invariants and the Testcontainers ritual tests.

@@ -9,11 +9,28 @@ namespace RealmWeaver.Api.IntegrationTests;
 public class ApiSmokeTests(RealmWeaverApiFactory factory)
 {
     [Fact]
-    public async Task Health_endpoint_returns_ok()
+    public async Task Health_alias_returns_ok_when_postgres_is_up()
     {
         using var client = factory.CreateClient();
         var response = await client.GetAsync(new Uri("/health", UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Liveness_endpoint_returns_ok()
+    {
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Readiness_endpoint_returns_ok_when_postgres_is_up()
+    {
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
