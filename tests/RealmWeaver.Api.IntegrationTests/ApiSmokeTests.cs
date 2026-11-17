@@ -9,7 +9,7 @@ namespace RealmWeaver.Api.IntegrationTests;
 public class ApiSmokeTests(RealmWeaverApiFactory factory)
 {
     [Fact]
-    public async Task Health_endpoint_returns_ok()
+    public async Task Health_alias_returns_ok_when_postgres_is_up()
     {
         using var client = factory.CreateClient();
         var response = await client.GetAsync(new Uri("/health", UriKind.Relative));
