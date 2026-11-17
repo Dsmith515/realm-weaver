@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 
 using RealmWeaver.Api;
+using RealmWeaver.Infrastructure.Health;
 using RealmWeaver.Infrastructure.Http;
 using RealmWeaver.Infrastructure.Persistence;
 using RealmWeaver.Modules.Catalog;
@@ -28,7 +30,7 @@ builder.Services.AddOpenApi(options => options.AddSchemaTransformer((schema, con
 }));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().AddCheck<PostgresHealthCheck>("postgres", tags: ["ready"], timeout: TimeSpan.FromSeconds(3));
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
           .AllowAnyHeader()
@@ -75,7 +77,15 @@ if (app.Environment.IsDevelopment())
         .DisableDefaultFonts());   // system fonts instead of loading them from Scalar's CDN
 }
 
-app.MapHealthChecks("/health");
+// Liveness: is the process up? Checks nothing external, so a DB outage doesn't get the API restarted.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+
+// Readiness: can it serve traffic? Runs the "ready" checks (Postgres).
+var readiness = new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") };
+app.MapHealthChecks("/health/ready", readiness);
+
+// Kept for nginx, the compose healthcheck and the Vite proxy, which already call /health.
+app.MapHealthChecks("/health", readiness);
 app.MapGet("/api/info", () => new ApiInfo("Realm Weaver", typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"))
    .WithName("GetApiInfo");
 
