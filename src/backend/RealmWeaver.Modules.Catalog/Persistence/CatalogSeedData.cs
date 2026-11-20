@@ -39,7 +39,7 @@ internal static class CatalogSeedData
         Coating(Id(3, 6), "Blightsap Varnish", Rarity.Epic, 4, "It keeps growing after you apply it.", ["plant", "beast"], RealmKind.FieldWithDungeon, 3, assignable: false),
     ];
 
-    /// <summary>Self-assign starts on, so a fresh install is playable without visiting the admin page.</summary>
+    /// <summary>Self-assign starts on, so a fresh install is playable without visiting the Components page.</summary>
     public const bool DefaultPlayersCanSelfAssign = true;
 
     private static Guid Id(int type, int index) => new($"{type}0000000-0000-0000-0000-{index:D12}");

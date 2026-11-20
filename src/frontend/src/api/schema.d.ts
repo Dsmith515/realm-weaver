@@ -29,7 +29,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Admin: gives a component to a player, regardless of the self-assign rules. */
+        /** @description GM: gives a component to a player, regardless of the self-assign rules. */
         post: operations["AssignComponent"];
         delete?: never;
         options?: never;

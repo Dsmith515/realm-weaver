@@ -27,7 +27,7 @@ const columns: { label: string; sort?: ComponentSort }[] = [
 
 const canClone = (c: Component) => (creatableTypes as readonly string[]).includes(c.type)
 
-/** Admin catalog. There's no access control yet: a TODO for when authentication arrives (roadmap v1 default). */
+/** GM catalog. Hidden in player view (ADR 0012), but there's no access control yet: a TODO for when authentication arrives. */
 export function ComponentsPage() {
   const [filters, setFilters] = useState<ComponentFilters>({ page: 1, pageSize })
   const [editing, setEditing] = useState<Editing | undefined>()

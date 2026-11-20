@@ -45,6 +45,8 @@ describe('App shell', () => {
     })
     renderApp('/player')
     const user = userEvent.setup()
+    // The player picker belongs to player view (ADR 0012).
+    await user.click(within(screen.getByRole('group', { name: 'Viewing as' })).getByRole('button', { name: 'Player' }))
 
     const select = await screen.findByRole('combobox', { name: 'Player' })
     await screen.findByRole('option', { name: 'Tester' })

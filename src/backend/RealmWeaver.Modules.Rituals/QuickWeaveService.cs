@@ -10,7 +10,7 @@ namespace RealmWeaver.Modules.Rituals;
 /// <summary>
 /// GM Quick Weave: generate a realm from anything in the catalog, for a one-shot. Nothing is owned or spent, so
 /// there's no inventory step; the map (when new) and the realm are written in one unit of work, both unowned.
-/// The admin can hand the map to a player afterwards with the normal Assign action.
+/// The GM can hand the map to a player afterwards with the normal Assign action.
 /// </summary>
 internal sealed class QuickWeaveService(ICatalogModule catalog, IRealmsModule realms, UnitOfWork unitOfWork, Random random)
 {

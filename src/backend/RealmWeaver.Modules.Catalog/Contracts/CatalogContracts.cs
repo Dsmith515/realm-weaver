@@ -104,7 +104,7 @@ public sealed record MapDetails(
     MapFlags? Flags = null);
 
 /// <summary>
-/// Per-map rules, set by an admin or GM. An update that leaves them out keeps the recorded ones.
+/// Per-map rules, set by the GM. An update that leaves them out keeps the recorded ones.
 /// <list type="bullet">
 /// <item><see cref="MapRequired"/>: a sealed map. A player must hold it to weave it. Off (the default), anyone weaving
 /// the same components reopens it, so the map just carries the recipe.</item>
@@ -182,7 +182,7 @@ public enum ComponentSort
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
 /// <summary>
-/// Global admin settings. A player may add a component to their own inventory only when
+/// Global GM settings. A player may add a component to their own inventory only when
 /// <see cref="PlayersCanSelfAssign"/> is on and the component is <c>IsPlayerAssignable</c>.
 /// </summary>
 public sealed record CatalogSettingsDto(bool PlayersCanSelfAssign);
@@ -191,7 +191,7 @@ public sealed record CatalogSettingsDto(bool PlayersCanSelfAssign);
 public sealed record StarterKitCandidates(Guid BeginnerNeedleId, IReadOnlyList<Guid> ThreadIds, IReadOnlyList<Guid> CoatingIds);
 
 /// <summary>
-/// A Map component created by a ritual. It appears in the admin catalog like any other component.
+/// A Map component created by a ritual. It appears in the GM catalog like any other component.
 /// The caller chooses the id up front, so a retried or replayed step always refers to the same map.
 /// </summary>
 public sealed record NewMap(Guid Id, string Name, string Description, MapDetails Details);

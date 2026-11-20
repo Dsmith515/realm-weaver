@@ -45,7 +45,7 @@ internal static class RitualsEndpoints
                 + "400: no players, an unknown player or objective, recipients who aren't in the party, or more than one recipient for a Unique map. "
                 + "409: a Unique map was just given to someone else.");
 
-        // GM tools. Like the admin catalog there's no access control yet: a TODO for when authentication arrives.
+        // GM tools. Like the GM catalog there's no access control yet: a TODO for when authentication arrives.
         var gm = app.MapGroup("/api/gm/weave").WithTags("GM");
         gm.MapPost("/preview", QuickWeavePreviewAsync).WithName("PreviewQuickWeave")
             .WithDescription("Resolves a Quick Weave without saving anything: chosen slots as given, empty ones picked at random within the limits.");

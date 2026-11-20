@@ -75,7 +75,7 @@ function SelfAdd({ playerId }: { playerId: string }) {
   return (
     <section className="card">
       <h2>Add components yourself</h2>
-      {!enabled && settings.data && <p className="muted">An admin has turned off adding components yourself.</p>}
+      {!enabled && settings.data && <p className="muted">Your GM has turned off adding components yourself.</p>}
       {selfAdd.isError && (
         <p className="error-text" role="alert">
           {errorMessage(selfAdd.error)}

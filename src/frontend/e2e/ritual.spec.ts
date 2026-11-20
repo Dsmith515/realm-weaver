@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectMapDrawn, nav, newPlayer } from './helpers.ts'
+import { expectMapDrawn, nav, newPlayer, viewAs } from './helpers.ts'
 
 test('a new player performs a random ritual, the GM completes an objective and hands out the map, and exports download', async ({ page }) => {
   await newPlayer(page, 'E2E Ritual')
@@ -36,6 +36,7 @@ test('a new player performs a random ritual, the GM completes an objective and h
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
 
   // The GM completes an objective (the first is chosen) and hands the map to the weaver, who is ticked by default.
+  await viewAs(page, 'GM')
   await expect(page.getByRole('region', { name: 'Objectives' })).toContainText('as often as the realm is run')
   const completion = page.getByRole('region', { name: 'Completion' })
   await expect(completion.getByRole('checkbox', { name: /\(weaver\)/ })).toBeChecked()

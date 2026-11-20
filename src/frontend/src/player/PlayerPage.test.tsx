@@ -99,11 +99,11 @@ describe('Player page', () => {
     await waitFor(() => expect(api.callsTo('POST', `/api/players/${player.id}/inventory`)[0]?.body).toEqual({ componentId: moss.id, quantity: 2 }))
   })
 
-  it('disables adding when an admin has turned self-assign off', async () => {
+  it('disables adding when the GM has turned self-assign off', async () => {
     fakeApi(routes(false))
     renderApp('/player')
 
-    expect(await screen.findByText('An admin has turned off adding components yourself.')).toBeInTheDocument()
+    expect(await screen.findByText('Your GM has turned off adding components yourself.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Beastward Wax' })).toBeDisabled()
   })
 

@@ -22,7 +22,7 @@ public sealed record InventoryNotesInput(string Notes);
 /// <summary>Body for a player adding a component to their own inventory.</summary>
 public sealed record AddInventoryItemInput(Guid ComponentId, int Quantity = 1);
 
-/// <summary>Body for an admin giving a component to a player.</summary>
+/// <summary>Body for the GM giving a component to a player.</summary>
 public sealed record AssignComponentInput(Guid PlayerId, int Quantity = 1);
 
 /// <summary>One page of players by name.</summary>

@@ -82,7 +82,7 @@ internal static class RitualTestKit
         return await response.ReadJsonAsync<RunCompletionDto>();
     }
 
-    /// <summary>Sets a map's flags through the admin catalog.</summary>
+    /// <summary>Sets a map's flags through the GM catalog.</summary>
     public static async Task SetMapFlagsAsync(HttpClient client, Guid mapId, MapFlags flags)
     {
         var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{mapId}");

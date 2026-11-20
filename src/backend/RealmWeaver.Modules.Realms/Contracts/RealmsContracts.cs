@@ -126,7 +126,7 @@ public interface IRealmsModule
 
     /// <summary>
     /// The first non-mirror realm opened from a map, with a digest of its mobs, loot and resource nodes.
-    /// Null when no such realm is stored (for example a map an admin created by hand).
+    /// Null when no such realm is stored (for example a map the GM created by hand).
     /// </summary>
     Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default);
 }

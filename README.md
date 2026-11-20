@@ -113,7 +113,7 @@ Errors are ProblemDetails: `400` with field errors, `403`, `404`, `409` for a co
 | **Quick Weave** | GM tool for one-shots: a realm from the whole catalog, with no inventory checks and nothing consumed. Pick each slot or leave it random within the limits (rarity, tier range, biome, realm kind, each with Select all), set size and settlement options (structures are off by default; ask for placed structures or just structure ideas), **Roll** to preview, re-roll single slots, then **Weave** exactly what's shown. The new map belongs to no one until you assign it. |
 | **About** | What Realm Weaver is for and how a ritual works. |
 
-The navigation leads with the GM pages (Quick Weave, Realms, Components). Ritual and Player sit under *Player preview*: groundwork for a later session client with logins (ADR 0010). The player switcher is in the header.
+The navigation leads with the GM pages (Quick Weave, Realms, Components). Ritual and Player sit under *Player preview*: groundwork for a later session client with logins (ADR 0010). A *Viewing as GM / Player* switch in the header previews each side: player view hides the GM pages and shows the player picker (ADR 0012). It is a preview, not access control.
 
 **API contract.** The frontend's types in `src/frontend/src/api/schema.d.ts` are generated from `src/frontend/openapi/realm-weaver.json`, and CI fails if either drifts from the API. After changing an endpoint or DTO:
 

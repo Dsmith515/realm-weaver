@@ -148,7 +148,7 @@ public class InventoryEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
-    public async Task Admin_assign_ignores_the_self_assign_rules()
+    public async Task Gm_assign_ignores_the_self_assign_rules()
     {
         using var client = factory.CreateClient();
         var player = await CreatePlayerAsync(client);
@@ -167,7 +167,7 @@ public class InventoryEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
-    public async Task Admin_assign_validates_player_and_component()
+    public async Task Gm_assign_validates_player_and_component()
     {
         using var client = factory.CreateClient();
 
