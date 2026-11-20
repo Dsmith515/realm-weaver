@@ -1,38 +1,222 @@
+/*
+ * Themes. Every palette sets the same tokens, so components only ever use var(--token).
+ * The default (no data-theme, or an unknown one) is Ink & Ember. ThemeProvider sets data-theme on <html>,
+ * and index.html applies the saved choice before first paint. Palette sources: docs/design/palettes.json.
+ * The default block uses :where(:root), which has zero specificity, so any [data-theme] block wins over it
+ * whatever order the blocks are in.
+ */
 :root {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --text: #1f1d1a;
-  --muted: #6b665e;
-  --accent: #6a4fb3;
-  --ok: #2f7d4f;
-  --bad: #b23a3a;
-  --border: #ddd6ca;
-  --warn-bg: #fff4d6;
-  --warn: #8a5a00;
-  --ok-bg: #e5f4ea;
-  --bad-bg: #fbe6e6;
-  --highlight: #e0218a;
+  color-scheme: dark;
+  --warn: #f0c46a;
+  --ok-bg: color-mix(in srgb, var(--ok) 16%, var(--surface));
+  --bad-bg: color-mix(in srgb, var(--bad) 16%, var(--surface));
+  --warn-bg: color-mix(in srgb, var(--warn) 16%, var(--surface));
+  /* Halo around the logo art (docs/design/logo.md): a 16px drop-shadow at this strength. */
+  --logo-halo-size: 16px;
+  --logo-halo: 15%;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15131a;
-    --surface: #1f1c26;
-    --text: #ece8f4;
-    --muted: #a39cb3;
-    --accent: #a98cf0;
-    --ok: #6cc795;
-    --bad: #ef7d7d;
-    --border: #34303f;
-    --warn-bg: #3a2f14;
-    --warn: #f0c46a;
-    --ok-bg: #173323;
-    --bad-bg: #3a1c1c;
-    --highlight: #ff5cb8;
-  }
+[data-theme='arcana'] {
+  --bg: #07081a;
+  --bar: #0b0d21;
+  --panel: #0f1129;
+  --surface: #11142e;
+  --surface-2: #181b3b;
+  --surface-hover: #21254d;
+  --glow: #17193d;
+  --border: #25294f;
+  --border-strong: #373c6e;
+  --text: #efeffa;
+  --text-2: #c9c9e0;
+  --muted: #9c9dbf;
+  --faint: #64668a;
+  --text-strong: #ffffff;
+  --accent: #e9b04c;
+  --accent-hover: #ffc96b;
+  --on-accent: #1d1303;
+  --accent-2: #8b6cf6;
+  --accent-2-text: #b9a6ff;
+  --on-accent-2: #ffffff;
+  --info: #4fd4ff;
+  --info-hover: #9be6ff;
+  --ok: #7cc242;
+  --bad: #f07272;
+  --highlight: #c4a5ff;
+}
+
+:where(:root),
+[data-theme='ember'] {
+  --bg: #0d0d10;
+  --bar: #121216;
+  --panel: #16161b;
+  --surface: #19191f;
+  --surface-2: #212128;
+  --surface-hover: #2a2a33;
+  --glow: #2b1c0c;
+  --border: #2e2e37;
+  --border-strong: #46464f;
+  --text: #f1ede6;
+  --text-2: #d0c9bd;
+  --muted: #a19b91;
+  --faint: #6d685f;
+  --text-strong: #ffffff;
+  --accent: #e8a33d;
+  --accent-hover: #ffbd5c;
+  --on-accent: #1c1204;
+  --accent-2: #2fb5a4;
+  --accent-2-text: #86ded2;
+  --on-accent-2: #04201c;
+  --info: #63b4e8;
+  --info-hover: #a3d4f4;
+  --ok: #7cc242;
+  --bad: #ef6b5b;
+  --highlight: #3ee0cc;
+}
+
+[data-theme='gilded'] {
+  --bg: #050a22;
+  --bar: #08102c;
+  --panel: #0b1535;
+  --surface: #0d183c;
+  --surface-2: #13214d;
+  --surface-hover: #1a2c61;
+  --glow: #0e2766;
+  --border: #1f2e5c;
+  --border-strong: #2e4380;
+  --text: #eef2ff;
+  --text-2: #c3cde8;
+  --muted: #93a0c8;
+  --faint: #5f6c95;
+  --text-strong: #ffffff;
+  --accent: #e9b04c;
+  --accent-hover: #ffc96b;
+  --on-accent: #1d1303;
+  --accent-2: #4a86f7;
+  --accent-2-text: #9cc0ff;
+  --on-accent-2: #04112e;
+  --info: #4fd4ff;
+  --info-hover: #9be6ff;
+  --ok: #7cc242;
+  --bad: #f07272;
+  --highlight: #ffd36b;
+}
+
+[data-theme='emerald'] {
+  --bg: #06100c;
+  --bar: #091510;
+  --panel: #0c1a14;
+  --surface: #0e1e17;
+  --surface-2: #14291f;
+  --surface-hover: #1b3629;
+  --glow: #0f3322;
+  --border: #1d3a2c;
+  --border-strong: #2c5541;
+  --text: #ecf5ef;
+  --text-2: #c3d8cb;
+  --muted: #8fae9c;
+  --faint: #5a7767;
+  --text-strong: #ffffff;
+  --accent: #4ccf7a;
+  --accent-hover: #7ee39f;
+  --on-accent: #04170b;
+  --accent-2: #e9b04c;
+  --accent-2-text: #f3cd85;
+  --on-accent-2: #1d1303;
+  --info: #56c1f5;
+  --info-hover: #a0dcfa;
+  --ok: #b5e35a;
+  --bad: #f07272;
+  --highlight: #ffd36b;
+}
+
+[data-theme='abyss'] {
+  --bg: #04121a;
+  --bar: #061923;
+  --panel: #09202b;
+  --surface: #0b2430;
+  --surface-2: #10303f;
+  --surface-hover: #173e50;
+  --glow: #0a3f4c;
+  --border: #1a3d4b;
+  --border-strong: #2a5869;
+  --text: #e8f4f4;
+  --text-2: #bdd7d7;
+  --muted: #88aaad;
+  --faint: #567478;
+  --text-strong: #ffffff;
+  --accent: #f0b24a;
+  --accent-hover: #ffc96b;
+  --on-accent: #1c1304;
+  --accent-2: #2dd4bf;
+  --accent-2-text: #8eeadc;
+  --on-accent-2: #032420;
+  --info: #56c1f5;
+  --info-hover: #a0dcfa;
+  --ok: #8bd450;
+  --bad: #f07a6e;
+  --highlight: #ff9d6b;
+}
+
+[data-theme='arcane'] {
+  --bg: #0b0e24;
+  --bar: #0f1330;
+  --panel: #10153a;
+  --surface: #141a3b;
+  --surface-2: #1c2352;
+  --surface-hover: #232b63;
+  --glow: #1c1f5a;
+  --border: #2b3270;
+  --border-strong: #3a4290;
+  --text: #ece9ff;
+  --text-2: #c9c5ea;
+  --muted: #a6a2cc;
+  --faint: #6f6b97;
+  --text-strong: #ffffff;
+  --accent: #f5a524;
+  --accent-hover: #ffbb45;
+  --on-accent: #1a1205;
+  --accent-2: #8b6cf6;
+  --accent-2-text: #b9a6ff;
+  --on-accent-2: #ffffff;
+  --info: #4cc9f0;
+  --info-hover: #8ee3fa;
+  --ok: #5cc98a;
+  --bad: #f07272;
+  --highlight: #ff5cb8;
+}
+
+[data-theme='parchment'] {
+  color-scheme: light;
+  --warn: #8a5a00;
+  --logo-halo: 35%;
+  --bg: #f5f0e6;
+  --bar: #fffdf8;
+  --panel: #fbf7ef;
+  --surface: #fffdf8;
+  --surface-2: #f0e9da;
+  --surface-hover: #e9e0cc;
+  --glow: #efe4cc;
+  --border: #ddd3bf;
+  --border-strong: #c4b79c;
+  --text: #1f1d1a;
+  --text-2: #3d3830;
+  --muted: #6b665e;
+  --faint: #9a9286;
+  --text-strong: #000000;
+  --accent: #8f5800;
+  --accent-hover: #a86a0a;
+  --on-accent: #ffffff;
+  --accent-2: #6a4fb3;
+  --accent-2-text: #5a3fa3;
+  --on-accent-2: #ffffff;
+  --info: #1f6f9a;
+  --info-hover: #155a80;
+  --ok: #2f7d4f;
+  --bad: #b23a3a;
+  --highlight: #e0218a;
 }
 
 * {

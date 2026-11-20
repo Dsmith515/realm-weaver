@@ -31,7 +31,7 @@ button:disabled {
 .button--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .button--quiet {
@@ -142,6 +142,17 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.theme-picker__label {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .player-switcher {
@@ -592,7 +603,7 @@ textarea {
 .limit-chips button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .rolled {
@@ -710,7 +721,7 @@ textarea {
 .tabs [aria-selected="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .realm {
