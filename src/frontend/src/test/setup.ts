@@ -18,4 +18,5 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   localStorage.clear()
+  delete document.documentElement.dataset.theme
 })

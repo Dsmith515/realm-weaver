@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router'
 import { PlayerSwitcher } from '../player/PlayerSwitcher'
+import { ThemePicker } from '../theme/ThemePicker'
 import { ApiStatus } from './ApiStatus'
 
 /**
@@ -44,6 +45,7 @@ export function Layout() {
           <NavLink to="/about">About</NavLink>
         </nav>
         <PlayerSwitcher />
+        <ThemePicker />
         <ApiStatus />
       </header>
       <main className="app-main">
