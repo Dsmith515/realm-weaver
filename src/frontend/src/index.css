@@ -1,7 +1,9 @@
 /*
  * Themes. Every palette sets the same tokens, so components only ever use var(--token).
- * The default (no data-theme, or an unknown one) is Gilded Arcana. ThemeProvider sets data-theme on <html>,
+ * The default (no data-theme, or an unknown one) is Ink & Ember. ThemeProvider sets data-theme on <html>,
  * and index.html applies the saved choice before first paint. Palette sources: docs/design/palettes.json.
+ * The default block uses :where(:root), which has zero specificity, so any [data-theme] block wins over it
+ * whatever order the blocks are in.
  */
 :root {
   color-scheme: dark;
@@ -17,7 +19,6 @@
   background: var(--bg);
 }
 
-:root,
 [data-theme='arcana'] {
   --bg: #07081a;
   --bar: #0b0d21;
@@ -46,6 +47,7 @@
   --highlight: #c4a5ff;
 }
 
+:where(:root),
 [data-theme='ember'] {
   --bg: #0d0d10;
   --bar: #121216;

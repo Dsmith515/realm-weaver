@@ -2,8 +2,8 @@ import { createContext, useContext } from 'react'
 
 /** The palettes in index.css. The ids match its `[data-theme='…']` blocks. */
 export const themes = [
-  { id: 'arcana', label: 'Gilded Arcana' },
   { id: 'ember', label: 'Ink & Ember' },
+  { id: 'arcana', label: 'Gilded Arcana' },
   { id: 'gilded', label: 'Gilded Night' },
   { id: 'emerald', label: 'Emerald Night' },
   { id: 'abyss', label: 'Abyssal Teal' },
@@ -13,7 +13,7 @@ export const themes = [
 
 export type ThemeId = (typeof themes)[number]['id']
 
-export const defaultTheme: ThemeId = 'arcana'
+export const defaultTheme: ThemeId = 'ember'
 
 export interface ThemeSelection {
   theme: ThemeId

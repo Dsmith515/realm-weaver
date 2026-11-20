@@ -10,12 +10,12 @@ const routes = {
 }
 
 describe('Theme picker', () => {
-  it('starts on Gilded Arcana and applies it to the page', async () => {
+  it('starts on Ink & Ember and applies it to the page', async () => {
     fakeApi(routes)
     renderApp('/about')
 
-    expect(await screen.findByRole('combobox', { name: 'Theme' })).toHaveValue('arcana')
-    expect(document.documentElement.dataset.theme).toBe('arcana')
+    expect(await screen.findByRole('combobox', { name: 'Theme' })).toHaveValue('ember')
+    expect(document.documentElement.dataset.theme).toBe('ember')
   })
 
   it('switches the palette and remembers the choice', async () => {
@@ -23,10 +23,10 @@ describe('Theme picker', () => {
     renderApp('/about')
     const user = userEvent.setup()
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), screen.getByRole('option', { name: 'Ink & Ember' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), screen.getByRole('option', { name: 'Gilded Arcana' }))
 
-    expect(document.documentElement.dataset.theme).toBe('ember')
-    expect(localStorage.getItem('realm-weaver.theme')).toBe('ember')
+    expect(document.documentElement.dataset.theme).toBe('arcana')
+    expect(localStorage.getItem('realm-weaver.theme')).toBe('arcana')
   })
 
   it('restores a saved palette and ignores an unknown one', () => {
@@ -38,6 +38,6 @@ describe('Theme picker', () => {
 
     localStorage.setItem('realm-weaver.theme', 'not-a-theme')
     renderApp('/about')
-    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('arcana')
+    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('ember')
   })
 })
