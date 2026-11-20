@@ -39,7 +39,7 @@ describe('Quick Weave page', () => {
   it('rolls within the limits, re-rolls one slot and weaves exactly what was shown', async () => {
     const api = fakeApi(routes([rolled(moss), rolled(wheat)]))
     const user = userEvent.setup()
-    renderApp('/gm/weave')
+    renderApp('/weave/quick')
 
     await screen.findByRole('option', { name: needle.name })
     await user.selectOptions(screen.getByRole('combobox', { name: 'Needle' }), needle.id)
@@ -59,14 +59,14 @@ describe('Quick Weave page', () => {
     const second = api.callsTo('POST', '/api/gm/weave/preview')[1].body as QuickWeaveRequest
     expect(second).toMatchObject({ needleId: needle.id, threadId: null, coatingId: wax.id })
 
-    await user.click(screen.getByRole('button', { name: 'Weave' }))
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'Weave' }))
     await waitFor(() => expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ needleId: needle.id, threadId: wheat.id, coatingId: wax.id, mapId: null }))
   })
 
   it('sends the settlement population and structures choice', async () => {
     const api = fakeApi(routes([rolled()]))
     const user = userEvent.setup()
-    renderApp('/gm/weave')
+    renderApp('/weave/quick')
 
     await screen.findByRole('option', { name: needle.name })
     await user.click(screen.getByRole('button', { name: 'Roll' }))
@@ -80,7 +80,7 @@ describe('Quick Weave page', () => {
     expect(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' })).toBeDisabled()
     await user.click(screen.getByRole('checkbox', { name: 'Place structures' }))
     await user.click(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' }))
-    await user.click(screen.getByRole('button', { name: 'Weave' }))
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'Weave' }))
 
     await waitFor(() =>
       expect(api.callsTo('POST', '/api/gm/weave')[0]?.body).toMatchObject({ population: 'bustling', includeStructures: false, suggestStructures: true }),
@@ -90,7 +90,7 @@ describe('Quick Weave page', () => {
   it('selects and unselects every option in a limit at once', async () => {
     const api = fakeApi(routes([rolled()]))
     const user = userEvent.setup()
-    renderApp('/gm/weave')
+    renderApp('/weave/quick')
 
     const biomeGroup = within(screen.getByRole('group', { name: 'Biome' }))
     await user.click(biomeGroup.getByRole('button', { name: 'Forest' }))
@@ -111,11 +111,11 @@ describe('Quick Weave page', () => {
   it('shows why nothing can be woven', async () => {
     fakeApi(routes([{ ...rolled(), coating: null, canWeave: false, issues: [{ slot: 'coating', field: 'coatingId', code: 'no-candidates', message: 'No Coating in the catalog fits the limits.' }] }]))
     const user = userEvent.setup()
-    renderApp('/gm/weave')
+    renderApp('/weave/quick')
 
     await user.click(await screen.findByRole('button', { name: 'Roll' }))
 
     expect(await screen.findByText('No Coating in the catalog fits the limits.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Weave' })).toBeDisabled()
+    expect(within(screen.getByRole('main')).getByRole('button', { name: 'Weave' })).toBeDisabled()
   })
 })

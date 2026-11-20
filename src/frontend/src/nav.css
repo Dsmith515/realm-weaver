@@ -1,0 +1,419 @@
+/*
+ * The app shell: header, left rail and phone drawer (src/components/Layout.tsx, src/nav/NavMenu.tsx).
+ * Desktop: a grid with the rail in the first column. The rail is 68px of icons, or 240px when pinned open.
+ * Below 768px the rail hides and the menu button opens the drawer instead.
+ */
+.app {
+  --rail-width: 68px;
+  display: grid;
+  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.app--pinned {
+  --rail-width: 240px;
+}
+
+/* Header */
+.app-header {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.5rem 1rem;
+  background: var(--bar);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+}
+
+.brand img {
+  margin: -4px;
+  filter: drop-shadow(0 0 var(--logo-halo-size) color-mix(in srgb, var(--accent) var(--logo-halo), transparent));
+}
+
+.app-header__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.icon-button:hover {
+  background: color-mix(in srgb, var(--accent-2) 16%, transparent);
+}
+
+/* Rail */
+.app-rail {
+  grid-column: 1;
+  grid-row: 2;
+  background: var(--bar);
+  border-right: 1px solid var(--border);
+  transition: width 0.2s ease;
+}
+
+.app-rail > .nav-menu {
+  position: sticky;
+  top: 0;
+  /* The viewport on long pages; the row itself on full-height pages (.page-fill). */
+  height: min(100dvh, 100%);
+}
+
+.app-main {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
+
+.app-header__menu {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-rail,
+  .app-header__pin {
+    display: none;
+  }
+
+  .app-header__menu {
+    display: inline-flex;
+  }
+
+  .app-main {
+    grid-column: 1;
+    padding: 1rem;
+  }
+}
+
+/* Menu: shared by the rail, the pinned rail and the drawer */
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0.6rem;
+  box-sizing: border-box;
+}
+
+.nav-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-menu__group {
+  position: relative;
+}
+
+.nav-menu__footer {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 9px;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nav-item:hover,
+.nav-item[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+  color: var(--text-strong);
+}
+
+.nav-item.active {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--info);
+  color: var(--text-strong);
+}
+
+.nav-item:focus-visible,
+.nav-card:focus-visible,
+.nav-sub__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nav-item__label {
+  flex: 1;
+}
+
+.nav-item__caret {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--muted);
+  transition: transform 0.15s;
+}
+
+.nav-item[aria-expanded='true'] .nav-item__caret {
+  transform: rotate(90deg);
+}
+
+/* Icons are single-colour SVGs used as a mask, so each takes its tone from the current palette. */
+.nav-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+.nav-icon--accent {
+  background: var(--accent);
+}
+
+.nav-icon--accent-2 {
+  background: var(--accent-2);
+}
+
+.nav-icon--info {
+  background: var(--info);
+}
+
+.nav-icon--ok {
+  background: var(--ok);
+}
+
+.nav-icon--soft {
+  background: var(--accent-2-text);
+}
+
+.nav-icon--muted {
+  background: var(--muted);
+}
+
+/* Collapsed rail: the label becomes a tooltip beside the icon. It stays in the accessibility tree. */
+.nav-menu--rail .nav-item {
+  width: 48px;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-menu--rail .nav-item__caret {
+  display: none;
+}
+
+.nav-menu--rail .nav-item__label {
+  position: absolute;
+  z-index: 16;
+  left: 58px;
+  top: 50%;
+  flex: none;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  color: var(--text-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.35);
+  font-size: 0.8rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.12s;
+}
+
+.nav-menu--rail .nav-item:hover .nav-item__label,
+.nav-menu--rail .nav-item:focus-visible .nav-item__label {
+  opacity: 1;
+}
+
+.nav-menu--rail .nav-item[aria-expanded='true'] .nav-item__label {
+  opacity: 0;
+}
+
+/* Flyout (collapsed rail) and drawer cards: one card per sub-page, with its one-line description. */
+.nav-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-menu--rail .nav-cards {
+  position: absolute;
+  z-index: 15;
+  left: 58px;
+  top: 0;
+  width: 300px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+}
+
+.nav-menu--drawer .nav-cards {
+  padding: 4px 0 8px 12px;
+}
+
+.nav-cards__title {
+  padding: 4px 8px 2px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 10px;
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.nav-card:hover,
+.nav-card.active {
+  border-color: var(--accent-2);
+  color: var(--text-strong);
+}
+
+.nav-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-card__label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.nav-card__description {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* Pinned rail: a group's pages listed under it. */
+.nav-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 23px;
+  padding: 2px 0 8px 18px;
+  border-left: 1px solid var(--border);
+}
+
+.nav-sub__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--text-2);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-sub__item:hover {
+  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+  color: var(--text-strong);
+}
+
+.nav-sub__item.active {
+  background: var(--surface-2);
+  color: var(--text-strong);
+}
+
+/* Phone drawer */
+.app-drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgb(5 7 20 / 0.6);
+}
+
+.app-drawer {
+  position: fixed;
+  z-index: 31;
+  inset: 0 auto 0 0;
+  width: min(300px, 86vw);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  box-shadow: 16px 0 40px rgb(0 0 0 / 0.45);
+}
+
+.app-drawer > .nav-menu {
+  flex: 1;
+}
+
+.app-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem 0;
+}
+
+.app-drawer__title {
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-rail,
+  .nav-item__caret,
+  .nav-menu--rail .nav-item__label {
+    transition: none;
+  }
+}

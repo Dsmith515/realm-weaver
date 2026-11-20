@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router'
 import { App } from './App'
 import './index.css'
 import './pages.css'
+import './nav.css'
 
 const queryClient = new QueryClient()
 

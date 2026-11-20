@@ -18,8 +18,23 @@ export function App() {
         <PlayerProvider>
           <Routes>
             <Route element={<Layout />}>
-              <Route index element={<Navigate to="/gm/weave" replace />} />
-              <Route path="ritual" element={<RitualPage />} />
+              {/* The landing page will take this route (the maintainer's piece in Milestone 8i). */}
+              <Route index element={<Navigate to="/weave/quick" replace />} />
+              <Route path="weave">
+                <Route index element={<Navigate to="/weave/quick" replace />} />
+                <Route
+                  path="quick"
+                  element={
+                    <GmOnly title="Quick Weave">
+                      <QuickWeavePage />
+                    </GmOnly>
+                  }
+                />
+                <Route path="ritual" element={<RitualPage />} />
+              </Route>
+              {/* Old addresses, kept so bookmarks still work. */}
+              <Route path="gm/weave" element={<Navigate to="/weave/quick" replace />} />
+              <Route path="ritual" element={<Navigate to="/weave/ritual" replace />} />
               <Route path="player" element={<PlayerPage />} />
               <Route path="realms" element={<RealmsPage />} />
               <Route path="realms/:id" element={<RealmPage />} />
@@ -28,14 +43,6 @@ export function App() {
                 element={
                   <GmOnly title="Components">
                     <ComponentsPage />
-                  </GmOnly>
-                }
-              />
-              <Route
-                path="gm/weave"
-                element={
-                  <GmOnly title="Quick Weave">
-                    <QuickWeavePage />
                   </GmOnly>
                 }
               />

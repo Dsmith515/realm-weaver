@@ -1123,17 +1123,13 @@ textarea {
 
 /* Pages whose list fills the window: the list scrolls inside it and the pager stays under it, always in view. */
 .app:has(.page-fill) {
-  display: flex;
-  flex-direction: column;
   height: 100dvh;
 }
 
 .app:has(.page-fill) .app-main {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-height: 0;
-  width: 100%;
 }
 
 .page-fill {
