@@ -1,9 +1,14 @@
 import { expect, type Page } from '@playwright/test'
 
-/** Creates a player through the header switcher (they get the starter kit) and leaves them selected. */
+/** Switches the header's "Viewing as" toggle (ADR 0012). The player picker only shows in player view. */
+export const viewAs = (page: Page, role: 'GM' | 'Player') =>
+  page.getByRole('group', { name: 'Viewing as' }).getByRole('button', { name: role }).click()
+
+/** Creates a player through the header switcher (they get the starter kit) and leaves them selected, in player view. */
 export async function newPlayer(page: Page, prefix: string): Promise<string> {
   const name = `${prefix} ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
   await page.goto('/')
+  await viewAs(page, 'Player')
   await page.getByRole('button', { name: 'New player' }).click()
   await page.getByLabel('New player name').fill(name)
   await page.getByRole('button', { name: 'Create' }).click()

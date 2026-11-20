@@ -8,7 +8,7 @@ Decisions made:
 - **Rituals fail only on invalid input** (missing or unowned components, concurrent spends). No random failure roll.
 - **Mismatched map** keeps the same seed and layout, raises the danger tier and rerolls the encounters.
 - **Free deployment.** GitHub Actions runs CI and pushes images to GHCR. The app runs locally with docker compose.
-- **v1 defaults** (easy to change later): no authentication. A player switcher sits in the header. The admin page has no access control (it's marked as a TODO for when auth arrives). Thimbles are modelled as a fifth, optional component type in Phase 3.
+- **v1 defaults** (easy to change later): no authentication. A *Viewing as GM / Player* switch and a player picker sit in the header (ADR 0012). The GM pages have no access control (it's marked as a TODO for when auth arrives). Thimbles are modelled as a fifth, optional component type in Phase 3.
 
 ---
 

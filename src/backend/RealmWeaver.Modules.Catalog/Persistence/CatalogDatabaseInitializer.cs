@@ -4,7 +4,7 @@ using RealmWeaver.Infrastructure.Persistence;
 
 namespace RealmWeaver.Modules.Catalog.Persistence;
 
-/// <summary>Migrates the catalog schema and adds any seed component that is missing. Admin edits are never overwritten.</summary>
+/// <summary>Migrates the catalog schema and adds any seed component that is missing. GM edits are never overwritten.</summary>
 internal sealed class CatalogDatabaseInitializer(CatalogDbContext db, CatalogService catalog) : IModuleDatabaseInitializer
 {
     public const int RunOrder = 100;

@@ -35,7 +35,7 @@ internal static class InventoryEndpoints
 
         // Lives here, not in Catalog: granting is an inventory write, and Catalog must not depend on Inventory.
         app.MapPost("/api/components/{id:guid}/assign", AssignAsync).WithTags("Components").WithName("AssignComponent")
-            .WithDescription("Admin: gives a component to a player, regardless of the self-assign rules.");
+            .WithDescription("GM: gives a component to a player, regardless of the self-assign rules.");
     }
 
     private static async Task<Results<Ok<IReadOnlyList<PlayerDto>>, ValidationProblem>> ListPlayersAsync(
@@ -116,12 +116,12 @@ internal static class InventoryEndpoints
         var settings = await catalog.GetSettingsAsync(cancellationToken);
         if (!settings.PlayersCanSelfAssign)
         {
-            return Problems.Forbidden("Self-assign is turned off.", "An admin has turned off adding components to your own inventory.");
+            return Problems.Forbidden("Self-assign is turned off.", "Your GM has turned off adding components to your own inventory.");
         }
 
         if (!component!.IsPlayerAssignable)
         {
-            return Problems.Forbidden("This component can't be self-assigned.", $"'{component.Name}' can only be given to players by an admin.");
+            return Problems.Forbidden("This component can't be self-assigned.", $"'{component.Name}' can only be given to players by the GM.");
         }
 
         try

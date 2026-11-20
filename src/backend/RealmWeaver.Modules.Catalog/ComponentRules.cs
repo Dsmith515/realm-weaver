@@ -58,7 +58,7 @@ internal static partial class ComponentRules
 
     /// <summary>
     /// Fields that decide how a realm is generated. Once a map references a component (<paramref name="usedByMaps"/> &gt; 0)
-    /// these can't change: the admin clones the component instead (ADR 0006).
+    /// these can't change: the GM clones the component instead (ADR 0006).
     /// </summary>
     public static IReadOnlyList<string> LockedFieldChanges(ComponentDto existing, ComponentInput input)
     {

@@ -1,19 +1,21 @@
 import { NavLink, Outlet } from 'react-router'
-import { PlayerSwitcher } from '../player/PlayerSwitcher'
+import { useRole } from '../player/roleContext'
+import { RoleSwitcher } from '../player/RoleSwitcher'
 import { ThemePicker } from '../theme/ThemePicker'
 import { ApiStatus } from './ApiStatus'
 
 /**
  * Realm Weaver is a GM tool first, so the GM's pages lead. The player pages are a preview: groundwork for a later
- * session client where players log in, perform rituals together and trade (ADR 0010).
+ * session client where players log in, perform rituals together and trade (ADR 0010). GM-only links are hidden in
+ * player view (ADR 0012).
  */
 const groups = [
   {
     label: 'GM',
     links: [
-      { to: '/gm/weave', label: 'Quick Weave' },
+      { to: '/gm/weave', label: 'Quick Weave', gmOnly: true },
       { to: '/realms', label: 'Realms' },
-      { to: '/components', label: 'Components' },
+      { to: '/components', label: 'Components', gmOnly: true },
     ],
   },
   {
@@ -27,6 +29,8 @@ const groups = [
 ]
 
 export function Layout() {
+  const { role } = useRole()
+
   return (
     <div className="app">
       <header className="app-header">
@@ -35,16 +39,18 @@ export function Layout() {
           {groups.map((group) => (
             <div key={group.label} className="nav-group" role="group" aria-label={group.label} title={group.hint}>
               <span className="nav-group__label">{group.label}</span>
-              {group.links.map((link) => (
-                <NavLink key={link.to} to={link.to}>
-                  {link.label}
-                </NavLink>
-              ))}
+              {group.links
+                .filter((link) => role === 'gm' || !('gmOnly' in link && link.gmOnly))
+                .map((link) => (
+                  <NavLink key={link.to} to={link.to}>
+                    {link.label}
+                  </NavLink>
+                ))}
             </div>
           ))}
           <NavLink to="/about">About</NavLink>
         </nav>
-        <PlayerSwitcher />
+        <RoleSwitcher />
         <ThemePicker />
         <ApiStatus />
       </header>

@@ -4,7 +4,7 @@ import { biomes, elements, rarities, realmKinds } from '../api/types'
 /** Returns a number in [0, 1). Injected so tests can be deterministic. */
 export type Rng = () => number
 
-/** The types an admin can create by hand (and randomize). Maps come only from rituals. */
+/** The types a GM can create by hand (and randomize). Maps come only from rituals. */
 export const creatableTypes = ['needle', 'thread', 'coating'] as const satisfies readonly ComponentType[]
 
 export type RandomizableType = (typeof creatableTypes)[number]
