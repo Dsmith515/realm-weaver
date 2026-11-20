@@ -9,6 +9,9 @@
   --ok-bg: color-mix(in srgb, var(--ok) 16%, var(--surface));
   --bad-bg: color-mix(in srgb, var(--bad) 16%, var(--surface));
   --warn-bg: color-mix(in srgb, var(--warn) 16%, var(--surface));
+  /* Halo around the logo art (docs/design/logo.md): a 16px drop-shadow at this strength. */
+  --logo-halo-size: 16px;
+  --logo-halo: 15%;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -186,6 +189,7 @@
 [data-theme='parchment'] {
   color-scheme: light;
   --warn: #8a5a00;
+  --logo-halo: 35%;
   --bg: #f5f0e6;
   --bar: #fffdf8;
   --panel: #fbf7ef;
