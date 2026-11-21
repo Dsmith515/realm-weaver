@@ -9,7 +9,7 @@ describe('About page', () => {
   it('is linked from the main navigation and explains the project', async () => {
     fakeApi({ 'GET /api/info': { name: 'Realm Weaver', version: '1.0.0' }, 'GET /api/players': [player] })
     const user = userEvent.setup()
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     await user.click(screen.getByRole('link', { name: 'About' }))
 

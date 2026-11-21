@@ -39,7 +39,7 @@ export function RealmsPage() {
       {realms.isError && <p className="error-text">{errorMessage(realms.error)}</p>}
       {result?.totalCount === 0 && (
         <p>
-          No realms yet. {gm ? <Link to="/gm/weave">Quick Weave</Link> : <Link to="/ritual">Perform a ritual</Link>} to open one.
+          No realms yet. {gm ? <Link to="/weave/quick">Quick Weave</Link> : <Link to="/weave/ritual">Perform a ritual</Link>} to open one.
         </p>
       )}
       <div className="scroll-region">

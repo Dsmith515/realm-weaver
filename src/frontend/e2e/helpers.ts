@@ -16,7 +16,19 @@ export async function newPlayer(page: Page, prefix: string): Promise<string> {
   return name
 }
 
-export const nav = (page: Page, link: string) => page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: link }).click()
+/** Pages that sit inside a menu group (src/nav/navConfig.ts): the group opens first. */
+const groupOf: Record<string, string> = { 'Quick Weave': 'Weave', Ritual: 'Weave', Components: 'Codex' }
+
+export async function nav(page: Page, link: string) {
+  const menu = page.getByRole('navigation', { name: 'Main' })
+  const group = groupOf[link]
+  if (group) {
+    await menu.getByRole('button', { name: group }).click()
+    await menu.getByRole('group', { name: group }).getByRole('link', { name: new RegExp(`^${link}`) }).click()
+  } else {
+    await menu.getByRole('link', { name: link, exact: true }).click()
+  }
+}
 
 /** The realm page has drawn its map: the server-rendered SVG is inside the viewer. */
 export async function expectMapDrawn(page: Page) {
