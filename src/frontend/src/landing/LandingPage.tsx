@@ -55,7 +55,7 @@ export function LandingPage() {
             </a>
           </div>
           <p className="landing__note">
-            {gm ? 'Quick Weave draws from the whole catalog. Nothing is used up.' : 'A ritual spends one needle, thread and coating from your pack.'}
+            {gm ? 'Quick Weave draws from the whole catalog. Nothing is used up.' : 'A ritual uses one needle, and consumes one thread and one coating from your pack.'}
           </p>
         </div>
       </div>
