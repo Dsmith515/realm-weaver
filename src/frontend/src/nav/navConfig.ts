@@ -60,7 +60,7 @@ export const navItems: NavItem[] = [
         to: '/weave/ritual',
         icon: ritualIcon,
         tone: 'accent-2',
-        description: 'Spend a needle, thread and coating to weave a realm.',
+        description: 'Use a needle and spend a thread and coating to weave a realm.',
       },
     ],
   },

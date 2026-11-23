@@ -42,7 +42,7 @@ export function PlayerSwitcher() {
       <span className="player-switcher__label" aria-hidden="true">
         Player
       </span>
-      <PlayerSelect label="Player" value={playerId ?? ''} onChange={(id) => setPlayerId(id || undefined)} selected={players.data?.find((p) => p.id === playerId)} />
+      <PlayerSelect label="Player" searchable={false} value={playerId ?? ''} onChange={(id) => setPlayerId(id || undefined)} selected={players.data?.find((p) => p.id === playerId)} />
       <button type="button" className="button--quiet" onClick={() => setAdding(true)}>
         New player
       </button>

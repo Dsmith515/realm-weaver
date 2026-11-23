@@ -5,6 +5,8 @@
  */
 .app {
   --rail-width: 68px;
+  /* The header's height. The rail's menu sticks just below it. */
+  --header-height: 64px;
   display: grid;
   grid-template-columns: var(--rail-width) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
@@ -22,13 +24,19 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-  min-height: 64px;
+  min-height: var(--header-height);
   padding: 0.5rem 1rem;
   background: var(--bar);
   border-bottom: 1px solid var(--border);
+  /* Stays at the top while the page scrolls. Above page content and the rail's flyouts (15–16),
+     below the phone drawer (30–31). */
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .brand {
+  font-family: Cinzel, serif;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -42,6 +50,18 @@
 .brand img {
   margin: -4px;
   filter: drop-shadow(0 0 var(--logo-halo-size) color-mix(in srgb, var(--accent) var(--logo-halo), transparent));
+}
+
+/* On narrow phones only the icon shows. The words stay in the page (visually hidden) so the link keeps its name. */
+@media (max-width: 480px) {
+  .brand__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .app-header__tools {
@@ -80,9 +100,9 @@
 
 .app-rail > .nav-menu {
   position: sticky;
-  top: 0;
-  /* The viewport on long pages; the row itself on full-height pages (.page-fill). */
-  height: min(100dvh, 100%);
+  top: var(--header-height);
+  /* The viewport below the header on long pages; the row itself on full-height pages (.page-fill). */
+  height: min(100dvh - var(--header-height), 100%);
 }
 
 .app-main {
@@ -97,6 +117,10 @@
 
 .app-header__menu {
   display: none;
+}
+
+.app:has(.landing) .app-main {
+  max-width: none;
 }
 
 @media (max-width: 767px) {
@@ -316,11 +340,12 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .nav-card:hover,
 .nav-card.active {
-  border-color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 14%, var(--surface));
   color: var(--text-strong);
 }
 

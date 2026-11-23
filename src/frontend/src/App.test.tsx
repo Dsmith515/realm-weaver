@@ -14,15 +14,15 @@ const shellRoutes = {
 }
 
 describe('App shell', () => {
-  it('opens on the GM Quick Weave page, with the main sections in the menu', async () => {
+  it('shows the main sections in the menu', async () => {
     fakeApi(shellRoutes)
-    renderApp('/')
+    renderApp('/weave/quick')
 
     expect(screen.getByRole('heading', { name: 'Quick Weave' })).toBeInTheDocument()
     const nav = screen.getByRole('navigation', { name: 'Main' })
     for (const group of ['Weave', 'Codex']) expect(within(nav).getByRole('button', { name: group })).toBeInTheDocument()
     for (const link of ['Realms', 'Player', 'About']) expect(within(nav).getByRole('link', { name: link })).toBeInTheDocument()
-    expect(await screen.findByText('API: 1.0.0')).toBeInTheDocument()
+    expect(await screen.findByRole('status', { name: 'API online (version 1.0.0)' })).toBeInTheDocument()
   })
 
   it('sends the old addresses to their new places', () => {
@@ -40,7 +40,7 @@ describe('App shell', () => {
     renderApp('/components')
 
     expect(screen.getByRole('heading', { name: 'Components' })).toBeInTheDocument()
-    expect(await screen.findByText('API: offline')).toBeInTheDocument()
+    expect(await screen.findByRole('status', { name: 'API offline' })).toBeInTheDocument()
   })
 
   it('selects the first player, remembers a switch, and creates players', async () => {

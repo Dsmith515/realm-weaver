@@ -26,7 +26,7 @@ describe('Main navigation', () => {
 
     expect(weave).toHaveAttribute('aria-expanded', 'true')
     const flyout = within(mainNav()).getByRole('group', { name: 'Weave' })
-    expect(within(flyout).getByText('Spend a needle, thread and coating to weave a realm.')).toBeInTheDocument()
+    expect(within(flyout).getByText('Use a needle and spend a thread and coating to weave a realm.')).toBeInTheDocument()
 
     await user.click(within(flyout).getByRole('link', { name: /Ritual/ }))
     expect(screen.getByRole('heading', { level: 1, name: 'Ritual' })).toBeInTheDocument()

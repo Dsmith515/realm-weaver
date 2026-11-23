@@ -67,7 +67,7 @@ export function Layout() {
         </button>
         <Link to="/" className="brand">
           <img src="/brand/icon-64.webp" srcSet="/brand/icon-128.webp 2x" alt="" width="40" height="40" />
-          <span>Realm Weaver</span>
+          <span className="brand__name">Realm Weaver</span>
         </Link>
         <div className="app-header__tools">
           <RoleSwitcher />

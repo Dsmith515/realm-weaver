@@ -14,7 +14,7 @@ describe('Theme picker', () => {
     fakeApi(routes)
     renderApp('/about')
 
-    expect(await screen.findByRole('combobox', { name: 'Theme' })).toHaveValue('ember')
+    expect(await screen.findByRole('radio', { name: 'Ink & Ember', hidden: true })).toBeChecked()
     expect(document.documentElement.dataset.theme).toBe('ember')
   })
 
@@ -23,7 +23,7 @@ describe('Theme picker', () => {
     renderApp('/about')
     const user = userEvent.setup()
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), screen.getByRole('option', { name: 'Gilded Arcana' }))
+    await user.click(screen.getByRole('radio', { name: 'Gilded Arcana', hidden: true }))
 
     expect(document.documentElement.dataset.theme).toBe('arcana')
     expect(localStorage.getItem('realm-weaver.theme')).toBe('arcana')
@@ -33,11 +33,11 @@ describe('Theme picker', () => {
     fakeApi(routes)
     localStorage.setItem('realm-weaver.theme', 'parchment')
     const { unmount } = renderApp('/about')
-    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('parchment')
+    expect(screen.getByRole('radio', { name: 'Parchment (light)', hidden: true })).toBeChecked()
     unmount()
 
     localStorage.setItem('realm-weaver.theme', 'not-a-theme')
     renderApp('/about')
-    expect(screen.getByRole('combobox', { name: 'Theme' })).toHaveValue('ember')
+    expect(screen.getByRole('radio', { name: 'Ink & Ember', hidden: true })).toBeChecked()
   })
 })

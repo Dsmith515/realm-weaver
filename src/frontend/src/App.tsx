@@ -3,6 +3,7 @@ import { AboutPage } from './about/AboutPage'
 import { ComponentsPage } from './catalog/ComponentsPage'
 import { Layout } from './components/Layout'
 import { QuickWeavePage } from './gm/QuickWeavePage'
+import { LandingPage } from './landing/LandingPage'
 import { GmOnly } from './player/GmOnly'
 import { PlayerPage } from './player/PlayerPage'
 import { PlayerProvider } from './player/PlayerProvider'
@@ -18,8 +19,7 @@ export function App() {
         <PlayerProvider>
           <Routes>
             <Route element={<Layout />}>
-              {/* The landing page will take this route (the maintainer's piece in Milestone 8i). */}
-              <Route index element={<Navigate to="/weave/quick" replace />} />
+              <Route index element={<LandingPage />} />
               <Route path="weave">
                 <Route index element={<Navigate to="/weave/quick" replace />} />
                 <Route
