@@ -10,13 +10,15 @@ interface PlayerSelectProps {
   /** The chosen player, so they stay in the list while a search hides them. */
   selected?: Player
   className?: string
+  /** Show the search box above the list. Defaults to true. */
+  searchable?: boolean
 }
 
 /**
  * Pick one player: a search box narrows the list on the server, so it keeps working as the player base grows.
  * The chosen player stays listed even when the search doesn't match them.
  */
-export function PlayerSelect({ label, value, onChange, selected, className }: PlayerSelectProps) {
+export function PlayerSelect({ label, value, onChange, selected, className, searchable = true }: PlayerSelectProps) {
   const [search, setSearch] = useState('')
   const players = usePlayers(search)
   const matches = players.data ?? []
@@ -25,13 +27,15 @@ export function PlayerSelect({ label, value, onChange, selected, className }: Pl
 
   return (
     <span className={`player-select ${className ?? ''}`}>
-      <input
-        type="search"
-        aria-label={`Search players for ${label.toLowerCase()}`}
-        placeholder="Search players"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {searchable && (
+        <input
+          type="search"
+          aria-label={`Search players for ${label.toLowerCase()}`}
+          placeholder="Search players"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      )}
       <label className="visually-hidden" htmlFor={selectId}>
         {label}
       </label>

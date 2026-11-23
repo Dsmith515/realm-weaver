@@ -230,16 +230,19 @@ body {
 
 /* The app shell (header, rail, drawer) lives in nav.css. */
 
+/* The header's API dot (ApiStatus.tsx). The words are in its aria-label and tooltip. */
 .api-status {
-  font-size: 0.85rem;
-  color: var(--muted);
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
 .api-status--up {
-  color: var(--ok);
+  background: var(--ok);
 }
 
 .api-status--down {
-  color: var(--bad);
+  background: var(--bad);
 }
 

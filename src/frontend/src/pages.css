@@ -144,15 +144,92 @@ textarea {
   gap: 0.4rem;
 }
 
+/* The header button: an icon in a 32px box. */
 .theme-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.theme-picker__label {
-  font-size: 0.85rem;
+.theme-picker:hover {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+}
+
+/* A popover opens in the middle of the screen by default; pin this one under the top-right of the header. */
+.theme-menu {
+  /* Just under the header (--header-height in nav.css), overlapping its bottom edge slightly. */
+  inset: calc(var(--header-height) - 0.5rem) 1rem auto auto;
+  margin: 0;
+  padding: 0.5rem;
+  min-width: 14rem;
+  /* Only Cinzel's bold weight is bundled (main.tsx), so the weight is set to match. */
+  font-family: Cinzel, serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.4);
+}
+
+.theme-menu fieldset {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.theme-menu legend {
+  padding: 0.25rem 0.5rem 0.4rem;
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+.theme-menu__option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.theme-menu__option:hover,
+.theme-menu__option:has(input:checked) {
+  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+  color: var(--text-strong);
+}
+
+/* The radio is hidden, so show its keyboard focus on the whole row. */
+.theme-menu__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -2px;
+}
+
+/*
+ * A colour sample of each palette: its --glow tint inside a --bg ring.
+ * - data-theme on the swatch gives it that palette's variables, whatever theme the page is in.
+ * - The glow is lifted with oklch(from …), which keeps its hue but raises lightness and colour, so it shows at this size.
+ * - The thin outline keeps the dark --bg ring visible against the menu.
+ */
+.theme-swatch {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: oklch(from var(--glow) calc(l + 0.2) calc(c * 2) h);
+  border: 6px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--border-strong);
 }
 
 .player-switcher {
@@ -679,9 +756,9 @@ textarea {
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  font-size: 1.4rem;
-  line-height: 1;
   cursor: pointer;
+  display: grid;
+  place-items: center;
 }
 
 .modal__close:hover,
@@ -1207,8 +1284,9 @@ th[aria-sort] .sort-header__arrow {
 /* The ritual page's inventory stays beside the slots and scrolls on its own. */
 .inventory-panel {
   position: sticky;
-  top: 1rem;
-  max-height: calc(100dvh - 2rem);
+  /* Below the sticky header (nav.css). */
+  top: calc(var(--header-height) + 1rem);
+  max-height: calc(100dvh - var(--header-height) - 2rem);
   overflow: auto;
 }
 
@@ -1299,4 +1377,204 @@ th[aria-sort] .sort-header__arrow {
 
 .placements__ideas .badge {
   margin-left: 0;
+}
+
+/* Landing page */
+.app:has(.landing) {
+  background:
+    radial-gradient(ellipse at 72% 0%, var(--glow) 0%, transparent 60%) center 4rem / 100% 52rem no-repeat,
+    var(--bg);
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 1.5rem 0 3rem;
+}
+
+.landing__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+}
+
+.landing__intro {
+  flex: 1 1 28rem;
+  max-width: 37.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.landing__logo {
+  width: min(60vw, 16rem);
+  height: auto;
+  filter: drop-shadow(0 0 var(--logo-halo-size) color-mix(in srgb, var(--accent-2) var(--logo-halo), transparent));
+}
+
+.landing__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.landing h1,
+.landing h2,
+.landing h3 {
+  font-family: Cinzel, serif;
+}
+
+.landing h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  line-height: 1.1;
+  color: var(--text-strong);
+}
+
+.landing__premise {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.landing__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.landing__cta {
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.4rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: background-color 0.15s, box-shadow 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.landing__browse {
+  border-color: var(--accent-2);
+}
+
+.landing__cta.button--primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); /* a soft amber glow */
+}
+
+.landing__browse:hover {
+  background: color-mix(in srgb, var(--accent-2) 22%, transparent);
+  border-color: var(--accent-2-text);
+  color: var(--text-strong);
+}
+
+.landing__how {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.9rem;
+  border-radius: 12px;
+  color: var(--accent-2-text);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.landing__how:hover {
+  background: color-mix(in srgb, var(--accent-2) 24%, transparent);
+  color: var(--text-strong);
+}
+
+.landing__how:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.landing__note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.landing__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-margin-top: calc(var(--header-height) + 1rem); /* lands below the sticky header, with a little space */
+}
+
+.landing__steps h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.landing__steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing__steps li {
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.landing__step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.landing__step-no {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.landing__steps h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.landing__steps p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.landing__footnote {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Desktop: the logo moves to the right of the text and grows. */
+@media (min-width: 768px) {
+  .landing__logo {
+    order: 1;
+    width: 100%;
+    max-width: 27.5rem;
+    flex: 0 1 27.5rem;
+  }
 }
