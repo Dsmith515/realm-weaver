@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using RealmWeaver.Infrastructure.Persistence;
+using RealmWeaver.Modules.Catalog.Contracts;
 using RealmWeaver.Modules.Inventory.Contracts;
 using RealmWeaver.Modules.Inventory.Endpoints;
 using RealmWeaver.Modules.Inventory.Persistence;
@@ -18,6 +19,7 @@ public static class InventoryModule
         services.AddSingleton(_ => new StarterKitPicker(Random.Shared));
         services.AddScoped<InventoryService>();
         services.AddScoped<IInventoryModule>(sp => sp.GetRequiredService<InventoryService>());
+        services.AddScoped<IMapHolderCount>(sp => sp.GetRequiredService<InventoryService>());
         services.AddScoped<IModuleDatabaseInitializer, InventoryDatabaseInitializer>();
         return services;
     }

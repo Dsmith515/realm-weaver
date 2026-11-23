@@ -194,6 +194,11 @@ public class RunCompletionEndpointTests(RealmWeaverApiFactory factory)
         var history = await client.GetJsonAsync<RealmCompletionsDto>($"/api/realms/{ritual.RealmId}/completions");
         Assert.Equal(2, history.Completions.Count);
         Assert.Single(history.Completions, c => c.IsFirst);
+
+        // Only the completion whose grant actually added the map records handing it out.
+        Assert.Single(history.Completions, c => c.Players.Single(p => p.Id == player.Id).MapGiven);
+        var results = await Task.WhenAll(responses.Select(r => r.ReadJsonAsync<RunCompletionDto>()));
+        Assert.Single(results, r => r.MapGivenTo.Contains(player.Id));
     }
 
     [Fact]

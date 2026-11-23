@@ -8,9 +8,16 @@ using RealmWeaver.Modules.Inventory.Persistence;
 
 namespace RealmWeaver.Modules.Inventory;
 
-internal sealed class InventoryService(InventoryDbContext db, ICatalogModule catalog, TimeProvider clock, StarterKitPicker starterKit)
-    : IInventoryModule
+internal sealed class InventoryService(
+    InventoryDbContext db, UnitOfWork unitOfWork, ICatalogModule catalog, TimeProvider clock, StarterKitPicker starterKit)
+    : IInventoryModule, IMapHolderCount
 {
+    /// <summary>
+    /// The first key of the advisory lock that serializes grants of one Unique map; the second is a hash of its id.
+    /// A hash collision only makes two unrelated grants wait for each other.
+    /// </summary>
+    private const int UniqueMapLock = 0x4D415031; // "MAP1"
+
     public async Task<PlayerDto?> GetPlayerAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         var player = await db.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
@@ -131,21 +138,46 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
     /// Consumables stack. Needles and Maps are kept at quantity 1, and granting one the player owns changes nothing.
     /// The caller has already checked that the player and component exist.
     /// </summary>
-    public async Task<InventoryItemDto> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default)
+    public async Task<GrantResult> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(component);
         ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
 
-        // A Unique map has one holder. Checked here so every way of granting (assign, completion) obeys it.
-        if (component.Map?.Flags is { Unique: true } && await IsHeldByOthersAsync(component.Id, playerId, cancellationToken))
+        if (component.Map?.Flags is not { Unique: true })
+        {
+            return await UpsertAsync(playerId, component, quantity, cancellationToken);
+        }
+
+        // A Unique map has one holder, checked here so every way of granting (assign, self-assign, completion) obeys it.
+        // The check and the insert must not interleave with another grant (ADR 0009). An advisory lock is only held
+        // inside a transaction, so open one when the caller hasn't.
+        return unitOfWork.IsInTransaction
+            ? await GrantUniqueMapAsync(playerId, component, cancellationToken)
+            : await unitOfWork.ExecuteAsync(ct => GrantUniqueMapAsync(playerId, component, ct), cancellationToken);
+    }
+
+    private async Task<GrantResult> GrantUniqueMapAsync(Guid playerId, ComponentDto component, CancellationToken cancellationToken)
+    {
+        // Waits until any other transaction granting this map commits or rolls back. Under Read Committed, the check
+        // below then sees that transaction's row, so a second holder is refused instead of slipping in.
+        await db.Database.ExecuteSqlAsync(
+            $"SELECT pg_advisory_xact_lock({UniqueMapLock}, hashtext({component.Id.ToString()}))", cancellationToken);
+
+        if (await IsHeldByOthersAsync(component.Id, playerId, cancellationToken))
         {
             throw new MapHeldElsewhereException($"{component.Name} is Unique and another player holds it.");
         }
 
+        return await UpsertAsync(playerId, component, 1, cancellationToken);
+    }
+
+    private async Task<GrantResult> UpsertAsync(Guid playerId, ComponentDto component, int quantity, CancellationToken cancellationToken)
+    {
         var now = clock.GetDatabaseUtcNow();
+        int changed;
         if (component.IsConsumable)
         {
-            await db.Database.ExecuteSqlAsync(
+            changed = await db.Database.ExecuteSqlAsync(
                 $"""
                 INSERT INTO inventory.inventory_items (player_id, component_definition_id, quantity, acquired_at)
                 VALUES ({playerId}, {component.Id}, {quantity}, {now})
@@ -156,7 +188,8 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         }
         else
         {
-            await db.Database.ExecuteSqlAsync(
+            // Affects no row when the player already holds it, because the conflict's WHERE is false.
+            changed = await db.Database.ExecuteSqlAsync(
                 $"""
                 INSERT INTO inventory.inventory_items (player_id, component_definition_id, quantity, acquired_at)
                 VALUES ({playerId}, {component.Id}, 1, {now})
@@ -168,7 +201,7 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
 
         var item = await db.Items.AsNoTracking()
             .FirstAsync(i => i.PlayerId == playerId && i.ComponentDefinitionId == component.Id, cancellationToken);
-        return new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes);
+        return new GrantResult(new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes), changed > 0);
     }
 
     /// <summary>Replaces the notes on an item the player owns. Returns null when they don't own it.</summary>
@@ -186,6 +219,9 @@ internal sealed class InventoryService(InventoryDbContext db, ICatalogModule cat
         await db.SaveChangesAsync(cancellationToken);
         return new InventoryItemDto(component, item.Quantity, item.AcquiredAt, item.Notes);
     }
+
+    public Task<int> CountHoldersAsync(Guid mapId, CancellationToken cancellationToken = default) =>
+        db.Items.CountAsync(i => i.ComponentDefinitionId == mapId && i.Quantity > 0, cancellationToken);
 
     public Task<bool> IsHeldByOthersAsync(Guid componentId, Guid playerId, CancellationToken cancellationToken = default) =>
         db.Items.AnyAsync(i => i.ComponentDefinitionId == componentId && i.PlayerId != playerId && i.Quantity > 0, cancellationToken);

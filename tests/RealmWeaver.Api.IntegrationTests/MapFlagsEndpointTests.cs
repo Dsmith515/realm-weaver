@@ -127,6 +127,36 @@ public class MapFlagsEndpointTests(RealmWeaverApiFactory factory)
     }
 
     [Fact]
+    public async Task A_map_two_players_hold_cant_become_unique()
+    {
+        using var client = factory.CreateClient();
+        var owner = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
+        var ritual = await PerformAndRecordAsync(client, SmallField(owner.Id));
+        var other = await CreatePlayerWithAsync(client);
+        var assign = await client.PostJsonAsync($"/api/components/{ritual.MapId}/assign", new AssignComponentInput(other.Id));
+        Assert.Equal(HttpStatusCode.OK, assign.StatusCode);
+
+        var map = await client.GetJsonAsync<ComponentDto>($"/api/components/{ritual.MapId}");
+        var input = new ComponentInput(map.Type, map.Name, map.Rarity, map.Rank, map.Description, map.IsPlayerAssignable, Map: map.Map! with { Flags = new MapFlags(Unique: true) });
+        var response = await client.PutJsonAsync($"/api/components/{map.Id}", input);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.False((await client.GetJsonAsync<ComponentDto>($"/api/components/{map.Id}")).Map!.Flags!.Unique);
+    }
+
+    [Fact]
+    public async Task A_map_one_player_holds_can_become_unique()
+    {
+        using var client = factory.CreateClient();
+        var owner = await CreatePlayerWithAsync(client, MossgreenThread, BeastwardWax);
+        var ritual = await PerformAndRecordAsync(client, SmallField(owner.Id));
+
+        await SetMapFlagsAsync(client, ritual.MapId, new MapFlags(Unique: true));
+
+        Assert.True((await client.GetJsonAsync<ComponentDto>($"/api/components/{ritual.MapId}")).Map!.Flags!.Unique);
+    }
+
+    [Fact]
     public async Task Editing_a_map_without_flags_keeps_them()
     {
         using var client = factory.CreateClient();

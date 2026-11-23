@@ -25,6 +25,12 @@ public sealed record AddInventoryItemInput(Guid ComponentId, int Quantity = 1);
 /// <summary>Body for the GM giving a component to a player.</summary>
 public sealed record AssignComponentInput(Guid PlayerId, int Quantity = 1);
 
+/// <summary>
+/// What a grant did. <see cref="Added"/> is false when the player already held the Needle or Map, so nothing changed.
+/// The database write decides it, so of two requests granting the same map to the same player only one sees true.
+/// </summary>
+public sealed record GrantResult(InventoryItemDto Item, bool Added);
+
 /// <summary>One page of players by name.</summary>
 public sealed record PlayerPage(IReadOnlyList<PlayerDto> Items, int Page, int PageSize, int TotalCount);
 
@@ -46,11 +52,12 @@ public interface IInventoryModule
     Task<IReadOnlyList<InventoryItemDto>?> GetInventoryAsync(Guid playerId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Adds a component to the player's inventory. Consumables stack; owning a Needle or Map again changes nothing.
-    /// Throws <see cref="MapHeldElsewhereException"/> for a Unique map another player holds.
-    /// Joins the caller's unit of work when one is running.
+    /// Adds a component to the player's inventory. Consumables stack; owning a Needle or Map again changes nothing,
+    /// and the result says so. Throws <see cref="MapHeldElsewhereException"/> for a Unique map another player holds.
+    /// Joins the caller's unit of work when one is running. A Unique map is granted under a per-map lock, in a
+    /// transaction of its own when the caller has none, so two grants can't both pass the one-holder check.
     /// </summary>
-    Task<InventoryItemDto> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default);
+    Task<GrantResult> GrantAsync(Guid playerId, ComponentDto component, int quantity = 1, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Takes one of each component from the player's inventory, guarded by the rows' <c>xmin</c>.

@@ -416,7 +416,7 @@
         "tags": [
           "Components"
         ],
-        "description": "Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409.",
+        "description": "Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409. A map can only be made Unique while at most one player holds it: 409.",
         "operationId": "UpdateComponent",
         "parameters": [
           {

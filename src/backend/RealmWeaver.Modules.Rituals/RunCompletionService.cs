@@ -69,7 +69,8 @@ internal sealed class RunCompletionService(
             return new CompletionOutcome.TooManyForUnique();
         }
 
-        // Decide every recipient up front; everything below is reads only.
+        // Decide the recipients up front from reads. A concurrent completion can still hand the map to one of them
+        // first, so the grants below have the final say on who received it.
         var given = new List<Guid>();
         var skipped = new List<MapHandOutSkip>();
         foreach (var playerId in recipients)
@@ -88,23 +89,28 @@ internal sealed class RunCompletionService(
             }
         }
 
-        var players = party.Select(p => new CompletionPlayerDto(p.Id, p.Name, given.Contains(p.Id))).ToList();
         RealmCompletionResult result;
+        var received = new List<Guid>();
         try
         {
             result = await unitOfWork.ExecuteAsync(
                 async ct =>
                 {
-                    var completion = await realms.CompleteAsync(realmId, input.ObjectiveKey, players, ct);
-                    if (completion.Result == CompletionResult.Completed)
+                    // Grant first, so the completion records only the players this transaction actually gave the map
+                    // to. If another completion granted it first, the upsert changes nothing and reports that.
+                    foreach (var playerId in given)
                     {
-                        foreach (var playerId in given)
+                        if ((await inventory.GrantAsync(playerId, map!, 1, ct)).Added)
                         {
-                            await inventory.GrantAsync(playerId, map!, 1, ct);
+                            received.Add(playerId);
                         }
                     }
 
-                    return completion;
+                    var players = party.Select(p => new CompletionPlayerDto(p.Id, p.Name, received.Contains(p.Id))).ToList();
+                    var completion = await realms.CompleteAsync(realmId, input.ObjectiveKey, players, ct);
+
+                    // Nothing was recorded (unknown objective, or the realm is gone), so undo the grants too.
+                    return completion.Result == CompletionResult.Completed ? completion : throw new CompletionNotRecordedException(completion);
                 },
                 cancellationToken);
         }
@@ -113,6 +119,13 @@ internal sealed class RunCompletionService(
             // Someone else was handed this Unique map between the checks and the grant. Nothing was saved.
             return new CompletionOutcome.Conflict();
         }
+        catch (CompletionNotRecordedException ex)
+        {
+            result = ex.Result;
+        }
+
+        // A recipient who received the map from a concurrent completion is reported as already holding it.
+        skipped.AddRange(given.Except(received).Select(id => new MapHandOutSkip(id, AlreadyHeld)));
 
         return result switch
         {
@@ -124,12 +137,18 @@ internal sealed class RunCompletionService(
                 done.IsFirst,
                 summary.MapComponentId,
                 [.. party.Select(p => p.Id)],
-                given,
+                received,
                 skipped)),
             { Result: CompletionResult.UnknownObjective } => new CompletionOutcome.UnknownObjective(),
             _ => new CompletionOutcome.NotFound(),
         };
     }
+}
+
+/// <summary>Rolls back the grants when Realms didn't record the completion. Never leaves <see cref="RunCompletionService"/>.</summary>
+internal sealed class CompletionNotRecordedException(RealmCompletionResult result) : Exception("The completion wasn't recorded.")
+{
+    public RealmCompletionResult Result { get; } = result;
 }
 
 internal abstract record CompletionOutcome

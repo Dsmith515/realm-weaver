@@ -23,7 +23,8 @@ internal static class CatalogEndpoints
             .WithDescription("The words a Needle, Thread or Coating name may end with.");
         components.MapPost("/", CreateAsync).WithName("CreateComponent");
         components.MapPut("/{id:guid}", UpdateAsync).WithName("UpdateComponent")
-            .WithDescription("Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409.");
+            .WithDescription("Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409. "
+                + "A map can only be made Unique while at most one player holds it: 409.");
         components.MapDelete("/{id:guid}", ArchiveAsync).WithName("ArchiveComponent")
             .WithDescription("Archives the component. It disappears from the catalog but stays readable for players who own it.");
 
@@ -105,7 +106,7 @@ internal static class CatalogEndpoints
     }
 
     private static async Task<Results<Ok<ComponentDto>, ProblemHttpResult, ValidationProblem>> UpdateAsync(
-        Guid id, [FromBody] ComponentInput input, CatalogService catalog, CancellationToken cancellationToken)
+        Guid id, [FromBody] ComponentInput input, CatalogService catalog, IMapHolderCount holders, CancellationToken cancellationToken)
     {
         var existing = await catalog.GetWithUsageAsync(id, cancellationToken);
         if (existing is null)
@@ -131,6 +132,14 @@ internal static class CatalogEndpoints
             var maps = existing.UsedByMapCount == 1 ? "1 map" : $"{existing.UsedByMapCount} maps";
             return Problems.Conflict(
                 $"{existing.Name} is used by {maps}, so {string.Join(", ", locked)} can't change. Clone it to make a variant.");
+        }
+
+        // A Unique map has one holder (ADR 0009). Turning it on for a shared map would leave two, and the GM can't take
+        // a map back. A grant racing this edit can still slip through; that window is accepted in Phase 1.
+        if (input.Map?.Flags is { Unique: true } && existing.Map?.Flags is not { Unique: true }
+            && await holders.CountHoldersAsync(id, cancellationToken) is > 1 and var count)
+        {
+            return Problems.Conflict($"{count} players hold {existing.Name}, so it can't become Unique. A Unique map has one holder.");
         }
 
         input = await catalog.WithRecipeAsync(input, cancellationToken);
