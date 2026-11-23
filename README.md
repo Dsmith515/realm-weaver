@@ -51,6 +51,8 @@ docker compose --profile full down            # stop it; add -v to also drop the
 
 The containers run the API in Production, so `/scalar` and `/openapi/v1.json` are only available from `dotnet run`.
 
+Compose publishes Postgres (5432) and the web app (8080) on `127.0.0.1` only. To open them to other devices on your network, set `REALMWEAVER_BIND=0.0.0.0` when you run compose. The app has no login and the dev database password is in this repo, so only do that on a network you trust.
+
 **Published images.** Every push to `main` publishes `ghcr.io/dsmith515/realm-weaver-api` and `ghcr.io/dsmith515/realm-weaver-web` to GitHub Container Registry, tagged `edge` and `sha-<commit>`. A `v1.2.3` tag adds `1.2.3`, `1.2` and `latest`. To run them instead of building locally:
 
 ```bash

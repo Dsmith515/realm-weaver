@@ -170,7 +170,9 @@ React Router, TanStack Query and **dnd-kit** for drag and drop.
 9. **Phase 2, microservices**: split the system into `catalog`, `inventory`, `ritual` and `realm` services. Each service has its own Postgres database (a schema or DB per service in a single container, to keep it light).
    - A **YARP** gateway sits in front, with **RabbitMQ** in compose.
    - **Wolverine** (MIT-licensed; MassTransit v9 is now commercial) provides the **transactional outbox and inbox**.
-   - An orchestrated **saga** in the ritual service runs: Reserve consumables, then Generate realm, then Create map, then Grant map, then Commit reservation. Compensation steps release the reservation and delete the orphan map.
+   - An orchestrated **saga** in the ritual service runs: Reserve consumables, then Generate realm, then Create map (when the ritual makes a new one), then Store realm, then Commit reservation. Compensation steps release the reservation and delete the orphan map.
+     - The ritual doesn't grant the map. That happens when the GM completes a run or assigns the map (ADR 0005, ADR 0008), so completion is a separate workflow: Record completion, then Grant map to each recipient.
+     - Start with the ritual saga alone, plus a failure-injection test, before splitting the completion flow.
    - **OpenTelemetry** sends traces to the free Aspire Dashboard container.
    - Tests for failure injection in the saga, with ADRs comparing it to the Phase 1 ACID version.
    - **Player sessions are a separate client.** Logins, parties, a shared ritual view, player-run completion and trading belong to a future session/VTT project that consumes these services. It is the split's first external consumer, and it shouldn't shape the generator's core (ADR 0010).
@@ -238,5 +240,5 @@ How the milestones line up with the maintainer's skills plan (a 5-project, 5-pha
 ## Verification
 - `dotnet test` passes, including the generation invariants and the Testcontainers ritual tests.
 - `npm run test` and `npm run build` pass in `src/frontend`.
-- `docker compose --profile full up`, then open the web app. Follow the flow: starter inventory shown → Random → Perform → new map in inventory and in the admin catalog → realm SVG renders with labels and placements → SVG and prompt exports download. Reselect the same N/T/C and the map auto-fills. Swap a thread and the mismatch warning appears with a higher danger level.
+- `docker compose --profile full up`, then open the web app. Follow the flow: starter inventory shown → Random → Perform → new map in the Components catalog → realm SVG renders with labels and placements → SVG and prompt exports download → the GM completes an objective and the map appears in the player's inventory. Reselect the same N/T/C and the map auto-fills. Swap a thread and the mismatch warning appears with a higher danger level.
 - `npx playwright test` runs green locally. All three GitHub workflows pass on the first PR once the repo is pushed.

@@ -1,6 +1,9 @@
 # Local infrastructure and the full app in containers.
 #   docker compose up -d                       -> Postgres only (run the API and web app from your IDE / npm)
 #   docker compose --profile full up -d --build -> Postgres, API and web app; open http://localhost:8080
+# Published ports listen on this machine only. To reach them from other devices on your network, opt in with
+#   REALMWEAVER_BIND=0.0.0.0 docker compose ...
+# There is no login and the database password is public, so only do that on a network you trust.
 name: realm-weaver
 
 services:
@@ -11,7 +14,7 @@ services:
       POSTGRES_USER: realmweaver
       POSTGRES_PASSWORD: realmweaver # local dev only; never reuse outside your machine
     ports:
-      - "5432:5432"
+      - "${REALMWEAVER_BIND:-127.0.0.1}:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -41,7 +44,7 @@ services:
     build:
       context: src/frontend
     ports:
-      - "8080:8080"
+      - "${REALMWEAVER_BIND:-127.0.0.1}:8080:8080"
     depends_on:
       - api
     healthcheck:
