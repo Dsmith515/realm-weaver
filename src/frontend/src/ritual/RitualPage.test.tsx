@@ -38,7 +38,7 @@ describe('Ritual page', () => {
   it('fills slots from clicked inventory items and previews them', async () => {
     const api = fakeApi(routes())
     const user = userEvent.setup()
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     await pick(user, needle.name)
     await pick(user, moss.name)
@@ -52,7 +52,7 @@ describe('Ritual page', () => {
 
   it('hides used-up consumables from the inventory panel', async () => {
     fakeApi(routes())
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     const panel = await screen.findByRole('complementary', { name: 'Inventory' })
     await within(panel).findByRole('button', { name: new RegExp(moss.name) })
@@ -74,7 +74,7 @@ describe('Ritual page', () => {
         }),
       }),
     )
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     expect(await within(await slotRegion('Needle')).findByText('From map')).toBeInTheDocument()
     expect(within(await slotRegion('Thread')).getByText('Mismatch')).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('Ritual page', () => {
         }),
       }),
     )
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     expect(await within(await slotRegion('Map')).findByText('Known recipe')).toBeInTheDocument()
     expect(screen.getByText(/These ingredients were woven before/)).toHaveTextContent(`this ritual reopens ${forestMap.name}`)
@@ -115,7 +115,7 @@ describe('Ritual page', () => {
         }),
       }),
     )
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     expect(await within(await slotRegion('Thread')).findByText("You don't have any Mossgreen Thread.")).toBeInTheDocument()
     expect(within(await slotRegion('Coating')).queryByText('Choose a Coating.')).not.toBeInTheDocument()
@@ -132,7 +132,7 @@ describe('Ritual page', () => {
       }),
     )
     const user = userEvent.setup()
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
 
     await user.click(await screen.findByRole('button', { name: 'Random' }))
 
@@ -156,7 +156,7 @@ describe('Ritual page', () => {
       }),
     )
     const user = userEvent.setup()
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
     await pick(user, needle.name)
     await pick(user, moss.name)
     await pick(user, wax.name)
@@ -178,7 +178,7 @@ describe('Ritual page', () => {
   it('explains a lost race and reloads the inventory', async () => {
     const api = fakeApi(routes({ 'POST /api/rituals': problem(409, 'The ritual lost a race for your components.') }))
     const user = userEvent.setup()
-    renderApp('/ritual')
+    renderApp('/weave/ritual')
     await pick(user, needle.name)
     await pick(user, moss.name)
     await pick(user, wax.name)

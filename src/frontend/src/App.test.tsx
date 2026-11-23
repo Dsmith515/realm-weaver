@@ -14,20 +14,25 @@ const shellRoutes = {
 }
 
 describe('App shell', () => {
-  it('opens on the GM Quick Weave page, with GM links first and the player pages as a preview', async () => {
+  it('opens on the GM Quick Weave page, with the main sections in the menu', async () => {
     fakeApi(shellRoutes)
     renderApp('/')
 
     expect(screen.getByRole('heading', { name: 'Quick Weave' })).toBeInTheDocument()
-    const gm = screen.getByRole('group', { name: 'GM' })
-    for (const label of ['Quick Weave', 'Realms', 'Components']) {
-      expect(within(gm).getByRole('link', { name: label })).toBeInTheDocument()
-    }
-    const players = screen.getByRole('group', { name: 'Player preview' })
-    for (const label of ['Ritual', 'Player']) {
-      expect(within(players).getByRole('link', { name: label })).toBeInTheDocument()
-    }
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    for (const group of ['Weave', 'Codex']) expect(within(nav).getByRole('button', { name: group })).toBeInTheDocument()
+    for (const link of ['Realms', 'Player', 'About']) expect(within(nav).getByRole('link', { name: link })).toBeInTheDocument()
     expect(await screen.findByText('API: 1.0.0')).toBeInTheDocument()
+  })
+
+  it('sends the old addresses to their new places', () => {
+    fakeApi(shellRoutes)
+    const { unmount } = renderApp('/gm/weave')
+    expect(screen.getByRole('heading', { name: 'Quick Weave' })).toBeInTheDocument()
+    unmount()
+
+    renderApp('/ritual')
+    expect(screen.getByRole('heading', { name: 'Ritual' })).toBeInTheDocument()
   })
 
   it('shows the API as offline when requests fail', async () => {
