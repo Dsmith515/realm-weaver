@@ -41,3 +41,9 @@ The maintainer is using this project to sharpen their skills, so agents leave ro
 - **Hand them a piece.** Each milestone plan names one small, self-contained task for the maintainer to write (for example a test, an endpoint or a component), with a short brief and acceptance criteria. Agents don't implement that task.
 - **Explain the why.** PR descriptions include a short *Concept practised* note (for example idempotency, transactional outbox, RBAC) saying what the change teaches and why it's built that way.
 - **Review, don't rewrite.** When the maintainer has written code, review it like a senior engineer: point out issues and explain the reasoning, and let them make the change unless they ask otherwise.
+
+## Review guidelines
+These apply to every reviewer (Codex on GitHub, Claude's `/code-review`, a local audit). CI already checks the architecture tests, analyzer warnings and OpenAPI drift, so don't repeat those.
+- **Treat unprotected concurrency as P1.** Flag any check-then-act on shared state (a holder check before a grant, a quantity check before a spend) that isn't guarded by a lock, a constraint or `xmin`. `UnitOfWork` runs at Read Committed, so a transaction alone doesn't make a check safe.
+- **Treat drift from an ADR as P1.** Flag a change that contradicts an ADR in `docs/adr/`, or that relies on an assumption an ADR states which no longer holds. Say which ADR and suggest whether to change the code or amend the ADR.
+- **Treat generator output changes without a version bump as P1.** Any change to `RealmWeaver.Generation` that changes the output for the same seed and inputs must bump `GeneratorLimits.Version` (ADR 0002).
