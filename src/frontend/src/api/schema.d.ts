@@ -112,7 +112,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GetComponent"];
-        /** @description Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409. */
+        /** @description Replaces a component. Once a map uses it, its recipe fields (tier, biome, element, mob types, realm kind, floors) are locked: 409. A map can only be made Unique while at most one player holds it: 409. */
         put: operations["UpdateComponent"];
         post?: never;
         /** @description Archives the component. It disappears from the catalog but stays readable for players who own it. */

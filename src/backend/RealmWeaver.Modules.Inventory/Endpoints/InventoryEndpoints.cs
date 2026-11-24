@@ -126,7 +126,7 @@ internal static class InventoryEndpoints
 
         try
         {
-            return TypedResults.Ok(await inventory.GrantAsync(id, component, input.Quantity, cancellationToken));
+            return TypedResults.Ok((await inventory.GrantAsync(id, component, input.Quantity, cancellationToken)).Item);
         }
         catch (MapHeldElsewhereException ex)
         {
@@ -169,7 +169,7 @@ internal static class InventoryEndpoints
 
         try
         {
-            return TypedResults.Ok(await inventory.GrantAsync(input.PlayerId, component, input.Quantity, cancellationToken));
+            return TypedResults.Ok((await inventory.GrantAsync(input.PlayerId, component, input.Quantity, cancellationToken)).Item);
         }
         catch (MapHeldElsewhereException ex)
         {

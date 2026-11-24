@@ -220,3 +220,13 @@ public interface ICatalogModule
     /// <summary>Creates a Map component. Joins the caller's unit of work when one is running.</summary>
     Task<ComponentDto> CreateMapAsync(NewMap map, CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// How many players hold a map. Catalog needs it to refuse turning on Unique for a map that is already shared, but
+/// holders belong to Inventory, which depends on Catalog. So Catalog declares the question and Inventory answers it
+/// (dependency inversion), and neither module reads the other's tables.
+/// </summary>
+public interface IMapHolderCount
+{
+    Task<int> CountHoldersAsync(Guid mapId, CancellationToken cancellationToken = default);
+}

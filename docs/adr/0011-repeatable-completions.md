@@ -23,6 +23,7 @@ The same round of feedback separated what a player sees on a map from what the G
   - The GM picks the party from a paged roster (`GET /api/realms/{id}/roster`), composed in the API host from the Inventory (players, map holders) and Realms (completions) contracts. By default it leaves out players who completed an objective and hold the map, since there's nothing left to give them. It always returns the weaver, so they can start selected.
   - The GM can also hand out the map without a completion. That reuses the component assign endpoint, once per player.
   - The completion and the grants still run in one transaction (ADR 0005). Two completions racing both count, and a map is only ever granted once (the grant is idempotent).
+  - The grants run before the completion is saved, and a grant reports whether it added the map. So of two racing completions, only the one that actually handed the map over records it, and the other lists that player as `already-held`.
 - **Player and GM views of a map.**
   - The player's view (inventory) shows kinds of creatures and loot without counts or locations, and objective titles without locations. Its rules show as tags (*Map required*, *Unique*, *No mirrors*) with an explanation on hover or focus. An open map shows no rules.
   - The GM's view (realm page, Components catalog) adds counts, locations, settlement settings and a link to the original realm.
