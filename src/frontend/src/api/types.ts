@@ -25,6 +25,8 @@ export type NeedleBoon = NonNullable<Schemas['NeedleBoon']>
 export type CompleteRunInput = Schemas['CompleteRunInput']
 export type RunCompletion = Schemas['RunCompletionDto']
 export type RosterPlayer = Schemas['RosterPlayerDto']
+export type RealmBriefing = Schemas['RealmBriefingDto']
+export type BriefingObjective = Schemas['BriefingObjectiveDto']
 
 // Runtime lists of the API's enums. `satisfies` plus the exhaustiveness checks below make the compiler
 // fail if the backend adds a value the frontend doesn't list.

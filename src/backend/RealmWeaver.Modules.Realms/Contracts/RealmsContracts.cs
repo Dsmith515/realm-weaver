@@ -129,7 +129,45 @@ public interface IRealmsModule
     /// Null when no such realm is stored (for example a map the GM created by hand).
     /// </summary>
     Task<RealmDigestDto?> GetOriginalDigestAsync(Guid mapComponentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The realm as a player sees it (<see cref="RealmBriefingDto"/>). The caller decides whether the viewer holds the
+    /// realm's map, since that's the Inventory module's knowledge; holding it adds the kinds of things to find.
+    /// Null when the realm doesn't exist.
+    /// </summary>
+    Task<RealmBriefingDto?> GetBriefingAsync(Guid realmId, bool holdsMap, CancellationToken cancellationToken = default);
 }
 
 /// <summary>A map's original realm and what it holds.</summary>
 public sealed record RealmDigestDto(Guid RealmId, int Threat, Generation.Export.RealmDigest Digest);
+
+/// <summary>
+/// A realm as a player sees it before the run: what kind of place it is, how dangerous, and what the party can aim for,
+/// with no map, no locations and nothing a GM keeps to themselves. A player who holds the realm's map also gets
+/// <see cref="Finds"/>. Still a preview (ADR 0012): the API doesn't check who is asking yet, but the shape is the one a
+/// signed-in player will be sent.
+/// </summary>
+public sealed record RealmBriefingDto(
+    Guid RealmId,
+    string? MapName,
+    RealmKind Kind,
+    Biome Biome,
+    Element Element,
+    int Threat,
+    int DangerModifier,
+    int FloorCount,
+    bool IsMirror,
+    IReadOnlyList<string> WovenFrom,
+    int CompletionCount,
+    IReadOnlyList<BriefingObjectiveDto> Objectives,
+    bool HoldsMap,
+    BriefingFindsDto? Finds = null);
+
+/// <summary>
+/// An objective as a player sees it: what to do and a hint, never where. <see cref="Id"/> is "O1".."O3", or "P" for a
+/// GM pin that isn't one of the rolled objectives; <see cref="IsPinned"/> marks the GM's pick either way.
+/// </summary>
+public sealed record BriefingObjectiveDto(string Id, string Title, string Hint, bool IsPinned);
+
+/// <summary>The kinds of creatures, loot and resource nodes in the realm, by name only: no counts, no locations.</summary>
+public sealed record BriefingFindsDto(IReadOnlyList<string> Creatures, IReadOnlyList<string> Loot, IReadOnlyList<string> ResourceNodes);

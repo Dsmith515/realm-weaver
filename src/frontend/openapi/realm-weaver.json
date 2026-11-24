@@ -235,6 +235,46 @@
         }
       }
     },
+    "/api/realms/{id}/briefing": {
+      "get": {
+        "tags": [
+          "Realms"
+        ],
+        "description": "The realm as a player sees it: kind, threat, components and objectives (title and hint only, no locations). When playerId holds the realm\u0027s map, the kinds of creatures, loot and resource nodes are included. A preview, not access control (ADR 0012).",
+        "operationId": "GetRealmBriefing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "playerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealmBriefingDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/components": {
       "get": {
         "tags": [
@@ -1574,6 +1614,57 @@
           "mountains",
           "coast"
         ]
+      },
+      "BriefingFindsDto": {
+        "required": [
+          "creatures",
+          "loot",
+          "resourceNodes"
+        ],
+        "type": "object",
+        "properties": {
+          "creatures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "loot": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resourceNodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BriefingObjectiveDto": {
+        "required": [
+          "id",
+          "title",
+          "hint",
+          "isPinned"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "isPinned": {
+            "type": "boolean"
+          }
+        }
       },
       "CatalogSettingsDto": {
         "required": [
@@ -3275,6 +3366,89 @@
           "floorNumber": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "RealmBriefingDto": {
+        "required": [
+          "realmId",
+          "mapName",
+          "kind",
+          "biome",
+          "element",
+          "threat",
+          "dangerModifier",
+          "floorCount",
+          "isMirror",
+          "wovenFrom",
+          "completionCount",
+          "objectives",
+          "holdsMap"
+        ],
+        "type": "object",
+        "properties": {
+          "realmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RealmKind"
+          },
+          "biome": {
+            "$ref": "#/components/schemas/Biome"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
+          },
+          "threat": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dangerModifier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "floorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isMirror": {
+            "type": "boolean"
+          },
+          "wovenFrom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "completionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BriefingObjectiveDto"
+            }
+          },
+          "holdsMap": {
+            "type": "boolean"
+          },
+          "finds": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BriefingFindsDto"
+              }
+            ]
           }
         }
       },
