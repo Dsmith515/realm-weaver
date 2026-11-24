@@ -27,6 +27,16 @@ const briefing: RealmBriefing = {
   areas: null,
 }
 
+const held: RealmBriefing = {
+  ...briefing,
+  holdsMap: true,
+  finds: { creatures: ['Grey wolf', 'Bandit'], loot: ['Hidden chest'], resourceNodes: [] },
+  areas: [
+    { id: 'field', kind: 'field', name: 'Forest field', floorNumber: 0 },
+    { id: 'floor-1', kind: 'dungeonFloor', name: 'Floor 1', floorNumber: 1 },
+  ],
+}
+
 const summary = {
   id: 'realm-1',
   playerId: player.id,
@@ -93,7 +103,24 @@ describe('Player realm briefing', () => {
   })
 
   // Maintainer's piece (Milestone 8i step 4): see the guide in the PR description.
-  it.todo('a player who holds the map sees the map and the kinds of creatures')
+  it('a player who holds the map sees the map and the kinds of creatures', async () => {
+    fakeApi(
+      routes({
+        'GET /api/realms/:id/briefing': held,
+        'GET /api/realms/:id/export': () =>
+          new Response('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>', { headers: { 'content-type': 'image/svg+xml' } }),
+      }),
+    )
+    viewAsPlayer()
+    renderApp('/realms/realm-1')
+
+    const creatures = await screen.findByRole('list', { name: 'Creatures' })
+    expect(within(creatures).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Grey wolf', 'Bandit'])
+
+    await waitFor(() => expect(document.querySelector('.svg-viewer svg')).not.toBeNull())
+    expect(screen.getByRole('tab', { name: 'Floor 1' })).toBeInTheDocument()
+    expect(screen.queryByText(/You don’t hold this realm’s map/)).not.toBeInTheDocument()
+  })
 
   it('keeps the GM realm page for the GM', async () => {
     const api = fakeApi(
