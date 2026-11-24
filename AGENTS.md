@@ -47,3 +47,10 @@ These apply to every reviewer (Codex on GitHub, Claude's `/code-review`, a local
 - **Treat unprotected concurrency as P1.** Flag any check-then-act on shared state (a holder check before a grant, a quantity check before a spend) that isn't guarded by a lock, a constraint or `xmin`. `UnitOfWork` runs at Read Committed, so a transaction alone doesn't make a check safe.
 - **Treat drift from an ADR as P1.** Flag a change that contradicts an ADR in `docs/adr/`, or that relies on an assumption an ADR states which no longer holds. Say which ADR and suggest whether to change the code or amend the ADR.
 - **Treat generator output changes without a version bump as P1.** Any change to `RealmWeaver.Generation` that changes the output for the same seed and inputs must bump `GeneratorLimits.Version` (ADR 0002).
+
+## Feedback that outlives a PR
+Findings that aren't fixed in the PR where they're raised go to GitHub Issues with the `review-finding` label, so every agent sees them across branches and milestones.
+- **Where things go.** Feedback on a diff stays a PR comment. A finding deferred past its PR becomes an issue. An accepted decision becomes an ADR.
+- **What an issue says.** What was observed (with file references), why it matters, and when to revisit it (a milestone or a condition), plus who raised it. Phrase open design questions as questions rather than as a solution.
+- **Before planning a milestone**, check the open issues (`gh issue list --label review-finding`) and say which ones the plan covers.
+- **Closing.** A PR that resolves an issue says `Closes #<n>`. The maintainer decides which issues are closed as won't-fix or moved into the roadmap.
