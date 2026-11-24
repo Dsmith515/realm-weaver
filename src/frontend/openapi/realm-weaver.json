@@ -3449,6 +3449,15 @@
                 "$ref": "#/components/schemas/BriefingFindsDto"
               }
             ]
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RealmAreaSummaryDto"
+            }
           }
         }
       },

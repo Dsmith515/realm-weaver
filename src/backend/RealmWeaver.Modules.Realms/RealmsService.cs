@@ -112,7 +112,8 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             summary.CompletionCount,
             objectives,
             holdsMap,
-            holdsMap ? FindsOf(RealmDigest.From(document)) : null);
+            holdsMap ? FindsOf(RealmDigest.From(document)) : null,
+            holdsMap ? summary.Areas : null);
     }
 
     /// <summary>Names only, each once, in the digest's order: a player learns what kinds of things are there, not how many or where.</summary>

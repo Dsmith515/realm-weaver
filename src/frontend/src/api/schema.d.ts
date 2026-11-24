@@ -940,6 +940,7 @@ export interface components {
             objectives: components["schemas"]["BriefingObjectiveDto"][];
             holdsMap: boolean;
             finds?: null | components["schemas"]["BriefingFindsDto"];
+            areas?: null | components["schemas"]["RealmAreaSummaryDto"][];
         };
         RealmCompletionDto: {
             /** Format: uuid */

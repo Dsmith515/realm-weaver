@@ -144,7 +144,7 @@ public sealed record RealmDigestDto(Guid RealmId, int Threat, Generation.Export.
 /// <summary>
 /// A realm as a player sees it before the run: what kind of place it is, how dangerous, and what the party can aim for,
 /// with no map, no locations and nothing a GM keeps to themselves. A player who holds the realm's map also gets
-/// <see cref="Finds"/>. Still a preview (ADR 0012): the API doesn't check who is asking yet, but the shape is the one a
+/// <see cref="Finds"/> and the <see cref="Areas"/> to draw its map by. Still a preview (ADR 0012): the API doesn't check who is asking yet, but the shape is the one a
 /// signed-in player will be sent.
 /// </summary>
 public sealed record RealmBriefingDto(
@@ -161,7 +161,8 @@ public sealed record RealmBriefingDto(
     int CompletionCount,
     IReadOnlyList<BriefingObjectiveDto> Objectives,
     bool HoldsMap,
-    BriefingFindsDto? Finds = null);
+    BriefingFindsDto? Finds = null,
+    IReadOnlyList<RealmAreaSummaryDto>? Areas = null);
 
 /// <summary>
 /// An objective as a player sees it: what to do and a hint, never where. <see cref="Id"/> is "O1".."O3", or "P" for a

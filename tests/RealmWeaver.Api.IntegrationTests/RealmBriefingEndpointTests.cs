@@ -25,6 +25,7 @@ public class RealmBriefingEndpointTests(RealmWeaverApiFactory factory)
 
         Assert.False(briefing.HoldsMap);
         Assert.Null(briefing.Finds);
+        Assert.Null(briefing.Areas);
         Assert.Equal(realm.Summary.Kind, briefing.Kind);
         Assert.Equal(realm.Summary.Threat, briefing.Threat);
         Assert.Equal(realm.Summary.Components!.MapName, briefing.MapName);
@@ -32,7 +33,7 @@ public class RealmBriefingEndpointTests(RealmWeaverApiFactory factory)
         Assert.Equal(rolled.Select(o => (o.Id, o.Title, o.Description)), briefing.Objectives.Select(o => (o.Id, o.Title, o.Hint)));
 
         // Nothing that places anything on the map: no locations, event or area ids, or the keys that embed them.
-        foreach (var hidden in new[] { "location", "eventId", "areaId", "key", "seed", "areas" })
+        foreach (var hidden in new[] { "location", "eventId", "areaId", "key", "seed" })
         {
             Assert.DoesNotContain($"\"{hidden}\"", json, StringComparison.Ordinal);
         }
@@ -52,9 +53,11 @@ public class RealmBriefingEndpointTests(RealmWeaverApiFactory factory)
         Assert.NotNull(briefing.Finds);
         Assert.NotEmpty(briefing.Finds.Creatures);
         Assert.Equal(briefing.Finds.Creatures.Distinct(), briefing.Finds.Creatures);
+        Assert.Equal((await GetRealmAsync(client, ritual.RealmId)).Summary.Areas, briefing.Areas);
         Assert.True(briefing.CompletionCount >= 1); // completions belong to the map, which other runs of this recipe share
         Assert.False(anonymous.HoldsMap);
         Assert.Null(anonymous.Finds);
+        Assert.Null(anonymous.Areas);
     }
 
     [Fact]
