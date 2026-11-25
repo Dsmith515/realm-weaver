@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { RealmBriefing } from '../api/types'
 import { fakeApi } from '../test/fakeApi'
@@ -56,6 +57,9 @@ const summary = {
   areas: [{ id: 'field', kind: 'field', name: 'Forest field', floorNumber: 0 }],
 }
 
+/** The map image: the export endpoint returns SVG text, not JSON. */
+const svgResponse = () => new Response('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>', { headers: { 'content-type': 'image/svg+xml' } })
+
 function routes(overrides: Record<string, unknown> = {}) {
   return {
     'GET /api/info': { name: 'Realm Weaver', version: '1.0.0' },
@@ -102,13 +106,11 @@ describe('Player realm briefing', () => {
     await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/briefing').at(-1)?.query.get('playerId')).toBe(player.id))
   })
 
-  // Maintainer's piece (Milestone 8i step 4): see the guide in the PR description.
   it('a player who holds the map sees the map and the kinds of creatures', async () => {
     fakeApi(
       routes({
         'GET /api/realms/:id/briefing': held,
-        'GET /api/realms/:id/export': () =>
-          new Response('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>', { headers: { 'content-type': 'image/svg+xml' } }),
+        'GET /api/realms/:id/export': svgResponse,
       }),
     )
     viewAsPlayer()
@@ -116,10 +118,15 @@ describe('Player realm briefing', () => {
 
     const creatures = await screen.findByRole('list', { name: 'Creatures' })
     expect(within(creatures).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Grey wolf', 'Bandit'])
+    expect(within(await screen.findByRole('list', { name: 'Potential loot' })).getByText('Hidden chest')).toBeInTheDocument()
+    const nodes = screen.getByRole('heading', { name: 'Resource nodes' })
+    expect(nodes.nextElementSibling).toHaveTextContent('None.')
 
     await waitFor(() => expect(document.querySelector('.svg-viewer svg')).not.toBeNull())
     expect(screen.getByRole('tab', { name: 'Floor 1' })).toBeInTheDocument()
     expect(screen.queryByText(/You don’t hold this realm’s map/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Map details' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Download SVG' })).not.toBeInTheDocument()
   })
 
   it('keeps the GM realm page for the GM', async () => {
@@ -143,5 +150,17 @@ describe('Player realm briefing', () => {
     expect(await screen.findByRole('link', { name: 'Forest field' })).toHaveAttribute('href', '/realms/realm-1')
     expect(screen.queryByRole('tab', { name: 'GM Quick Weaves' })).not.toBeInTheDocument()
     expect(api.callsTo('GET', '/api/realms')[0].query.get('playerId')).toBe(player.id)
+  })
+
+  it('a map holder switching to another floor loads that floor’s map', async () => {
+    viewAsPlayer()
+    const api = fakeApi(routes({ 'GET /api/realms/:id/briefing': held, 'GET /api/realms/:id/export': svgResponse }))
+    const user = userEvent.setup()
+    renderApp('/realms/realm-1')
+
+    await user.click(await screen.findByRole('tab', { name: 'Floor 1' }))
+
+    expect(screen.getByRole('tab', { name: 'Floor 1' })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms/realm-1/export').at(-1)?.query.get('area')).toBe('floor-1'))
   })
 })
