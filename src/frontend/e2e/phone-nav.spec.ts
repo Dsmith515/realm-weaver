@@ -39,3 +39,24 @@ test('the phone menu keeps keyboard focus inside and gives it back to the menu b
   await expect(drawer).toBeHidden()
   await expect(menuButton).toBeFocused()
 })
+
+test('a phone sheet closes with a tap on its grab bar, or a long drag down', async ({ page }) => {
+  await page.goto('/about')
+  const tabs = page.getByRole('navigation', { name: 'Sections' })
+  const sheet = page.getByRole('dialog', { name: 'Weave' })
+
+  // A tap: a press and release without moving.
+  await tabs.getByRole('button', { name: 'Weave' }).click()
+  await sheet.getByRole('button', { name: 'Close' }).click()
+  await expect(sheet).toBeHidden()
+
+  // A drag down well past the close distance.
+  await tabs.getByRole('button', { name: 'Weave' }).click()
+  const bar = await sheet.getByRole('button', { name: 'Close' }).boundingBox()
+  if (!bar) throw new Error('The grab bar has no box')
+  await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bar.x + bar.width / 2, bar.y + 150, { steps: 10 })
+  await page.mouse.up()
+  await expect(sheet).toBeHidden()
+})

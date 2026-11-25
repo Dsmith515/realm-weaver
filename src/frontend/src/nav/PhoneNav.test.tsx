@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeApi } from '../test/fakeApi'
 import { inventory, player } from '../test/fixtures'
 import { renderApp } from '../test/render'
@@ -106,6 +106,48 @@ describe('Phone sheet swipe', () => {
     const panel = screen.getByTestId('sheet-grab').parentElement!
     expect(panel.style.transform).toBe('')
     expect(panel).not.toHaveClass('app-sheet--dragging')
+  })
+})
+
+describe('Phone sheet pointer capture', () => {
+  // jsdom has no pointer capture, so stand in a spy. In a real browser, capturing on press would send a tap's click to
+  // the strip instead of the handle (e2e/phone-nav.spec.ts covers the tap end to end).
+  const capture = vi.fn()
+  beforeEach(() => {
+    capture.mockClear()
+    Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { value: capture, configurable: true })
+  })
+  afterEach(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).setPointerCapture
+  })
+
+  const openWeave = async () => {
+    fakeApi(routes)
+    renderApp('/about')
+    await userEvent.setup().click(within(tabBar()).getByRole('button', { name: 'Weave' }))
+    return screen.getByTestId('sheet-grab')
+  }
+
+  it('leaves a tap uncaptured, so its click reaches the handle and closes the sheet', async () => {
+    const grab = await openWeave()
+    fireEvent.pointerDown(grab, { clientY: 100, pointerId: 1 })
+    fireEvent.pointerMove(grab, { clientY: 103, pointerId: 1 })
+    fireEvent.pointerUp(grab, { clientY: 103, pointerId: 1 })
+    expect(capture).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog', { name: 'Weave' })).not.toBeInTheDocument()
+  })
+
+  it('captures the pointer once a press moves far enough to be a drag', async () => {
+    const grab = await openWeave()
+    fireEvent.pointerDown(grab, { clientY: 100, pointerId: 1 })
+    fireEvent.pointerMove(grab, { clientY: 130, pointerId: 1 })
+    fireEvent.pointerMove(grab, { clientY: 140, pointerId: 1 })
+
+    expect(capture).toHaveBeenCalledTimes(1)
+    expect(capture).toHaveBeenCalledWith(1)
+    fireEvent.pointerUp(grab, { clientY: 140, pointerId: 1 })
   })
 })
 

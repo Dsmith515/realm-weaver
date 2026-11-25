@@ -91,6 +91,10 @@ const tapSlop = 6
 /**
  * Swipe-down-to-close for a bottom sheet. While dragging, the panel follows the finger (downwards only). Let go past
  * closeDistance and it closes; otherwise it springs back. A drag never also counts as a tap on the handle.
+ *
+ * The pointer is captured only once a press has moved past tapSlop. Capturing sends every later pointer event to the
+ * strip, including the click that ends the press. Capturing on pointerdown would send a plain tap's click to the strip
+ * instead of the handle button, and the tap would do nothing.
  */
 function useSwipeDown(onClose: () => void) {
   const sheet = useRef<HTMLDivElement>(null)
@@ -107,6 +111,9 @@ function useSwipeDown(onClose: () => void) {
     drag.current = undefined
     sheet.current?.classList.remove('app-sheet--dragging')
     move(0)
+    // A drag's click goes to the strip, not the handle, so onClickHandle may never clear the flag. Clear it once that
+    // click has had its turn, or the next keyboard press on the handle would be swallowed.
+    if (dragged.current) setTimeout(() => (dragged.current = false))
     if (dy > closeDistance) onClose()
   }
 
@@ -117,14 +124,17 @@ function useSwipeDown(onClose: () => void) {
       onPointerDown: (event: PointerEvent<HTMLDivElement>) => {
         drag.current = { startY: event.clientY, dy: 0 }
         dragged.current = false
-        event.currentTarget.setPointerCapture?.(event.pointerId)
         sheet.current?.classList.add('app-sheet--dragging')
       },
       onPointerMove: (event: PointerEvent<HTMLDivElement>) => {
         const current = drag.current
         if (!current) return
         current.dy = Math.max(0, event.clientY - current.startY)
-        if (current.dy > tapSlop) dragged.current = true
+        if (current.dy > tapSlop && !dragged.current) {
+          // Now it's a drag: keep getting its events even if the finger leaves the strip.
+          dragged.current = true
+          event.currentTarget.setPointerCapture?.(event.pointerId)
+        }
         move(current.dy)
       },
       onPointerUp: end,
