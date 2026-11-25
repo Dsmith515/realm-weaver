@@ -17,12 +17,15 @@ test('a new player performs a random ritual, the GM completes an objective and h
   const maps = page.getByRole('region', { name: 'Maps' })
   await expect(maps.getByRole('heading')).toContainText('(0)')
 
-  // The realm renders, and exports download.
-  // A new player has exactly the one realm they just opened.
+  // A new player has exactly the one realm they just opened. Without its map they get a briefing (realm-briefing.spec.ts).
   await nav(page, 'Realms')
   const realms = page.locator('.realm-list').getByRole('link')
   await expect(realms).toHaveCount(1)
   await realms.click()
+  await expect(page.getByRole('region', { name: 'Realm briefing' })).toBeVisible()
+
+  // The GM sees the whole realm: it renders, and exports download.
+  await viewAs(page, 'GM')
   await expectMapDrawn(page)
 
   for (const [link, extension] of [['Download SVG', '.svg'], ['Placement sheet (Markdown)', '.md'], ['JSON', '.json']] as const) {
@@ -36,7 +39,6 @@ test('a new player performs a random ritual, the GM completes an objective and h
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
 
   // The GM completes an objective (the first is chosen) and hands the map to the weaver, who is ticked by default.
-  await viewAs(page, 'GM')
   await expect(page.getByRole('region', { name: 'Objectives' })).toContainText('as often as the realm is run')
   const completion = page.getByRole('region', { name: 'Completion' })
   await expect(completion.getByRole('checkbox', { name: /\(weaver\)/ })).toBeChecked()
@@ -47,6 +49,12 @@ test('a new player performs a random ritual, the GM completes an objective and h
   const objectives = page.getByRole('region', { name: 'Objectives' })
   await objectives.getByText('Player completion').click()
   await expect(objectives.getByRole('list', { name: 'Players who completed an objective' })).toContainText('E2E Ritual')
+
+  // Back in player view, the weaver now holds the map, so their briefing shows it.
+  await viewAs(page, 'Player')
+  await expect(page.getByRole('region', { name: 'Realm briefing' })).toBeVisible()
+  await expectMapDrawn(page)
+  await expect(page.getByRole('heading', { name: 'Creatures' })).toBeVisible()
 
   await nav(page, 'Player')
   await expect(page.getByRole('region', { name: 'Maps' }).getByRole('heading')).toContainText('(1)')

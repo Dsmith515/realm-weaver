@@ -7,6 +7,9 @@ import { boonLabel, label, tileLabel } from '../api/types'
 import { Pager } from '../components/Pager'
 import { MapDetailsModal } from '../maps/MapDetailsView'
 import { usePlayerSelection } from '../player/playerContext'
+import { useRole } from '../player/roleContext'
+import { MirrorBadge } from './MirrorBadge'
+import { RealmBriefing } from './RealmBriefing'
 import { RealmObjectives } from './RealmObjectives'
 import { PromptDialog } from './PromptDialog'
 import { SvgViewer } from './SvgViewer'
@@ -15,26 +18,33 @@ const realmsPageSize = 25
 
 export function RealmsPage() {
   const { playerId } = usePlayerSelection()
-  const [gm, setGm] = useState(false)
-  const [page, setPage] = useState(1)
+  const { role } = useRole()
+  // The GM can look at a player's realms or their own Quick Weaves; a player only ever sees their own (ADR 0012).
+  const [gmTab, setGmTab] = useState(false)
+  const gm = role === 'gm' && gmTab
+  // The page belongs to the list it was chosen on. Switching tab, role or player shows another list, which starts at
+  // page 1, without an effect to reset it.
+  const audience = gm ? 'gm' : `player:${playerId ?? ''}`
+  const [paging, setPaging] = useState({ audience, page: 1 })
+  const page = paging.audience === audience ? paging.page : 1
+  const setPage = (next: number) => setPaging({ audience, page: next })
   const realms = useRealms(gm ? { gm: true, page, pageSize: realmsPageSize } : { playerId, page, pageSize: realmsPageSize }, gm || !!playerId)
-  const showTab = (toGm: boolean) => {
-    setGm(toGm)
-    setPage(1)
-  }
+  const showTab = (toGm: boolean) => setGmTab(toGm)
   const result = realms.data
 
   return (
     <section className="page-fill">
       <h1>Realms</h1>
-      <div role="tablist" aria-label="Whose realms" className="tabs">
-        <button type="button" role="tab" aria-selected={!gm} onClick={() => showTab(false)}>
-          Player
-        </button>
-        <button type="button" role="tab" aria-selected={gm} onClick={() => showTab(true)}>
-          GM Quick Weaves
-        </button>
-      </div>
+      {role === 'gm' && (
+        <div role="tablist" aria-label="Whose realms" className="tabs">
+          <button type="button" role="tab" aria-selected={!gm} onClick={() => showTab(false)}>
+            Player
+          </button>
+          <button type="button" role="tab" aria-selected={gm} onClick={() => showTab(true)}>
+            GM Quick Weaves
+          </button>
+        </div>
+      )}
       {!gm && !playerId && <p>Choose a player in the header.</p>}
       {realms.isError && <p className="error-text">{errorMessage(realms.error)}</p>}
       {result?.totalCount === 0 && (
@@ -71,8 +81,14 @@ export function RealmsPage() {
   )
 }
 
+/** The GM sees the whole realm; a player gets a briefing without the map's secrets (Milestone 8i, ADR 0012). */
 export function RealmPage() {
   const { id = '' } = useParams()
+  const { role } = useRole()
+  return role === 'gm' ? <GmRealmPage id={id} /> : <RealmBriefing realmId={id} />
+}
+
+function GmRealmPage({ id }: { id: string }) {
   const realm = useRealm(id)
 
   if (realm.isPending) return <p className="muted">Loading realm…</p>
@@ -235,14 +251,6 @@ function title(realm: RealmSummary) {
 function componentsLine(realm: RealmSummary) {
   const c = realm.components!
   return [c.needle.name, c.thread.name, c.coating.name].join(' · ')
-}
-
-function MirrorBadge() {
-  return (
-    <span className="badge badge--warn" title="Woven from a recorded map with different components: same layout, rerolled encounters.">
-      Mirror
-    </span>
-  )
 }
 
 interface Placement {
