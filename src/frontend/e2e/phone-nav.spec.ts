@@ -27,11 +27,13 @@ test('the phone menu keeps keyboard focus inside and gives it back to the menu b
   const drawer = page.getByRole('dialog', { name: 'Menu' })
   await expect(drawer.getByRole('group', { name: 'Viewing as' })).toBeVisible()
 
-  // Tab all the way round: focus never lands behind the drawer.
+  // Tab all the way round: nothing behind the drawer ever takes focus. After the drawer's last control, Chrome moves
+  // focus out to its own toolbar (the page then reports no focused element) and the next Tab wraps back into the drawer.
   for (let i = 0; i < 8; i++) {
     await page.keyboard.press('Tab')
-    await expect(drawer.locator(':focus')).toHaveCount(1)
+    await expect(page.locator(':focus:not(.app-drawer *)')).toHaveCount(0)
   }
+  await expect(drawer.locator(':focus')).toHaveCount(1)
 
   await page.keyboard.press('Escape')
   await expect(drawer).toBeHidden()
