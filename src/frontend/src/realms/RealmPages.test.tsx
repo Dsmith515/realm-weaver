@@ -158,6 +158,23 @@ describe('Realm pages', () => {
     expect(screen.getByRole('tab', { name: 'GM Quick Weaves' })).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('starts a player’s list at page 1 after the GM paged through Quick Weaves', async () => {
+    const api = fakeApi({
+      ...routes(),
+      'GET /api/realms': (call: ApiCall) => ({ items: [summary], page: Number(call.query.get('page')), pageSize: 25, totalCount: 60 }),
+    })
+    const user = userEvent.setup()
+    renderApp('/realms')
+
+    await user.click(await screen.findByRole('tab', { name: 'GM Quick Weaves' }))
+    await user.click(await screen.findByRole('button', { name: 'Next' }))
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms').at(-1)?.query.get('page')).toBe('2'))
+    await user.click(within(screen.getByRole('group', { name: 'Viewing as' })).getByRole('button', { name: 'Player' }))
+
+    await waitFor(() => expect(api.callsTo('GET', '/api/realms').at(-1)?.query.get('playerId')).toBe(player.id))
+    expect(api.callsTo('GET', '/api/realms').at(-1)?.query.get('page')).toBe('1')
+  })
+
   it('names a realm after its map, lists its components and flags mirrors', async () => {
     fakeApi(routes())
     renderApp('/realms')

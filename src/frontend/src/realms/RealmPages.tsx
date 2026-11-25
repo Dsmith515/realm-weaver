@@ -22,12 +22,14 @@ export function RealmsPage() {
   // The GM can look at a player's realms or their own Quick Weaves; a player only ever sees their own (ADR 0012).
   const [gmTab, setGmTab] = useState(false)
   const gm = role === 'gm' && gmTab
-  const [page, setPage] = useState(1)
+  // The page belongs to the list it was chosen on. Switching tab, role or player shows another list, which starts at
+  // page 1, without an effect to reset it.
+  const audience = gm ? 'gm' : `player:${playerId ?? ''}`
+  const [paging, setPaging] = useState({ audience, page: 1 })
+  const page = paging.audience === audience ? paging.page : 1
+  const setPage = (next: number) => setPaging({ audience, page: next })
   const realms = useRealms(gm ? { gm: true, page, pageSize: realmsPageSize } : { playerId, page, pageSize: realmsPageSize }, gm || !!playerId)
-  const showTab = (toGm: boolean) => {
-    setGmTab(toGm)
-    setPage(1)
-  }
+  const showTab = (toGm: boolean) => setGmTab(toGm)
   const result = realms.data
 
   return (
