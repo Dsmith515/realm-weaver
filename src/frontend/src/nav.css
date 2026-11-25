@@ -501,11 +501,16 @@
   inset: auto 0 0;
   width: 100%;
   margin: 0;
-  border-top: 1px solid var(--border-strong);
-  border-radius: 16px 16px 0 0;
+  /* The panel inside carries the look, so it can be dragged down on its own (useSwipeDown in TabBar.tsx). */
+  background: transparent;
+  box-shadow: none;
 }
 
 .app-sheet__body {
+  background: var(--panel);
+  border-top: 1px solid var(--border-strong);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.45);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -514,10 +519,54 @@
   padding: 0.6rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
 }
 
-.app-sheet__head {
+.app-sheet__body {
+  transition: transform 0.2s ease;
+}
+
+/* While a finger drags the panel it follows exactly, with no easing. */
+.app-sheet__body.app-sheet--dragging {
+  transition: none;
+}
+
+/* The top strip: a grab bar to drag down, with the group's name under it. */
+.app-sheet__grab {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 2px;
+  margin: -0.6rem -0.75rem 0;
+  padding: 0.3rem 0.75rem 0.2rem;
+  cursor: grab;
+  /* The browser mustn't scroll or pull-to-refresh while the strip is dragged. */
+  touch-action: none;
+}
+
+.app-sheet__grab .nav-cards__title {
+  align-self: flex-start;
+}
+
+.app-sheet__handle {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: grab;
+}
+
+.app-sheet__handle > span {
+  width: 40px;
+  height: 5px;
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+.app-sheet__handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .app-drawer {
@@ -565,6 +614,7 @@
   .app-rail,
   .app-header,
   .app-tabbar,
+  .app-sheet__body,
   .nav-item__caret,
   .nav-menu--rail .nav-item__label {
     transition: none;

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeApi } from '../test/fakeApi'
@@ -73,6 +73,39 @@ describe('Phone tab bar', () => {
     await user.click(within(screen.getByRole('dialog', { name: 'Codex' })).getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByRole('dialog', { name: 'Codex' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Phone sheet swipe', () => {
+  const drag = (to: number) => {
+    const grab = screen.getByTestId('sheet-grab')
+    fireEvent.pointerDown(grab, { clientY: 100, pointerId: 1 })
+    fireEvent.pointerMove(grab, { clientY: 100 + to, pointerId: 1 })
+    fireEvent.pointerUp(grab, { clientY: 100 + to, pointerId: 1 })
+  }
+
+  it('closes the sheet when its grab bar is dragged far enough down', async () => {
+    fakeApi(routes)
+    renderApp('/about')
+    await userEvent.setup().click(within(tabBar()).getByRole('button', { name: 'Weave' }))
+
+    drag(120)
+
+    expect(screen.queryByRole('dialog', { name: 'Weave' })).not.toBeInTheDocument()
+  })
+
+  it('springs back on a short drag, without counting it as a tap on the handle', async () => {
+    fakeApi(routes)
+    renderApp('/about')
+    await userEvent.setup().click(within(tabBar()).getByRole('button', { name: 'Weave' }))
+
+    drag(30)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(screen.getByRole('dialog', { name: 'Weave' })).toBeInTheDocument()
+    const panel = screen.getByTestId('sheet-grab').parentElement!
+    expect(panel.style.transform).toBe('')
+    expect(panel).not.toHaveClass('app-sheet--dragging')
   })
 })
 

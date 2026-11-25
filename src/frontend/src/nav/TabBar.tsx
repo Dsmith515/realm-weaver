@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { useModalDialog } from '../components/useModalDialog'
 import { useRole } from '../player/roleContext'
@@ -24,6 +24,7 @@ export function TabBar({ sheet, onSheetChange }: TabBarProps) {
   // The sheet keeps showing its group while it closes (see useModalDialog), so remember the last one opened.
   const [lastSheet, setLastSheet] = useState(sheet)
   if (sheet !== undefined && sheet !== lastSheet) setLastSheet(sheet)
+  const { panel, handlers: swipeHandlers, onClickHandle } = useSwipeDown(close)
   const group = shown ? items.find((item): item is NavGroup => item.kind === 'group' && item.id === lastSheet) : undefined
 
   return (
@@ -56,14 +57,13 @@ export function TabBar({ sheet, onSheetChange }: TabBarProps) {
 
       <dialog {...props} className="app-sheet" aria-label={group?.label}>
         {group && (
-          <div className="app-sheet__body">
-            <div className="app-sheet__head">
-              <span className="nav-cards__title">{group.label}</span>
-              <button type="button" className="icon-button" aria-label="Close" onClick={close}>
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
+          <div ref={panel} className="app-sheet__body">
+            {/* Drag this strip down to close the sheet. The bar is also a button, for a tap or the keyboard. */}
+            <div className="app-sheet__grab" data-testid="sheet-grab" {...swipeHandlers}>
+              <button type="button" className="app-sheet__handle" aria-label="Close" onClick={onClickHandle}>
+                <span aria-hidden="true" />
               </button>
+              <span className="nav-cards__title">{group.label}</span>
             </div>
             <div className="nav-cards">
               {group.children.map((child) => (
@@ -83,3 +83,60 @@ export function TabBar({ sheet, onSheetChange }: TabBarProps) {
   )
 }
 
+/** How far down (px) a drag has to go before letting go closes the sheet. */
+const closeDistance = 80
+/** Movement (px) below which a press still counts as a tap on the handle. */
+const tapSlop = 6
+
+/**
+ * Swipe-down-to-close for a bottom sheet. While dragging, the panel follows the finger (downwards only). Let go past
+ * closeDistance and it closes; otherwise it springs back. A drag never also counts as a tap on the handle.
+ */
+function useSwipeDown(onClose: () => void) {
+  const sheet = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ startY: number; dy: number } | undefined>(undefined)
+  const dragged = useRef(false)
+
+  const move = (dy: number) => {
+    const el = sheet.current
+    if (el) el.style.transform = dy > 0 ? `translateY(${dy}px)` : ''
+  }
+
+  const end = () => {
+    const dy = drag.current?.dy ?? 0
+    drag.current = undefined
+    sheet.current?.classList.remove('app-sheet--dragging')
+    move(0)
+    if (dy > closeDistance) onClose()
+  }
+
+  return {
+    /** Goes on the sheet's panel: the part that moves. */
+    panel: sheet,
+    handlers: {
+      onPointerDown: (event: PointerEvent<HTMLDivElement>) => {
+        drag.current = { startY: event.clientY, dy: 0 }
+        dragged.current = false
+        event.currentTarget.setPointerCapture?.(event.pointerId)
+        sheet.current?.classList.add('app-sheet--dragging')
+      },
+      onPointerMove: (event: PointerEvent<HTMLDivElement>) => {
+        const current = drag.current
+        if (!current) return
+        current.dy = Math.max(0, event.clientY - current.startY)
+        if (current.dy > tapSlop) dragged.current = true
+        move(current.dy)
+      },
+      onPointerUp: end,
+      onPointerCancel: end,
+    },
+    onClickHandle: (event: MouseEvent) => {
+      if (dragged.current) {
+        event.preventDefault()
+        dragged.current = false
+        return
+      }
+      onClose()
+    },
+  }
+}
