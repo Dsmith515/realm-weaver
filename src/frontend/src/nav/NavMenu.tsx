@@ -6,21 +6,21 @@ import { aboutItem, itemsFor, type IconTone, type NavGroup, type NavLink as NavL
 /**
  * - rail: icons only. Hovering or focusing an icon shows its name, and a group opens a flyout of cards beside the rail.
  * - pinned: the rail held open, with labels and each group's pages listed inline.
- * - drawer: the phone menu; like pinned, with the one-line descriptions shown.
+ * Phones use TabBar instead, from the same config.
  */
-export type NavVariant = 'rail' | 'pinned' | 'drawer'
+export type NavVariant = 'rail' | 'pinned'
 
 export function NavIcon({ icon, tone, size = 28 }: { icon: string; tone: IconTone; size?: number }) {
   const style = { '--icon': `url("${icon}")`, width: size, height: size } as CSSProperties
   return <span aria-hidden="true" className={`nav-icon nav-icon--${tone}`} style={style} />
 }
 
-export function NavMenu({ variant, onNavigate }: { variant: NavVariant; onNavigate?: () => void }) {
+export function NavMenu({ variant }: { variant: NavVariant }) {
   const { role } = useRole()
   const { pathname } = useLocation()
   const items = itemsFor(role)
   const activeGroup = items.find((item): item is NavGroup => item.kind === 'group' && item.children.some((c) => pathname.startsWith(c.to)))
-  // In the inline variants, the group holding the current page starts open. The flyout starts closed.
+  // When pinned, the group holding the current page starts open. The flyout starts closed.
   const [open, setOpen] = useState<string | undefined>(variant === 'rail' ? undefined : activeGroup?.id)
   const menu = useRef<HTMLUListElement>(null)
   const flyoutOpen = variant === 'rail' && open !== undefined
@@ -42,7 +42,6 @@ export function NavMenu({ variant, onNavigate }: { variant: NavVariant; onNaviga
 
   const navigated = () => {
     if (variant === 'rail') setOpen(undefined)
-    onNavigate?.()
   }
 
   const link = (item: NavLinkItem) => (

@@ -17,7 +17,7 @@ export interface NavLink {
   to: string
   icon: string
   tone: IconTone
-  /** One line shown on the sub-page cards (flyout and phone drawer). */
+  /** One line shown on the sub-page cards (desktop flyout and phone sheet). */
   description?: string
   gmOnly?: boolean
 }
@@ -34,7 +34,7 @@ export interface NavGroup {
 export type NavItem = NavLink | NavGroup
 
 /**
- * The main navigation, used by the desktop rail and the phone drawer alike. Adding a page is one entry here.
+ * The main navigation, used by the desktop rail and the phone tab bar alike. Adding a page is one entry here.
  * Monsters and Abilities join Codex with the Milestone 10 content tables; there are no empty placeholders until then.
  */
 export const navItems: NavItem[] = [

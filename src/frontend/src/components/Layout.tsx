@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, Outlet } from 'react-router'
+import { MenuDrawer } from '../nav/MenuDrawer'
 import { NavMenu } from '../nav/NavMenu'
+import { TabBar } from '../nav/TabBar'
+import { useScrollDirection } from '../nav/useScrollDirection'
 import { RoleSwitcher } from '../player/RoleSwitcher'
 import { ThemePicker } from '../theme/ThemePicker'
 import { ApiStatus } from './ApiStatus'
@@ -24,30 +27,27 @@ function savePinned(pinned: boolean) {
 }
 
 /**
- * The app shell. Desktop has a left rail: icons by default, or pinned open with labels. On a phone the rail becomes a
- * drawer behind the menu button. Realm Weaver is a GM tool first (ADR 0010); in player view the GM-only pages drop out
- * of the menu (ADR 0012).
+ * The app shell. Desktop has a left rail: icons by default, or pinned open with labels. On a phone the pages move to a
+ * bottom tab bar, and the menu button opens a drawer with About, the role switch and the theme. Scrolling down slides
+ * the phone's header and tab bar away, and scrolling up brings them back (nav.css). Realm Weaver is a GM tool first
+ * (ADR 0010); in player view the GM-only pages drop out of the menu (ADR 0012).
  */
 export function Layout() {
   const [pinned, setPinned] = useState(loadPinned)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sheet, setSheet] = useState<string | undefined>()
+  // The bars never hide while the drawer or a sheet is open. The CSS also keeps them shown while keyboard focus is in them.
+  const barsHidden = useScrollDirection() === 'down' && !drawerOpen && sheet === undefined
 
   const togglePinned = () => {
     savePinned(!pinned)
     setPinned(!pinned)
   }
 
-  useEffect(() => {
-    if (!drawerOpen) return
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setDrawerOpen(false)
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [drawerOpen])
-
   return (
-    <div className={`app${pinned ? ' app--pinned' : ''}`}>
+    <div className={`app${pinned ? ' app--pinned' : ''}${barsHidden ? ' app--bars-hidden' : ''}`}>
       <header className="app-header">
-        <button type="button" className="icon-button app-header__menu" aria-label="Open menu" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}>
+        <button type="button" className="icon-button app-header__menu" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -70,8 +70,11 @@ export function Layout() {
           <span className="brand__name">Realm Weaver</span>
         </Link>
         <div className="app-header__tools">
-          <RoleSwitcher />
-          <ThemePicker />
+          {/* On a phone these two move into the menu drawer. */}
+          <div className="app-header__wide">
+            <RoleSwitcher />
+            <ThemePicker />
+          </div>
           <ApiStatus />
         </div>
       </header>
@@ -80,26 +83,13 @@ export function Layout() {
         <NavMenu key={pinned ? 'pinned' : 'rail'} variant={pinned ? 'pinned' : 'rail'} />
       </nav>
 
-      {drawerOpen && (
-        <>
-          <div className="app-drawer__backdrop" onClick={() => setDrawerOpen(false)} />
-          <nav aria-label="Menu" className="app-drawer">
-            <div className="app-drawer__head">
-              <span className="app-drawer__title">Menu</span>
-              <button type="button" className="icon-button" aria-label="Close menu" onClick={() => setDrawerOpen(false)} autoFocus>
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-            <NavMenu variant="drawer" onNavigate={() => setDrawerOpen(false)} />
-          </nav>
-        </>
-      )}
+      <MenuDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <main className="app-main">
         <Outlet />
       </main>
+
+      <TabBar sheet={sheet} onSheetChange={setSheet} />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { errorMessage } from '../api/client'
 import { useCreatePlayer, usePlayers } from '../api/queries'
 import { PlayerSelect } from '../components/PlayerPicker'
@@ -10,6 +10,8 @@ export function PlayerSwitcher() {
   const createPlayer = useCreatePlayer()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+  // The switcher can be on the page twice (the header on desktop, the menu drawer on a phone), so the id is unique per copy.
+  const nameId = useId()
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -22,10 +24,10 @@ export function PlayerSwitcher() {
   if (adding) {
     return (
       <form className="player-switcher" onSubmit={(e) => void submit(e).catch(() => undefined)}>
-        <label className="visually-hidden" htmlFor="new-player-name">
+        <label className="visually-hidden" htmlFor={nameId}>
           New player name
         </label>
-        <input id="new-player-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player name" autoFocus maxLength={60} />
+        <input id={nameId} value={name} onChange={(e) => setName(e.target.value)} placeholder="Player name" autoFocus maxLength={60} />
         <button type="submit" disabled={createPlayer.isPending}>
           Create
         </button>
