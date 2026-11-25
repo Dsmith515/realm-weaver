@@ -87,6 +87,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realms/{id}/briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The realm as a player sees it: kind, threat, components and objectives (title and hint only, no locations). When playerId holds the realm's map, the kinds of creatures, loot and resource nodes are included. A preview, not access control (ADR 0012). */
+        get: operations["GetRealmBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/components": {
         parameters: {
             query?: never;
@@ -466,6 +483,17 @@ export interface components {
         };
         /** @enum {unknown} */
         Biome: "plains" | "forest" | "desert" | "tundra" | "swamp" | "volcanic" | "mountains" | "coast";
+        BriefingFindsDto: {
+            creatures: string[];
+            loot: string[];
+            resourceNodes: string[];
+        };
+        BriefingObjectiveDto: {
+            id: string;
+            title: string;
+            hint: string;
+            isPinned: boolean;
+        };
         CatalogSettingsDto: {
             playersCanSelfAssign: boolean;
         };
@@ -892,6 +920,28 @@ export interface components {
             /** Format: int32 */
             floorNumber: number;
         };
+        RealmBriefingDto: {
+            /** Format: uuid */
+            realmId: string;
+            mapName: null | string;
+            kind: components["schemas"]["RealmKind"];
+            biome: components["schemas"]["Biome"];
+            element: components["schemas"]["Element"];
+            /** Format: int32 */
+            threat: number;
+            /** Format: int32 */
+            dangerModifier: number;
+            /** Format: int32 */
+            floorCount: number;
+            isMirror: boolean;
+            wovenFrom: string[];
+            /** Format: int32 */
+            completionCount: number;
+            objectives: components["schemas"]["BriefingObjectiveDto"][];
+            holdsMap: boolean;
+            finds?: null | components["schemas"]["BriefingFindsDto"];
+            areas?: null | components["schemas"]["RealmAreaSummaryDto"][];
+        };
         RealmCompletionDto: {
             /** Format: uuid */
             id: string;
@@ -1304,6 +1354,30 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRealmBriefing: {
+        parameters: {
+            query?: {
+                playerId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealmBriefingDto"];
                 };
             };
         };

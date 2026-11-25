@@ -96,6 +96,7 @@ app.MapRealmsModule();
 app.MapRitualsModule();
 app.MapMapDetails();
 app.MapRealmRoster();
+app.MapRealmBriefing();
 
 await app.RunAsync();
 

@@ -391,6 +391,9 @@ public class RitualEndpointTests(RealmWeaverApiFactory factory)
         public Task<RealmCompletionsDto?> GetCompletionsAsync(Guid realmId, CancellationToken cancellationToken = default) =>
             Task.FromResult<RealmCompletionsDto?>(null);
 
+        public Task<RealmBriefingDto?> GetBriefingAsync(Guid realmId, bool holdsMap, CancellationToken cancellationToken = default) =>
+            Task.FromResult<RealmBriefingDto?>(null);
+
         public Task<RealmCompletionResult> CompleteAsync(Guid realmId, string objectiveKey, IReadOnlyList<CompletionPlayerDto> players, CancellationToken cancellationToken = default) =>
             Task.FromResult(new RealmCompletionResult(CompletionResult.NotFound));
     }

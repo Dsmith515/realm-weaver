@@ -12,6 +12,8 @@ export const keys = {
   realms: (filter: RealmFilter) => ['realms', filter] as const,
   allRealms: ['realms'] as const,
   realm: (id: string) => ['realm', id] as const,
+  briefing: (realmId: string, playerId: string | undefined) => ['briefing', realmId, playerId ?? ''] as const,
+  allBriefings: ['briefing'] as const,
   completions: (realmId: string) => ['completions', realmId] as const,
   roster: (realmId: string, filter: RosterFilter) => ['roster', realmId, filter] as const,
   allRosters: ['roster'] as const,
@@ -151,7 +153,10 @@ export function useAssignComponent() {
   return useMutation({
     mutationFn: ({ componentId, playerId, quantity }: { componentId: string; playerId: string; quantity: number }) =>
       unwrap(api.POST('/api/components/{id}/assign', { params: { path: { id: componentId } }, body: { playerId, quantity } })),
-    onSuccess: (_, { playerId }) => queryClient.invalidateQueries({ queryKey: keys.inventory(playerId) }),
+    onSuccess: (_, { playerId }) => {
+      void queryClient.invalidateQueries({ queryKey: keys.inventory(playerId) })
+      void queryClient.invalidateQueries({ queryKey: keys.allBriefings }) // a map changes what its holder is briefed on
+    },
   })
 }
 
@@ -200,6 +205,17 @@ export function useRealm(id: string) {
     queryKey: keys.realm(id),
     queryFn: () => unwrap(api.GET('/api/realms/{id}', { params: { path: { id } } })),
     staleTime: Infinity, // the document never changes; a pin updates the cache below
+  })
+}
+
+/**
+ * The realm as a player sees it: no map, no locations, no GM detail. With a player who holds the realm's map, it adds
+ * the kinds of creatures, loot and resource nodes. Refetched on each visit, since a hand-out or a pin changes it.
+ */
+export function useRealmBriefing(realmId: string, playerId: string | undefined) {
+  return useQuery({
+    queryKey: keys.briefing(realmId, playerId),
+    queryFn: () => unwrap(api.GET('/api/realms/{id}/briefing', { params: { path: { id: realmId }, query: { playerId } } })),
   })
 }
 
@@ -270,6 +286,7 @@ export function useHandOutMap(mapId: string) {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: keys.allRosters })
+      void queryClient.invalidateQueries({ queryKey: keys.allBriefings })
       void queryClient.invalidateQueries({ queryKey: ['inventory'] })
     },
   })
@@ -285,6 +302,7 @@ export function useCompleteRun(realmId: string) {
       void queryClient.invalidateQueries({ queryKey: ['completions'] })
       void queryClient.invalidateQueries({ queryKey: keys.allRosters })
       void queryClient.invalidateQueries({ queryKey: keys.allRealms })
+      void queryClient.invalidateQueries({ queryKey: keys.allBriefings })
       void queryClient.invalidateQueries({ queryKey: ['inventory'] })
       void queryClient.invalidateQueries({ queryKey: keys.allPreviews })
     },
@@ -302,6 +320,7 @@ export function usePinObjective(realmId: string) {
     onSuccess: (summary) => {
       queryClient.setQueryData<Realm>(keys.realm(realmId), (old) => (old ? { ...old, summary } : old))
       void queryClient.invalidateQueries({ queryKey: keys.allRealms })
+      void queryClient.invalidateQueries({ queryKey: keys.allBriefings })
     },
   })
 }

@@ -81,6 +81,47 @@ internal sealed class RealmsService(RealmsDbContext db, TimeProvider clock) : IR
             : new RealmDigestDto(original.Id, original.Threat, RealmDigest.From(RealmJson.Deserialize(original.Document)));
     }
 
+    public async Task<RealmBriefingDto?> GetBriefingAsync(Guid realmId, bool holdsMap, CancellationToken cancellationToken = default)
+    {
+        if (await GetAsync(realmId, cancellationToken) is not { Summary: var summary, Document: var document })
+        {
+            return null;
+        }
+
+        var pin = summary.PinnedObjective;
+        var objectives = document.Objectives
+            .Select(o => new BriefingObjectiveDto(o.Id, o.Title, o.Description, o.Key == pin?.Key))
+            .ToList();
+        if (pin is not null && objectives.All(o => !o.IsPinned))
+        {
+            objectives.Insert(0, new BriefingObjectiveDto("P", pin.Title, pin.Description, IsPinned: true));
+        }
+
+        var components = summary.Components;
+        return new RealmBriefingDto(
+            summary.Id,
+            components?.MapName,
+            summary.Kind,
+            summary.Biome,
+            document.Request.Element,
+            summary.Threat,
+            summary.DangerModifier,
+            summary.FloorCount,
+            summary.IsMirror,
+            components is null ? [] : [components.Needle.Name, components.Thread.Name, components.Coating.Name],
+            summary.CompletionCount,
+            objectives,
+            holdsMap,
+            holdsMap ? FindsOf(RealmDigest.From(document)) : null,
+            holdsMap ? summary.Areas : null);
+    }
+
+    /// <summary>Names only, each once, in the digest's order: a player learns what kinds of things are there, not how many or where.</summary>
+    private static BriefingFindsDto FindsOf(RealmDigest digest) => new(
+        [.. digest.Mobs.Select(m => m.Name).Distinct(StringComparer.Ordinal)],
+        [.. digest.Loot.Select(e => e.Name).Distinct(StringComparer.Ordinal)],
+        [.. digest.ResourceNodes.Select(e => e.Name).Distinct(StringComparer.Ordinal)]);
+
     /// <summary>
     /// Every objective the realm could offer: the rolled ones first, then the other hooks of its placed events and the
     /// realm-wide objectives. Null when the realm doesn't exist.
