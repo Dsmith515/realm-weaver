@@ -98,8 +98,8 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
       <Field label="Description" error={fieldError('description')}>
         <textarea value={input.description ?? ''} onChange={(e) => setInput({ ...input, description: e.target.value })} rows={2} />
       </Field>
-      <label className="checkbox">
-        <input type="checkbox" checked={input.isPlayerAssignable} onChange={(e) => setInput({ ...input, isPlayerAssignable: e.target.checked })} />
+      <label className="checkbox switch">
+        <input type="checkbox" role="switch" checked={input.isPlayerAssignable} onChange={(e) => setInput({ ...input, isPlayerAssignable: e.target.checked })} />
         Players may add this themselves
       </label>
 
@@ -220,9 +220,10 @@ export function ComponentForm({ component, template, onDone, rng }: ComponentFor
               ['unique', 'Unique', 'Only one player can hold it, so it can’t be shared or assigned twice.'],
             ] as const
           ).map(([flag, text, hint]) => (
-            <label key={flag} className="checkbox" title={hint}>
+            <label key={flag} className="checkbox switch" title={hint}>
               <input
                 type="checkbox"
+                role="switch"
                 checked={flagsOf(input.map!)[flag]}
                 onChange={(e) => setInput({ ...input, map: { ...input.map!, flags: { ...flagsOf(input.map!), [flag]: e.target.checked } } })}
               />

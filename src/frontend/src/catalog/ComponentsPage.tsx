@@ -72,8 +72,8 @@ export function ComponentsPage() {
           ))}
         </select>
         <input aria-label="Search components" placeholder="Search" value={filters.search ?? ''} onChange={(e) => filter({ search: e.target.value })} />
-        <label className="checkbox">
-          <input type="checkbox" checked={!!filters.includeArchived} onChange={(e) => filter({ includeArchived: e.target.checked || undefined })} />
+        <label className="checkbox switch">
+          <input type="checkbox" role="switch" checked={!!filters.includeArchived} onChange={(e) => filter({ includeArchived: e.target.checked || undefined })} />
           Show archived
         </label>
         <button type="button" className="button--primary" onClick={() => setEditing({ mode: 'new' })}>
@@ -208,9 +208,10 @@ function SelfAssignToggle() {
   const settings = useSettings()
   const update = useUpdateSettings()
   return (
-    <label className="checkbox toggle">
+    <label className="checkbox switch toggle">
       <input
         type="checkbox"
+        role="switch"
         checked={settings.data?.playersCanSelfAssign ?? false}
         disabled={!settings.data || update.isPending}
         onChange={(e) => update.mutate(e.target.checked)}

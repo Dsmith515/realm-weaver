@@ -127,9 +127,10 @@ export function CompleteRealmCard({ realm }: { realm: Realm }) {
                 setPage(1)
               }}
             />
-            <label className="checkbox">
+            <label className="checkbox switch">
               <input
                 type="checkbox"
+                role="switch"
                 checked={all}
                 onChange={(e) => {
                   setAll(e.target.checked)
@@ -191,8 +192,8 @@ export function CompleteRealmCard({ realm }: { realm: Realm }) {
           </p>
         </fieldset>
 
-        <label className="checkbox">
-          <input type="checkbox" checked={giveMap} onChange={(e) => setGiveMap(e.target.checked)} />
+        <label className="checkbox switch">
+          <input type="checkbox" role="switch" checked={giveMap} onChange={(e) => setGiveMap(e.target.checked)} />
           When completing, hand the map to selected players who don’t have it yet
         </label>
         {unique && withoutMap.length > 1 && (
