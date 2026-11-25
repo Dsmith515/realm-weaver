@@ -104,6 +104,9 @@
 
 .app-rail > .nav-menu {
   position: sticky;
+  /* Sticky makes the menu its own stacking context, so the flyout's z-index only counts inside it. Lifting the menu
+     itself keeps the flyout above positioned page content (the Ritual page's slots), and still under the header. */
+  z-index: 15;
   top: var(--header-height);
   /* The viewport below the header on long pages; the row itself on full-height pages (.page-fill). */
   height: min(100dvh - var(--header-height), 100%);
