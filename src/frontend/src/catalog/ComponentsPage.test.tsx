@@ -239,11 +239,11 @@ describe('Components page', () => {
     renderApp('/components')
 
     await user.click(await screen.findByRole('button', { name: 'Archive Beastward Wax' }))
-    await user.click(screen.getByRole('checkbox', { name: /Players can add assignable components/ }))
+    await user.click(screen.getByRole('switch', { name: /Players can add assignable components/ }))
 
     await waitFor(() => expect(api.callsTo('DELETE', `/api/components/${wax.id}`)).toHaveLength(1))
     await waitFor(() => expect(api.callsTo('PUT', '/api/settings')[0]?.body).toEqual({ playersCanSelfAssign: false }))
-    expect(screen.getByRole('checkbox', { name: /Players can add assignable components/ })).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: /Players can add assignable components/ })).not.toBeChecked()
   })
 
   it('edits a map’s rules and a needle’s base type and boon', async () => {
@@ -259,10 +259,10 @@ describe('Components page', () => {
     await user.click(await screen.findByRole('button', { name: `Edit ${forestMap.name}` }))
     const mapForm = screen.getByRole('form', { name: `Edit ${forestMap.name}` })
     // Maps are open unless the GM seals them (ADR 0010).
-    expect(within(mapForm).getByRole('checkbox', { name: /Map required/ })).not.toBeChecked()
-    await user.click(within(mapForm).getByRole('checkbox', { name: /Map required/ }))
-    await user.click(within(mapForm).getByRole('checkbox', { name: /Components must match/ }))
-    await user.click(within(mapForm).getByRole('checkbox', { name: /Unique/ }))
+    expect(within(mapForm).getByRole('switch', { name: /Map required/ })).not.toBeChecked()
+    await user.click(within(mapForm).getByRole('switch', { name: /Map required/ }))
+    await user.click(within(mapForm).getByRole('switch', { name: /Components must match/ }))
+    await user.click(within(mapForm).getByRole('switch', { name: /Unique/ }))
     await user.click(within(mapForm).getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(api.callsTo('PUT', `/api/components/${forestMap.id}`)).toHaveLength(1))

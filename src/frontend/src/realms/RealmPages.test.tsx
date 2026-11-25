@@ -472,7 +472,7 @@ describe('Realm pages', () => {
 
     const card = await screen.findByRole('region', { name: 'Completion' })
     await within(card).findByRole('checkbox', { name: /Wanderer/ })
-    await user.click(within(card).getByRole('checkbox', { name: 'When completing, hand the map to selected players who don’t have it yet' }))
+    await user.click(within(card).getByRole('switch', { name: 'When completing, hand the map to selected players who don’t have it yet' }))
     await user.click(within(card).getByRole('button', { name: 'Complete objective' }))
 
     expect(api.callsTo('POST', '/api/realms/realm-1/completion')[0].body).toMatchObject({ playerIds: [player.id], mapRecipientIds: [] })
@@ -497,7 +497,7 @@ describe('Realm pages', () => {
     expect(within(table).getByText('2×')).toBeInTheDocument()
     // Players who completed it and hold the map are hidden until asked for.
     expect(within(table).queryByText('Holder')).not.toBeInTheDocument()
-    await user.click(within(card).getByRole('checkbox', { name: 'Include players who completed it and hold the map' }))
+    await user.click(within(card).getByRole('switch', { name: 'Include players who completed it and hold the map' }))
     expect(await within(table).findByText('Has map')).toBeInTheDocument()
 
     await user.click(within(table).getByRole('checkbox', { name: 'Select everyone on this page' }))

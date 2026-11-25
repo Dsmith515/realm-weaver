@@ -75,11 +75,11 @@ describe('Quick Weave page', () => {
 
     await user.click(screen.getByText('Settlements (new maps only)'))
     await user.selectOptions(screen.getByRole('combobox', { name: 'Population' }), 'bustling')
-    // Placing structures replaces the suggestions.
-    await user.click(screen.getByRole('checkbox', { name: 'Place structures' }))
-    expect(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' })).toBeDisabled()
-    await user.click(screen.getByRole('checkbox', { name: 'Place structures' }))
-    await user.click(screen.getByRole('checkbox', { name: 'Suggest structures instead (ideas, not placed)' }))
+    // Including structures replaces the suggestions.
+    await user.click(screen.getByRole('switch', { name: 'Include settlement structures' }))
+    expect(screen.getByRole('switch', { name: 'Suggest structure placement only' })).toBeDisabled()
+    await user.click(screen.getByRole('switch', { name: 'Include settlement structures' }))
+    await user.click(screen.getByRole('switch', { name: 'Suggest structure placement only' }))
     await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'Weave' }))
 
     await waitFor(() =>

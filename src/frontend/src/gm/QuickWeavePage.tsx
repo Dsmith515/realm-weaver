@@ -74,7 +74,7 @@ export function QuickWeavePage() {
 
           <details className="advanced">
             <summary>Settlements (new maps only)</summary>
-            <div className="advanced__fields">
+            <div className="advanced__fields advanced__fields--rows">
               <label>
                 Population
                 <select value={population} onChange={(e) => setPopulation(e.target.value as SettlementPopulation | '')}>
@@ -86,18 +86,19 @@ export function QuickWeavePage() {
                   ))}
                 </select>
               </label>
-              <label className="checkbox">
-                <input type="checkbox" checked={includeStructures} onChange={(e) => setIncludeStructures(e.target.checked)} />
-                Place structures
+              <label className="checkbox switch switch--stacked">
+                Include settlement structures
+                <input type="checkbox" role="switch" checked={includeStructures} onChange={(e) => setIncludeStructures(e.target.checked)} />
               </label>
-              <label className="checkbox" title="A few structure ideas for each settlement, listed on the realm page and placement sheet but not drawn on the map">
+              <label className="checkbox switch switch--stacked" title="A few structure ideas for each settlement, listed on the realm page and placement sheet but not drawn on the map">
+                Suggest structure placement only
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={!includeStructures && suggestStructures}
                   disabled={includeStructures}
                   onChange={(e) => setSuggestStructures(e.target.checked)}
                 />
-                Suggest structures instead (ideas, not placed)
               </label>
             </div>
           </details>
@@ -118,9 +119,9 @@ export function QuickWeavePage() {
           </div>
           <Chips legend="Biome" options={biomes} selected={limits.biomes ?? []} onChange={(b: Biome[]) => setLimits({ ...limits, biomes: b })} />
           <Chips legend="Realm kind" options={realmKinds} selected={limits.kinds ?? []} onChange={(k: RealmKind[]) => setLimits({ ...limits, kinds: k })} />
-          <label className="checkbox">
-            <input type="checkbox" checked={!!limits.includeArchived} onChange={(e) => setLimits({ ...limits, includeArchived: e.target.checked })} />
+          <label className="checkbox switch switch--stacked field-label">
             Include archived components
+            <input type="checkbox" role="switch" checked={!!limits.includeArchived} onChange={(e) => setLimits({ ...limits, includeArchived: e.target.checked })} />
           </label>
         </fieldset>
       </div>
