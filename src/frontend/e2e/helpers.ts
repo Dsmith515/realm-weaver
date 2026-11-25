@@ -34,3 +34,15 @@ export async function nav(page: Page, link: string) {
 export async function expectMapDrawn(page: Page) {
   await expect(page.locator('.svg-viewer svg').first()).toBeVisible()
 }
+
+/** The phone navigation (src/nav/TabBar.tsx): a group tab opens a sheet of its pages. */
+export async function phoneNav(page: Page, link: string) {
+  const tabs = page.getByRole('navigation', { name: 'Sections' })
+  const group = groupOf[link]
+  if (group) {
+    await tabs.getByRole('button', { name: group }).click()
+    await page.getByRole('dialog', { name: group }).getByRole('link', { name: new RegExp(`^${link}`) }).click()
+  } else {
+    await tabs.getByRole('link', { name: link, exact: true }).click()
+  }
+}

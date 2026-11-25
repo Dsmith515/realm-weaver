@@ -56,17 +56,4 @@ describe('Main navigation', () => {
     expect(within(mainNav()).getByRole('link', { name: 'Ritual' })).toHaveClass('active')
     expect(localStorage.getItem('realm-weaver.rail')).toBe('pinned')
   })
-
-  it('opens the phone menu as a drawer that closes when a page is chosen', async () => {
-    fakeApi(routes)
-    renderApp('/about')
-    const user = userEvent.setup()
-
-    await user.click(screen.getByRole('button', { name: 'Open menu' }))
-    const drawer = screen.getByRole('navigation', { name: 'Menu' })
-    await user.click(within(drawer).getByRole('link', { name: 'Realms' }))
-
-    expect(screen.queryByRole('navigation', { name: 'Menu' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Realms' })).toBeInTheDocument()
-  })
 })
